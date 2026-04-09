@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-04-09T10:21:00Z",
+  "generated_at": "2026-04-09T10:24:34Z",
   "skills": [
     {
       "id": "dev.heyari.counter",
@@ -8,9 +8,6 @@
       "name": "counter",
       "description": "Counts how many times you've asked it to count, persisting across calls. Single-digit ASCII counter that wraps from 9 back to 1. Reference WASM skill for the storage_kv host imports.",
       "license": "MIT",
-      "bundle": "bundles/dev.heyari.counter-0.1.0.tar.gz",
-      "signature": "bundles/dev.heyari.counter-0.1.0.tar.gz.sig",
-      "sha256": "4bbc3b5881488c5e863c743eb6b60d4f52d4ba633bb3531f63a986353c342a00",
       "author": "Ari core team",
       "homepage": "https://github.com/ari-digital-assistant/ari-skills",
       "capabilities": [
@@ -18,7 +15,10 @@
       ],
       "languages": [
         "en"
-      ]
+      ],
+      "bundle": "bundles/dev.heyari.counter-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.counter-0.1.0.tar.gz.sig",
+      "sha256": "a057e48c438a1aa2ad8b5fb2baeeb8352399e9e34f42436b4995a53c5742b0f3"
     },
     {
       "id": "dev.heyari.wasmecho",
@@ -26,15 +26,15 @@
       "name": "wasm-echo",
       "description": "Tiny WASM smoke-test skill. Returns a fixed greeting from inside its sandboxed module. Use only for testing the WASM loader.",
       "license": "MIT",
-      "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
-      "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
-      "sha256": "e2f94bacc8b90152774087aa455c83bacf24dccd633b8ce502234e363e9b7651",
       "author": "Ari core team",
       "homepage": null,
       "capabilities": [],
       "languages": [
         "en"
-      ]
+      ],
+      "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
+      "sha256": "fca44c72b5fac9b6b270b7190e5fd156d92c1b11d67a1945763f28e987cd4645"
     },
     {
       "id": "dev.heyari.coinflip",
@@ -42,15 +42,15 @@
       "name": "coin-flip",
       "description": "Flips a virtual coin and returns heads or tails. Use when the user asks to flip a coin, toss a coin, or make a random binary choice.",
       "license": "MIT",
-      "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
-      "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "4daf277f6e617d859f91097a5972226ecc79644203370083d4ffac4b989d2ff3",
       "author": "Ari core team",
       "homepage": "https://github.com/ari-digital-assistant/ari-skills",
       "capabilities": [],
       "languages": [
         "en"
-      ]
+      ],
+      "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
+      "sha256": "9e55eef3e828cd9fe74b1a3bbfe297ee567444d25b3dc21dca76f0545f9959b3"
     },
     {
       "id": "dev.heyari.githubzen",
@@ -58,9 +58,6 @@
       "name": "github-zen",
       "description": "Fetches a one-line piece of zen wisdom from the GitHub API. Use to test the WASM http_fetch host import end-to-end. Requires internet access.",
       "license": "MIT",
-      "bundle": "bundles/dev.heyari.githubzen-0.1.1.tar.gz",
-      "signature": "bundles/dev.heyari.githubzen-0.1.1.tar.gz.sig",
-      "sha256": "2d6c790a61d3634d49edf89efd99bc9b6fbff82ac3719b78ef5780cf01c5239f",
       "author": "Ari core team",
       "homepage": "https://github.com/ari-digital-assistant/ari-skills",
       "capabilities": [
@@ -68,7 +65,10 @@
       ],
       "languages": [
         "en"
-      ]
+      ],
+      "bundle": "bundles/dev.heyari.githubzen-0.1.1.tar.gz",
+      "signature": "bundles/dev.heyari.githubzen-0.1.1.tar.gz.sig",
+      "sha256": "88f5a74480a67fa4c54a760a3c3a7d8893e72c184339ef5c116213a54d8dad74"
     }
   ]
 }
