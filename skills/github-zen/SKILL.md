@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.githubzen
-    version: "0.1.0"
+    version: "0.1.1"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3,<0.4"
@@ -14,8 +14,14 @@ metadata:
     specificity: high
     matching:
       patterns:
-        - keywords: [zen, wisdom]
-          weight: 0.95
+        # Either word on its own is enough — "tell me a zen", "some
+        # wisdom please", etc. all have to land on this skill.
+        - keywords: [zen]
+          weight: 0.9
+        - keywords: [wisdom]
+          weight: 0.9
+        # If both words appear, or "github" + "zen", prefer this skill
+        # over anything else that also matches a single word.
         - keywords: [github, zen]
           weight: 0.95
     wasm:
