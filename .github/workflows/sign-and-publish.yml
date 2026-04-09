@@ -1,0 +1,107 @@
+name: sign-and-publish
+
+# Runs on every push to main that touches the skill set. Rebuilds all
+# bundles, re-signs them with the registry signing key (an Actions secret),
+# regenerates index.json, and commits the lot back to main.
+#
+# Signing every bundle every time is deliberate: it means the on-disk state
+# of main always matches the signed state, no partial updates, no stale
+# signatures. The bundles are small (kilobytes each) so this is cheap.
+#
+# SECRETS
+#   ARI_REGISTRY_SIGNING_KEY  Hex-encoded 32-byte Ed25519 private key, as
+#                        produced by `ari-sign-bundle gen-key` (see
+#                        GOVERNANCE.md for the key rotation procedure).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+      - 'tools/**'
+      - '.github/workflows/sign-and-publish.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+env:
+  ARI_ENGINE_REF: main
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out ari-skills
+        uses: actions/checkout@v4
+
+      - name: Check out ari-engine
+        uses: actions/checkout@v4
+        with:
+          repository: ari-digital-assistant/ari
+          ref: ${{ env.ARI_ENGINE_REF }}
+          path: ari-engine-src
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ari-engine-src/target
+          key: ${{ runner.os }}-cargo-publish-${{ hashFiles('ari-engine-src/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-publish-
+
+      - name: Build validator + signer
+        working-directory: ari-engine-src
+        run: cargo build --release -p ari-skill-validate -p ari-sign-bundle
+
+      - name: Install jq (usually preinstalled)
+        run: command -v jq >/dev/null || sudo apt-get install -y jq
+
+      - name: Materialise signing key from secret
+        env:
+          ARI_REGISTRY_SIGNING_KEY: ${{ secrets.ARI_REGISTRY_SIGNING_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${ARI_REGISTRY_SIGNING_KEY:-}" ]]; then
+            echo "ARI_REGISTRY_SIGNING_KEY secret is not set" >&2
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/ari-keys"
+          chmod 700 "$RUNNER_TEMP/ari-keys"
+          key_path="$RUNNER_TEMP/ari-keys/registry.key"
+          printf '%s' "$ARI_REGISTRY_SIGNING_KEY" | xxd -r -p > "$key_path"
+          chmod 600 "$key_path"
+          if [[ ! -s "$key_path" ]]; then
+            echo "decoded key is empty — is the secret hex-encoded?" >&2
+            exit 1
+          fi
+          echo "ARI_SIGNING_KEY_FILE=$key_path" >> "$GITHUB_ENV"
+
+      - name: Build bundles, sign, regenerate index.json
+        env:
+          ARI_SKILL_VALIDATE: ${{ github.workspace }}/ari-engine-src/target/release/ari-skill-validate
+          ARI_SIGN_BUNDLE: ${{ github.workspace }}/ari-engine-src/target/release/ari-sign-bundle
+        run: ./tools/build-index.sh
+
+      - name: Commit updated index and bundles
+        run: |
+          set -euo pipefail
+          git config user.name "ari-skills-bot"
+          git config user.email "ari-skills-bot@users.noreply.github.com"
+          git add index.json bundles/
+          if git diff --cached --quiet; then
+            echo "nothing to commit — index and bundles are already up to date"
+            exit 0
+          fi
+          git commit -m "chore(registry): publish signed bundles + index.json for ${{ github.sha }}"
+          git push origin HEAD:main
+
+      - name: Scrub key file
+        if: always()
+        run: |
+          if [[ -n "${ARI_SIGNING_KEY_FILE:-}" && -f "$ARI_SIGNING_KEY_FILE" ]]; then
+            shred -u "$ARI_SIGNING_KEY_FILE" || rm -f "$ARI_SIGNING_KEY_FILE"
+          fi

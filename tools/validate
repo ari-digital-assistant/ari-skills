@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+#
+# Validate one or more Ari skill directories.
+#
+# Usage:
+#   ./tools/validate skills/coin-flip
+#   ./tools/validate skills/                 # validates every skill in the registry
+#   ./tools/validate skills/foo skills/bar
+#
+# This script is a thin wrapper around the `ari-skill-validate` binary, which
+# lives in the ari-engine workspace and re-uses the same loader code that the
+# engine itself runs at startup. That means the validator will catch exactly
+# the same problems the engine would, with no second implementation to drift.
+#
+# Resolution order for the binary:
+#   1. $ARI_SKILL_VALIDATE if set (path to a prebuilt binary)
+#   2. ari-skill-validate on $PATH (e.g. `cargo install`ed)
+#   3. A sibling ari-engine clone next to this repo
+#   4. Bail with a useful error
+
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+
+run_with_engine_workspace() {
+  local engine_dir="$1"
+  shift
+  cargo run --quiet --manifest-path "$engine_dir/Cargo.toml" -p ari-skill-validate -- "$@"
+}
+
+if [[ -n "${ARI_SKILL_VALIDATE:-}" ]]; then
+  exec "$ARI_SKILL_VALIDATE" "$@"
+fi
+
+if command -v ari-skill-validate >/dev/null 2>&1; then
+  exec ari-skill-validate "$@"
+fi
+
+# Try a sibling ari-engine clone in the same parent directory as this repo,
+# or one level up (for the canonical workspace layout where ari-skills and
+# ari-engine are both children of the Ari/ root).
+for candidate in \
+  "$REPO_ROOT/../ari-engine" \
+  "$REPO_ROOT/../../ari-engine"; do
+  if [[ -f "$candidate/Cargo.toml" ]]; then
+    run_with_engine_workspace "$candidate" "$@"
+    exit $?
+  fi
+done
+
+cat >&2 <<EOF
+ari-skills/tools/validate: could not find the ari-skill-validate binary.
+
+Tried (in order):
+  1. \$ARI_SKILL_VALIDATE          (not set)
+  2. ari-skill-validate on PATH    (not found)
+  3. ../ari-engine                 (not found)
+  4. ../../ari-engine              (not found)
+
+Fix one of:
+  - Clone ari-digital-assistant/ari into a sibling directory.
+  - cargo install --git https://github.com/ari-digital-assistant/ari ari-skill-validate
+  - Set ARI_SKILL_VALIDATE=/path/to/ari-skill-validate
+EOF
+exit 2

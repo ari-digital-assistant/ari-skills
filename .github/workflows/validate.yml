@@ -1,0 +1,97 @@
+name: validate
+
+# Runs on every PR that touches a skill or the workflow itself. Builds the
+# validator from the sibling ari-engine repo (pinned by ref below) and runs
+# it against the skill dirs changed in the PR. Result is posted back as a
+# bot comment via `gh pr comment`.
+#
+# We do NOT run on push-to-main — the sign-and-publish workflow covers that
+# path and any failure there is a merge-day incident, not a review gate.
+
+on:
+  pull_request:
+    paths:
+      - 'skills/**'
+      - 'tools/**'
+      - '.github/workflows/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# Pin the engine version that CI validates against. Bump this when a new
+# engine release changes manifest semantics.
+env:
+  ARI_ENGINE_REF: main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out ari-skills PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check out ari-engine (validator source)
+        uses: actions/checkout@v4
+        with:
+          repository: ari-digital-assistant/ari
+          ref: ${{ env.ARI_ENGINE_REF }}
+          path: ari-engine-src
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ari-engine-src/target
+          key: ${{ runner.os }}-cargo-validate-${{ hashFiles('ari-engine-src/Cargo.lock', 'ari-engine-src/crates/ari-skill-validate/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-validate-
+
+      - name: Build ari-skill-validate
+        working-directory: ari-engine-src
+        run: cargo build --release -p ari-skill-validate
+
+      - name: Identify changed skill directories
+        id: changed
+        run: |
+          set -euo pipefail
+          base_sha="${{ github.event.pull_request.base.sha }}"
+          head_sha="${{ github.event.pull_request.head.sha }}"
+          changed=$(git diff --name-only "$base_sha" "$head_sha" -- skills/ \
+            | awk -F/ '/^skills\/[^\/]+\//{print $1 "/" $2}' \
+            | sort -u)
+          if [[ -z "$changed" ]]; then
+            echo "no skill directories changed — validating the whole registry"
+            changed="skills/"
+          fi
+          echo "paths<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$changed" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Run validator
+        id: validate
+        run: |
+          set -euo pipefail
+          paths_arg=()
+          while IFS= read -r p; do
+            [[ -n "$p" ]] && paths_arg+=("$p")
+          done <<< "${{ steps.changed.outputs.paths }}"
+          ./ari-engine-src/target/release/ari-skill-validate \
+            --format=pr-comment "${paths_arg[@]}" > comment.md && status=0 || status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Post PR comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --body-file comment.md
+
+      - name: Fail the job if validation failed
+        if: steps.validate.outputs.status != '0'
+        run: exit 1
