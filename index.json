@@ -1,16 +1,16 @@
 {
   "index_version": 1,
-  "generated_at": "2026-04-09T08:58:12Z",
+  "generated_at": "2026-04-09T09:02:41Z",
   "skills": [
     {
-      "id": "dev.heyari.githubzen",
+      "id": "dev.heyari.counter",
       "version": "0.1.0",
-      "name": "github-zen",
-      "description": "Fetches a one-line piece of zen wisdom from the GitHub API. Use to test the WASM http_fetch host import end-to-end. Requires internet access.",
+      "name": "counter",
+      "description": "Counts how many times you've asked it to count, persisting across calls. Single-digit ASCII counter that wraps from 9 back to 1. Reference WASM skill for the storage_kv host imports.",
       "license": "MIT",
-      "bundle": "bundles/dev.heyari.githubzen-0.1.0.tar.gz",
-      "signature": "bundles/dev.heyari.githubzen-0.1.0.tar.gz.sig",
-      "sha256": "8981442f379cb37b94cffe0b64289b0000c1e658772c68710d44c59176275915"
+      "bundle": "bundles/dev.heyari.counter-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.counter-0.1.0.tar.gz.sig",
+      "sha256": "4a944a0c823ba218eef0e11b2a04b046f6afbc3d323b9c665dbb6447b73bf40e"
     },
     {
       "id": "dev.heyari.wasmecho",
@@ -20,7 +20,7 @@
       "license": "MIT",
       "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
-      "sha256": "9aaedc3c2939cecc3659e0c631715ae58e8a6e62f6f76d1c2374a11814031405"
+      "sha256": "2e6d33abc6557e6028b1db0935ab5fd2c4e66d8af2a3b723b4e56345023bd3f1"
     },
     {
       "id": "dev.heyari.coinflip",
@@ -30,7 +30,17 @@
       "license": "MIT",
       "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "aaf3590a828f31bb7fda18fb7b33d306f976de769e624ccc6d5e403f54f8820e"
+      "sha256": "34ce4c0f78b163b7970399a574468a8139a881e733f37c46b4f2daac690be859"
+    },
+    {
+      "id": "dev.heyari.githubzen",
+      "version": "0.1.0",
+      "name": "github-zen",
+      "description": "Fetches a one-line piece of zen wisdom from the GitHub API. Use to test the WASM http_fetch host import end-to-end. Requires internet access.",
+      "license": "MIT",
+      "bundle": "bundles/dev.heyari.githubzen-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.githubzen-0.1.0.tar.gz.sig",
+      "sha256": "d3a8eeca44e1b2c02f12fe688c8ec9d3a41cf1990e9c14be55e74369cd8bb1b2"
     }
   ]
 }
