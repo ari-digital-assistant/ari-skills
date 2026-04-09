@@ -33,12 +33,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out ari-skills
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Check out ari-engine
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          repository: ari-digital-assistant/ari
+          repository: ari-digital-assistant/ari-engine
           ref: ${{ env.ARI_ENGINE_REF }}
           path: ari-engine-src
 
