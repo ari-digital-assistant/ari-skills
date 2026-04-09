@@ -12,3 +12,5 @@ skills/*
 !skills/wasm-echo/**
 !skills/github-zen/
 !skills/github-zen/**
+!skills/counter/
+!skills/counter/**
