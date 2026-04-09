@@ -10,3 +10,5 @@ skills/*
 !skills/coin-flip/**
 !skills/wasm-echo/
 !skills/wasm-echo/**
+!skills/github-zen/
+!skills/github-zen/**
