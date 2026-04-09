@@ -1,7 +1,17 @@
 {
   "index_version": 1,
-  "generated_at": "2026-04-09T08:20:46Z",
+  "generated_at": "2026-04-09T08:58:12Z",
   "skills": [
+    {
+      "id": "dev.heyari.githubzen",
+      "version": "0.1.0",
+      "name": "github-zen",
+      "description": "Fetches a one-line piece of zen wisdom from the GitHub API. Use to test the WASM http_fetch host import end-to-end. Requires internet access.",
+      "license": "MIT",
+      "bundle": "bundles/dev.heyari.githubzen-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.githubzen-0.1.0.tar.gz.sig",
+      "sha256": "8981442f379cb37b94cffe0b64289b0000c1e658772c68710d44c59176275915"
+    },
     {
       "id": "dev.heyari.wasmecho",
       "version": "0.1.0",
@@ -10,7 +20,7 @@
       "license": "MIT",
       "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
-      "sha256": "f506b2ca5c529ff27330d9f9fd064cac8bbbf3d2808e8ea8a7e899a2c4b84854"
+      "sha256": "9aaedc3c2939cecc3659e0c631715ae58e8a6e62f6f76d1c2374a11814031405"
     },
     {
       "id": "dev.heyari.coinflip",
@@ -20,7 +30,7 @@
       "license": "MIT",
       "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "20f74c1a8f843f6114ddf9b27c5106f5482117562c6f8e07006c6dfaec73ca40"
+      "sha256": "aaf3590a828f31bb7fda18fb7b33d306f976de769e624ccc6d5e403f54f8820e"
     }
   ]
 }
