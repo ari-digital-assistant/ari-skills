@@ -82,14 +82,19 @@ fi
 rm -rf bundles
 mkdir -p bundles
 
-# Stream each skill through a while-read loop. We emit index entries into a
-# temp file and stitch them together into index.json at the end.
+# Stream each skill through jq rather than a while-read loop this time —
+# the validator JSON now carries arrays (capabilities, languages) which
+# don't round-trip cleanly through TSV. We iterate with `jq -c '.[]'` and
+# pipe each single-skill JSON object into a helper that does the bundle
+# work and emits the index entry.
 INDEX_TMP=$(mktemp)
 trap 'rm -f "$INDEX_TMP"' EXIT
 
-# Use process substitution so the loop runs in the current shell and can
-# append to INDEX_TMP without subshell variable-scoping traps.
-while IFS=$'\t' read -r path id version name description license; do
+echo "$SKILL_JSON" | jq -c '.[]' | while read -r SKILL_ROW; do
+  path=$(echo "$SKILL_ROW" | jq -r '.path')
+  id=$(echo "$SKILL_ROW" | jq -r '.id // ""')
+  version=$(echo "$SKILL_ROW" | jq -r '.version // ""')
+
   if [[ -z "$id" || -z "$version" ]]; then
     echo "build-index: skill at $path has no id/version — skipping" >&2
     continue
@@ -108,20 +113,30 @@ while IFS=$'\t' read -r path id version name description license; do
   $SIGN sign "$bundle_path" "$ARI_SIGNING_KEY_FILE" >/dev/null
   sha256_hex=$(cut -c1-64 <"${bundle_path}.sha256")
 
-  jq -n \
-    --arg id "$id" \
-    --arg version "$version" \
-    --arg name "$name" \
-    --arg description "$description" \
-    --arg license "${license:-}" \
+  # Build the index entry by augmenting the validator row with the
+  # bundle paths we just produced. license / author / homepage come
+  # from the validator as JSON-typed values (nullable strings), so we
+  # pass them through verbatim rather than shoving them via --arg.
+  echo "$SKILL_ROW" | jq \
     --arg bundle "$bundle_path" \
     --arg signature "${bundle_path}.sig" \
     --arg sha256 "$sha256_hex" \
-    '{id: $id, version: $version, name: $name, description: $description,
-      license: (if $license == "" then null else $license end),
-      bundle: $bundle, signature: $signature, sha256: $sha256}' \
+    '{
+      id: .id,
+      version: .version,
+      name: .name,
+      description: .description,
+      license: .license,
+      author: .author,
+      homepage: .homepage,
+      capabilities: (.capabilities // []),
+      languages: (.languages // []),
+      bundle: $bundle,
+      signature: $signature,
+      sha256: $sha256
+    }' \
     >>"$INDEX_TMP"
-done < <(echo "$SKILL_JSON" | jq -r '.[] | [.path, .id, .version, .name, .description, (.license // "")] | @tsv')
+done
 
 # Assemble index.json. generated_at is a UTC ISO-8601 timestamp; index_version
 # lets us evolve the format without a flag-day migration.

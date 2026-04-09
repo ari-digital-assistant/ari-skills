@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-04-09T09:18:23Z",
+  "generated_at": "2026-04-09T10:21:00Z",
   "skills": [
     {
       "id": "dev.heyari.counter",
@@ -10,7 +10,15 @@
       "license": "MIT",
       "bundle": "bundles/dev.heyari.counter-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.counter-0.1.0.tar.gz.sig",
-      "sha256": "4bbc3b5881488c5e863c743eb6b60d4f52d4ba633bb3531f63a986353c342a00"
+      "sha256": "4bbc3b5881488c5e863c743eb6b60d4f52d4ba633bb3531f63a986353c342a00",
+      "author": "Ari core team",
+      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
+      "capabilities": [
+        "storage_kv"
+      ],
+      "languages": [
+        "en"
+      ]
     },
     {
       "id": "dev.heyari.wasmecho",
@@ -20,7 +28,13 @@
       "license": "MIT",
       "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
-      "sha256": "e2f94bacc8b90152774087aa455c83bacf24dccd633b8ce502234e363e9b7651"
+      "sha256": "e2f94bacc8b90152774087aa455c83bacf24dccd633b8ce502234e363e9b7651",
+      "author": "Ari core team",
+      "homepage": null,
+      "capabilities": [],
+      "languages": [
+        "en"
+      ]
     },
     {
       "id": "dev.heyari.coinflip",
@@ -30,7 +44,13 @@
       "license": "MIT",
       "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "4daf277f6e617d859f91097a5972226ecc79644203370083d4ffac4b989d2ff3"
+      "sha256": "4daf277f6e617d859f91097a5972226ecc79644203370083d4ffac4b989d2ff3",
+      "author": "Ari core team",
+      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
+      "capabilities": [],
+      "languages": [
+        "en"
+      ]
     },
     {
       "id": "dev.heyari.githubzen",
@@ -40,7 +60,15 @@
       "license": "MIT",
       "bundle": "bundles/dev.heyari.githubzen-0.1.1.tar.gz",
       "signature": "bundles/dev.heyari.githubzen-0.1.1.tar.gz.sig",
-      "sha256": "2d6c790a61d3634d49edf89efd99bc9b6fbff82ac3719b78ef5780cf01c5239f"
+      "sha256": "2d6c790a61d3634d49edf89efd99bc9b6fbff82ac3719b78ef5780cf01c5239f",
+      "author": "Ari core team",
+      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
+      "capabilities": [
+        "http"
+      ],
+      "languages": [
+        "en"
+      ]
     }
   ]
 }
