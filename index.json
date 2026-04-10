@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-04-09T10:24:34Z",
+  "generated_at": "2026-04-10T12:14:50Z",
   "skills": [
     {
       "id": "dev.heyari.counter",
@@ -18,7 +18,7 @@
       ],
       "bundle": "bundles/dev.heyari.counter-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.counter-0.1.0.tar.gz.sig",
-      "sha256": "a057e48c438a1aa2ad8b5fb2baeeb8352399e9e34f42436b4995a53c5742b0f3"
+      "sha256": "12596e22d821579f962d7e5fa1023ea2e711ff150b7af6fcaff17c1721d655f4"
     },
     {
       "id": "dev.heyari.wasmecho",
@@ -34,7 +34,23 @@
       ],
       "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
-      "sha256": "fca44c72b5fac9b6b270b7190e5fd156d92c1b11d67a1945763f28e987cd4645"
+      "sha256": "049a47d679884b811dc7691265fb4187d4b89770d165465a636382d36848bc39"
+    },
+    {
+      "id": "dev.heyari.assistant.chatgpt",
+      "version": "0.1.0",
+      "name": "chatgpt",
+      "description": "Use OpenAI's ChatGPT to answer general questions. Requires an API key from platform.openai.com. Your questions are sent to OpenAI's servers.\n",
+      "license": "MIT",
+      "author": "Ari Project",
+      "homepage": "https://github.com/ari-digital-assistant/ari",
+      "capabilities": [],
+      "languages": [
+        "en"
+      ],
+      "bundle": "bundles/dev.heyari.assistant.chatgpt-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.assistant.chatgpt-0.1.0.tar.gz.sig",
+      "sha256": "cbb8183785a42c40e3033aaec4880ca7cc4cb7fd752b58b55325d69a5a219541"
     },
     {
       "id": "dev.heyari.coinflip",
@@ -50,7 +66,7 @@
       ],
       "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "9e55eef3e828cd9fe74b1a3bbfe297ee567444d25b3dc21dca76f0545f9959b3"
+      "sha256": "e9c28671bc04ef2ea2e85a786b816ba5e768cf32a0eba8313d90ae9d1ca85134"
     },
     {
       "id": "dev.heyari.githubzen",
@@ -68,7 +84,7 @@
       ],
       "bundle": "bundles/dev.heyari.githubzen-0.1.1.tar.gz",
       "signature": "bundles/dev.heyari.githubzen-0.1.1.tar.gz.sig",
-      "sha256": "88f5a74480a67fa4c54a760a3c3a7d8893e72c184339ef5c116213a54d8dad74"
+      "sha256": "d07da0603dd76c777f2dc808cf78ac1820c398eda9f0682821ee6d807342f8db"
     }
   ]
 }
