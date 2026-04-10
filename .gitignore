@@ -14,3 +14,11 @@ skills/*
 !skills/github-zen/**
 !skills/counter/
 !skills/counter/**
+
+# Build artifacts
+sdk/rust/target/
+templates/rust/target/
+templates/rust/skill.wasm
+templates/assemblyscript/node_modules/
+templates/assemblyscript/skill.wasm
+templates/assemblyscript/package-lock.json

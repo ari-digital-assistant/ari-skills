@@ -1,0 +1,20 @@
+[package]
+name = "my-ari-skill"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ari-skill-sdk = { path = "../../sdk/rust" }
+
+# Enable features for host imports your skill needs:
+# ari-skill-sdk = { path = "../../sdk/rust" }
+# ari-skill-sdk = { path = "../../sdk/rust", features = ["storage"] }
+# ari-skill-sdk = { path = "../../sdk/rust", features = ["http", "storage"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true

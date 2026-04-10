@@ -1,0 +1,15 @@
+[package]
+name = "ari-skill-sdk"
+version = "0.1.0"
+edition = "2021"
+description = "SDK for building Ari WASM skills in Rust"
+license = "MIT"
+
+[lib]
+crate-type = ["rlib"]
+
+[features]
+default = ["std"]
+std = []
+http = []
+storage = []

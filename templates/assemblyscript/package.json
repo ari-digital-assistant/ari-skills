@@ -1,0 +1,14 @@
+{
+  "name": "my-ari-skill-as",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "asc assembly/index.ts --outFile skill.wasm --optimize --exportRuntime --use abort="
+  },
+  "devDependencies": {
+    "assemblyscript": "^0.28.13"
+  },
+  "dependencies": {
+    "ari-skill-sdk-as": "file:../../sdk/assemblyscript"
+  }
+}

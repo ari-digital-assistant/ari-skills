@@ -150,7 +150,12 @@ Reach for WASM only if your skill needs to:
 
 A WASM skill declares its capabilities and ships a `skill.wasm` module alongside `SKILL.md`. The host exposes a tiny API: `log`, `http_fetch`, `storage_get`, `storage_set`, `get_capability`. That's it. If you need more, file an issue first — the surface is intentionally small.
 
-A starter template, build instructions, and the host API reference live in `tools/wasm-template/` (TBD — coming with the loader implementation).
+Two SDKs are available:
+
+- **Rust** — `sdk/rust/` and template at `templates/rust/`
+- **AssemblyScript** — `sdk/assemblyscript/` and template at `templates/assemblyscript/`
+
+Copy a template, edit SKILL.md + the source file, run `build.sh`, and you're done. Full docs: [wasm-sdk.md](wasm-sdk.md).
 
 ## Rules of the road
 

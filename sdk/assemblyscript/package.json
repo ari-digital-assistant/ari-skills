@@ -1,0 +1,10 @@
+{
+  "name": "ari-skill-sdk-as",
+  "version": "0.1.0",
+  "description": "SDK for building Ari WASM skills in AssemblyScript",
+  "license": "MIT",
+  "ascMain": "assembly/index.ts",
+  "peerDependencies": {
+    "assemblyscript": "^0.28.0"
+  }
+}
