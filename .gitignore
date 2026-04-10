@@ -14,6 +14,8 @@ skills/*
 !skills/github-zen/**
 !skills/counter/
 !skills/counter/**
+!skills/chatgpt/
+!skills/chatgpt/**
 
 # Build artifacts
 sdk/rust/target/
