@@ -157,6 +157,73 @@ Two SDKs are available:
 
 Copy a template, edit SKILL.md + the source file, run `build.sh`, and you're done. Full docs: [wasm-sdk.md](wasm-sdk.md).
 
+## How your skill gets matched (the two layers)
+
+When a user speaks, Ari does this:
+
+1. **Keyword matcher** runs first — fast, deterministic, free. It scores
+   every installed skill against the user's input using the `matching.patterns`
+   you declared. If something clears the threshold, that skill executes. Done.
+
+2. **If nothing matched**, Ari optionally consults the **FunctionGemma router** —
+   a small (~250MB) on-device language model fine-tuned for routing. It sees
+   your skill's `name` and `description`, and the user's input, and picks one.
+   This is the safety net for paraphrases the keyword matcher missed.
+
+So a user saying *"flip a coin"* always lands on coin-flip via keywords. A user
+saying *"let's leave it to chance, heads or tails"* won't trigger any keyword
+patterns — but the FunctionGemma router can still route them to coin-flip,
+**because it understood the description**.
+
+This is why your `description` matters more than you might think. The keyword
+matcher only ever reads `matching.patterns`. The FunctionGemma router reads
+the `description`. Two completely different consumers, both important.
+
+### Writing a description that works for the router
+
+The router is a model. It pattern-matches on semantic similarity. Two rules:
+
+1. **Lead with what the skill does in plain English.** "Tells the current
+   time", "Flips a coin", "Sends an email". The router pulls the skill's
+   purpose from the first sentence.
+
+2. **Enrich with semantic keywords for the second sentence.** Don't just say
+   "Use when the user asks the time" — say "Use when the user asks what
+   time it is, what hour it is, whether it is morning or afternoon, or
+   anything about the current time of day." The router picks up phrases
+   like "morning or afternoon" and learns to route them.
+
+A weak description means the router won't catch paraphrases. A rich one
+gives you free coverage for utterances you never thought of.
+
+### Example utterances (future)
+
+Built-in Rust skills in `ari-engine` declare a list of training utterances
+via the `Skill::example_utterances()` trait method, paired with the JSON
+arguments the function call should produce. These feed directly into the
+FunctionGemma fine-tuning dataset.
+
+Community SKILL.md skills don't have a trait, but a future enhancement will
+pull example utterances from a `## Example utterances` markdown section in
+the SKILL.md body. **You can include this section now** — it's already a
+loose convention in the reference skills, and it'll start contributing to
+training data once the community-skill extractor lands.
+
+```markdown
+## Example utterances
+
+- "flip a coin"
+- "toss a coin please"
+- "heads or tails"
+- "let's leave it to chance"
+- "should I or shouldn't I, flip a coin"
+```
+
+Aim for 20-30 varied phrasings. Cover paraphrases, indirect language,
+conversational filler ("can you", "please", "I need"). The point is to
+teach the router that all these natural utterances should land on your
+skill, not just the rigid ones your keyword patterns catch.
+
 ## Rules of the road
 
 These will save your PR from review friction:
