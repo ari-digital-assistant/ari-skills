@@ -55,6 +55,12 @@ metadata:
           weight: 0.95
         - keywords: [toss, coin]
           weight: 0.95
+    examples:
+      - text: "flip a coin"
+      - text: "toss a coin"
+      - text: "heads or tails"
+      - text: "can you flip a coin for me"
+      - text: "let's leave it to chance"
     declarative:
       response_pick: ["Heads.", "Tails."]
 ---
@@ -67,7 +73,7 @@ Flips a virtual coin. Example: "flip a coin" → "Heads."
 A few things worth pointing at:
 
 - **`name` and the directory name must match.** AgentSkills rule. Lowercase, hyphens, no leading/trailing/consecutive hyphens.
-- **`description` is two sentences for a reason.** First sentence: what the skill does. Second sentence: when to use it. AgentSkills-compatible LLM tools (and Ari's future learned router) read this to decide whether to activate the skill. A vague description means a skill that never wins.
+- **`description` is two sentences for a reason.** First sentence: what the skill does. Second sentence: when to use it, with semantic keywords. The FunctionGemma router reads this to decide whether to activate the skill. A vague description means a skill the router will never pick.
 - **`metadata.ari.id` is reverse-DNS.** This is the unique registry identifier. Pick a domain you control. The directory `name` is just a slug.
 - **`specificity: high`** means "I'm confident about a narrow input." A coin-flip skill with `keywords: [flip, coin]` should never fire on "flip the pancakes" — high specificity + tight keywords prevents that.
 - **`capabilities: []`** because we don't need network, location, storage, or anything else. Skills that don't need capabilities should declare an empty list, not omit the field.
@@ -196,33 +202,45 @@ The router is a model. It pattern-matches on semantic similarity. Two rules:
 A weak description means the router won't catch paraphrases. A rich one
 gives you free coverage for utterances you never thought of.
 
-### Example utterances (future)
+### Example utterances
 
-Built-in Rust skills in `ari-engine` declare a list of training utterances
-via the `Skill::example_utterances()` trait method, paired with the JSON
-arguments the function call should produce. These feed directly into the
-FunctionGemma fine-tuning dataset.
+Every skill must include example utterances in `metadata.ari.examples`.
+These feed directly into the FunctionGemma router's training dataset.
+The validator enforces a minimum of 5, but aim for 15-30 for good
+coverage.
 
-Community SKILL.md skills don't have a trait, but a future enhancement will
-pull example utterances from a `## Example utterances` markdown section in
-the SKILL.md body. **You can include this section now** — it's already a
-loose convention in the reference skills, and it'll start contributing to
-training data once the community-skill extractor lands.
+Each entry has a `text` field (the user utterance) and an optional `args`
+field (the JSON arguments the function call should produce). Parameterless
+skills omit `args`:
 
-```markdown
-## Example utterances
-
-- "flip a coin"
-- "toss a coin please"
-- "heads or tails"
-- "let's leave it to chance"
-- "should I or shouldn't I, flip a coin"
+```yaml
+    examples:
+      - text: "flip a coin"
+      - text: "toss a coin please"
+      - text: "heads or tails"
+      - text: "let's leave it to chance"
+      - text: "can you flip a coin for me"
 ```
 
-Aim for 20-30 varied phrasings. Cover paraphrases, indirect language,
-conversational filler ("can you", "please", "I need"). The point is to
-teach the router that all these natural utterances should land on your
-skill, not just the rigid ones your keyword patterns catch.
+Parameterised skills include `args`:
+
+```yaml
+    examples:
+      - text: "open spotify"
+        args:
+          app_name: Spotify
+      - text: "launch the camera"
+        args:
+          app_name: Camera
+      - text: "fire up the music player"
+        args:
+          app_name: Music Player
+```
+
+Cover paraphrases, indirect language, and conversational filler ("can you",
+"please", "I need"). The point is to teach the router that all the natural
+ways a user might phrase a request should land on your skill, not just the
+rigid ones your keyword patterns catch.
 
 ## Rules of the road
 

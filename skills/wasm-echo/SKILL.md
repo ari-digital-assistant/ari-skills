@@ -15,6 +15,12 @@ metadata:
       patterns:
         - keywords: [wasm, echo]
           weight: 0.95
+    examples:
+      - text: "wasm echo"
+      - text: "echo test"
+      - text: "test the wasm loader"
+      - text: "run the echo skill"
+      - text: "wasm hello"
     wasm:
       module: skill.wasm
       memory_limit_mb: 1

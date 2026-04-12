@@ -24,6 +24,12 @@ metadata:
         # over anything else that also matches a single word.
         - keywords: [github, zen]
           weight: 0.95
+    examples:
+      - text: "github zen"
+      - text: "tell me some wisdom"
+      - text: "give me a piece of zen"
+      - text: "say something wise"
+      - text: "share some wisdom with me"
     wasm:
       module: skill.wasm
       memory_limit_mb: 1

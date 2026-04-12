@@ -18,6 +18,22 @@ metadata:
           weight: 0.95
         - keywords: [toss, coin]
           weight: 0.95
+    examples:
+      - text: "flip a coin"
+      - text: "toss a coin"
+      - text: "heads or tails"
+      - text: "coin flip"
+      - text: "can you flip a coin for me"
+      - text: "toss a coin please"
+      - text: "let's flip for it"
+      - text: "I need a coin flip"
+      - text: "heads or tails please"
+      - text: "let's leave it to chance"
+      - text: "coin toss"
+      - text: "do a coin flip"
+      - text: "pick heads or tails"
+      - text: "let chance decide"
+      - text: "help me decide with a coin flip"
     declarative:
       response_pick: ["Heads.", "Tails."]
 ---
@@ -25,9 +41,3 @@ metadata:
 # Coin Flip
 
 Flips a virtual coin. Returns "Heads." or "Tails." at random.
-
-## Example utterances
-
-- "flip a coin"
-- "toss a coin for me"
-- "can you flip a coin"

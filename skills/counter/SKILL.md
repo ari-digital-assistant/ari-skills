@@ -18,6 +18,12 @@ metadata:
           weight: 0.95
         - keywords: [tick]
           weight: 0.95
+    examples:
+      - text: "count"
+      - text: "tick"
+      - text: "increment the counter"
+      - text: "count up"
+      - text: "add one to the counter"
     wasm:
       module: skill.wasm
       memory_limit_mb: 1
