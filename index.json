@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-04-12T10:35:21Z",
+  "generated_at": "2026-04-13T12:24:00Z",
   "skills": [
     {
       "id": "dev.heyari.counter",
@@ -18,7 +18,7 @@
       ],
       "bundle": "bundles/dev.heyari.counter-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.counter-0.1.0.tar.gz.sig",
-      "sha256": "050aa9490fc1b17eb9f556bd19e57adf8417a8f0850e68fd341e736dffd92570"
+      "sha256": "77e124a171aba26f315e6298287d9704c29f3da8cf9371ee3c1c2812a0515c5a"
     },
     {
       "id": "dev.heyari.wasmecho",
@@ -34,7 +34,7 @@
       ],
       "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
-      "sha256": "9d7a95123c9c4d71ab812cdc33b02760e8196aaeb287a1f215653d3b7870cc2f"
+      "sha256": "0de5e6f6b851659283171c371b9903adab2e55ddc5d6c4d3da419678351533c3"
     },
     {
       "id": "dev.heyari.assistant.chatgpt",
@@ -50,7 +50,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.chatgpt-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.chatgpt-0.1.0.tar.gz.sig",
-      "sha256": "b3faff2b5ad4d392f6a0e1f88b51e4fe97279c40c04ce5b17c5b22a3bf092db4"
+      "sha256": "25fab642385132b1d12845c3625b25cf2534fe1e70e166ddff934900c79e7b87"
     },
     {
       "id": "dev.heyari.coinflip",
@@ -66,7 +66,7 @@
       ],
       "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "7ced8e2cbdf95b5ae1d247f76eb8dd62356642e041f92d9fa2927893b3806350"
+      "sha256": "ac44841de1d7979ed469aa87a63f80901a77630e7d4c3dfe9f2c8acc09a514b7"
     },
     {
       "id": "dev.heyari.githubzen",
@@ -84,7 +84,7 @@
       ],
       "bundle": "bundles/dev.heyari.githubzen-0.1.1.tar.gz",
       "signature": "bundles/dev.heyari.githubzen-0.1.1.tar.gz.sig",
-      "sha256": "4c0e2c0736630099ea15c6a6fb32b90dc144606ad673f9a185b747a1028e4032"
+      "sha256": "520cf91cf95fba561d222851fa95f454ded728a142b124d50650424cbbb6d99f"
     }
   ]
 }
