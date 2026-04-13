@@ -1,22 +1,3 @@
-# Ignore skill dir contents by default, but allow specific skills back in
-# via negation. Must be `skills/*` (contents) not `skills/` (whole dir) —
-# git never descends into a directory-ignore, so `!skills/<name>/` only
-# works when the ignore targets contents.
-skills/*
-
-# Allow reference skills one at a time as we gain confidence in the
-# sign-and-publish pipeline.
-!skills/coin-flip/
-!skills/coin-flip/**
-!skills/wasm-echo/
-!skills/wasm-echo/**
-!skills/github-zen/
-!skills/github-zen/**
-!skills/counter/
-!skills/counter/**
-!skills/chatgpt/
-!skills/chatgpt/**
-
 # Build artifacts
 sdk/rust/target/
 templates/rust/target/
