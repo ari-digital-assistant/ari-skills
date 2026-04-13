@@ -8,7 +8,7 @@ metadata:
     version: "0.1.1"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
-    engine: ">=0.3,<0.4"
+    engine: ">=0.1"
     capabilities: [http]
     languages: [en]
     specificity: high

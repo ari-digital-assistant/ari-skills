@@ -7,7 +7,7 @@ metadata:
     id: dev.heyari.wasmecho
     version: "0.1.0"
     author: Ari core team
-    engine: ">=0.3,<0.4"
+    engine: ">=0.1"
     capabilities: []
     languages: [en]
     specificity: high
