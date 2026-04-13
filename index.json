@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-04-13T12:24:00Z",
+  "generated_at": "2026-04-13T12:27:54Z",
   "skills": [
     {
       "id": "dev.heyari.counter",
@@ -18,7 +18,7 @@
       ],
       "bundle": "bundles/dev.heyari.counter-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.counter-0.1.0.tar.gz.sig",
-      "sha256": "77e124a171aba26f315e6298287d9704c29f3da8cf9371ee3c1c2812a0515c5a"
+      "sha256": "5823b2e8b3c4169f6260acbf404b4f7d89147602bc94e42531aed7c256eb3c64"
     },
     {
       "id": "dev.heyari.wasmecho",
@@ -34,7 +34,7 @@
       ],
       "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
-      "sha256": "0de5e6f6b851659283171c371b9903adab2e55ddc5d6c4d3da419678351533c3"
+      "sha256": "db68ae7b9021c252988562fc56394733ec7a2a5a4c14e3f5d2e20222c3719611"
     },
     {
       "id": "dev.heyari.assistant.chatgpt",
@@ -50,7 +50,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.chatgpt-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.chatgpt-0.1.0.tar.gz.sig",
-      "sha256": "25fab642385132b1d12845c3625b25cf2534fe1e70e166ddff934900c79e7b87"
+      "sha256": "0e695b805744cb676a5785d82c81f2c343dfca3a709ecf863034f7682e3af952"
     },
     {
       "id": "dev.heyari.coinflip",
@@ -66,7 +66,7 @@
       ],
       "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "ac44841de1d7979ed469aa87a63f80901a77630e7d4c3dfe9f2c8acc09a514b7"
+      "sha256": "0c72f72c4b8ce5b71d60b9638a0b9c064a2df163f43055f756e22ac2bbbeae13"
     },
     {
       "id": "dev.heyari.githubzen",
@@ -84,7 +84,39 @@
       ],
       "bundle": "bundles/dev.heyari.githubzen-0.1.1.tar.gz",
       "signature": "bundles/dev.heyari.githubzen-0.1.1.tar.gz.sig",
-      "sha256": "520cf91cf95fba561d222851fa95f454ded728a142b124d50650424cbbb6d99f"
+      "sha256": "eac2b86a5495c3435b7a46c6e68f1f316bc8ccc20bc652322131d7a5f0c27ac9"
+    },
+    {
+      "id": "dev.heyari.assistant.claude",
+      "version": "0.1.0",
+      "name": "claude",
+      "description": "Use Anthropic's Claude to answer general questions. Requires an API key from console.anthropic.com. Your questions are sent to Anthropic's servers.\n",
+      "license": "MIT",
+      "author": "Ari Project",
+      "homepage": "https://github.com/ari-digital-assistant/ari",
+      "capabilities": [],
+      "languages": [
+        "en"
+      ],
+      "bundle": "bundles/dev.heyari.assistant.claude-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.assistant.claude-0.1.0.tar.gz.sig",
+      "sha256": "893a5f53c1a5c2fdc3dbde704bf4995779d1d645721f95c8224923d161d4e684"
+    },
+    {
+      "id": "dev.heyari.assistant.gemini",
+      "version": "0.1.0",
+      "name": "gemini",
+      "description": "Use Google's Gemini to answer general questions. Requires an API key from aistudio.google.com. Your questions are sent to Google's servers.\n",
+      "license": "MIT",
+      "author": "Ari Project",
+      "homepage": "https://github.com/ari-digital-assistant/ari",
+      "capabilities": [],
+      "languages": [
+        "en"
+      ],
+      "bundle": "bundles/dev.heyari.assistant.gemini-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.assistant.gemini-0.1.0.tar.gz.sig",
+      "sha256": "b972bef09df708361b3e8b60feb4a1287e2cae2b9c8c2065deeac2e23824eacb"
     }
   ]
 }
