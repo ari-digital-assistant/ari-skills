@@ -90,8 +90,14 @@ let text: &str = unsafe { ari::input(ptr, len) };
 let packed: i64 = ari::respond_text("Hello!");
 
 // Or a structured action envelope — JSON parsed into Response::Action host-side.
-// See docs/action-responses.md for the canonical envelope shape.
-let packed: i64 = ari::respond_action(r#"{"action":"open","target":"Spotify"}"#);
+// Easiest path: build it via the typed presentation module (default-on
+// feature). See docs/action-responses.md for the full envelope vocabulary.
+use ari_skill_sdk::presentation as p;
+let envelope = p::Envelope::new()
+    .speak("Opening Spotify.")
+    .launch_app("Spotify")
+    .to_json();
+let packed: i64 = ari::respond_action(&envelope);
 
 // Logging (levels: Trace, Debug, Info, Warn, Error)
 ari::log(ari::LogLevel::Info, "something happened");

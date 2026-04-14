@@ -7,11 +7,9 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-ari-skill-sdk = { path = "../../sdk/rust", default-features = false }
-serde_json = { version = "1", default-features = false, features = ["alloc"] }
-
-# Uncomment if your skill needs storage or http:
-# ari-skill-sdk = { path = "../../sdk/rust", default-features = false, features = ["storage"] }
+# `presentation` exposes the typed envelope/card/alert builders the example
+# below uses. Add `storage` and/or `http` if your skill needs them.
+ari-skill-sdk = { path = "../../sdk/rust", default-features = false, features = ["presentation"] }
 
 [profile.release]
 opt-level = "s"

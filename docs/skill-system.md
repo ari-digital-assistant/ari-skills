@@ -182,7 +182,9 @@ ari-skills/
 │   └── <slug>/
 │       ├── SKILL.md
 │       ├── skill.wasm        # if WASM
-│       ├── assets/icon.png
+│       ├── assets/            # optional — bundled images, audio, etc.
+│       │   ├── timer_icon.png
+│       │   └── timer.mp3
 │       └── references/       # optional, AgentSkills-style
 ├── index.json                # generated, machine-readable catalogue
 ├── signing/public.pem

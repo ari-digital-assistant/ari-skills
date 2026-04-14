@@ -9,7 +9,16 @@ license = "MIT"
 crate-type = ["rlib"]
 
 [features]
-default = ["std"]
+default = ["std", "presentation"]
 std = []
 http = []
 storage = []
+# Pulls in serde + serde_json with `alloc` so skills can build presentation
+# envelopes (cards, alerts, notifications, …) as ergonomic Rust structs.
+# On by default; turn off if you're shipping a text-only skill and want the
+# leanest possible wasm.
+presentation = ["dep:serde", "dep:serde_json"]
+
+[dependencies]
+serde = { version = "1", default-features = false, features = ["alloc", "derive"], optional = true }
+serde_json = { version = "1", default-features = false, features = ["alloc"], optional = true }

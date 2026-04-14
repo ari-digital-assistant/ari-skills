@@ -3,6 +3,9 @@
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
+#[cfg(feature = "presentation")]
+pub mod presentation;
+
 // ---------------------------------------------------------------------------
 // Bump allocator
 //
