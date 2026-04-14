@@ -2,7 +2,7 @@
 
 WASM skills run sandboxed code inside Ari's engine. Use them when declarative skills aren't enough — HTTP calls, persistent state, non-trivial parsing.
 
-Two SDKs are available: **Rust** and **AssemblyScript**. Both produce `.wasm` modules that conform to ABI v1.
+Two SDKs are available: **Rust** and **AssemblyScript**. Both produce `.wasm` modules that conform to the Ari WASM ABI described below.
 
 ## Prerequisites
 
@@ -86,11 +86,19 @@ use ari_skill_sdk as ari;
 // Read input from the host (call inside score/execute)
 let text: &str = unsafe { ari::input(ptr, len) };
 
-// Pack a response string for return from execute()
-let packed: i64 = ari::respond("Hello!");
+// Pack a text response for return from execute()
+let packed: i64 = ari::respond_text("Hello!");
+
+// Or a structured action envelope — JSON parsed into Response::Action host-side.
+// See docs/action-responses.md for the canonical envelope shape.
+let packed: i64 = ari::respond_action(r#"{"action":"open","target":"Spotify"}"#);
 
 // Logging (levels: Trace, Debug, Info, Warn, Error)
 ari::log(ari::LogLevel::Info, "something happened");
+
+// Wall-clock time in milliseconds, and 64 bits of entropy. Both unconditional.
+let now: i64 = ari::now_ms();
+let seed: u64 = ari::rand_u64();
 
 // Check if a capability is available
 if ari::has_capability("http") { /* ... */ }
@@ -132,7 +140,7 @@ pub extern "C" fn score(ptr: i32, len: i32) -> f32 {
 #[no_mangle]
 pub extern "C" fn execute(ptr: i32, len: i32) -> i64 {
     let input = unsafe { ari::input(ptr, len) };
-    ari::respond("your response here")
+    ari::respond_text("your response here")
 }
 ```
 
@@ -202,7 +210,7 @@ export function execute(ptr: i32, len: i32): i64 {
 
 AS skills must be compiled with `--use abort=` to prevent importing `env::abort`, which the Ari host doesn't provide. The template's `build.sh` includes this.
 
-## ABI v1 contract
+## ABI contract
 
 For authors who want to understand what the SDK does under the hood.
 
@@ -213,21 +221,51 @@ For authors who want to understand what the SDK does under the hood.
 | `memory` | linear memory | Host reads/writes input and responses here |
 | `ari_alloc` | `(size: i32) -> i32` | Host calls this to allocate space for input strings and import responses |
 | `score` | `(ptr: i32, len: i32) -> f32` | Return relevance score in [0.0, 1.0] for the UTF-8 input at (ptr, len) |
-| `execute` | `(ptr: i32, len: i32) -> i64` | Process input at (ptr, len), return packed `(response_ptr << 32) \| response_len` |
+| `execute` | `(ptr: i32, len: i32) -> i64` | Process input at (ptr, len), return the tagged response value described below |
 
-### Optional host imports (all in the `ari` module)
+### Tagged `execute` return value
+
+`execute` packs a tag byte + pointer + length into the 64-bit return:
+
+```text
+bits 63..56 → tag  (0x00 = Text, 0x01 = Action, 0x02 reserved for Binary)
+bits 55..32 → ptr  (24-bit pointer — caps skill memory at 16 MiB, enforced)
+bits 31..0  → len  (32-bit byte length of the payload)
+```
+
+- `tag = 0x00` → host treats payload as UTF-8 and wraps in `Response::Text`
+- `tag = 0x01` → host parses payload as JSON and wraps in `Response::Action`
+
+The Rust SDK helpers (`respond_text`, `respond_action`) do the packing for you.
+If you hand-roll the WAT, remember that a tag byte in `bits 63..56` of zero is
+automatic for any small pointer — this is why existing text-only skills keep
+working without changes.
+
+Any tag ≥ `0x02` is currently a contract violation; the host falls back to
+`(skill error)`. New tags will be added via engine releases, not silently.
+
+### Host imports (all in the `ari` module)
+
+Unconditional — any skill may import these without declaring a capability:
+
+| Import | Signature |
+|--------|-----------|
+| `log` | `(level: i32, ptr: i32, len: i32)` |
+| `get_capability` | `(name_ptr: i32, name_len: i32) -> i32` |
+| `now_ms` | `() -> i64` — current Unix time in milliseconds |
+| `rand_u64` | `() -> i64` — 64 bits of cryptographically-random entropy |
+
+Capability-gated:
 
 | Import | Signature | Capability |
 |--------|-----------|------------|
-| `log` | `(level: i32, ptr: i32, len: i32)` | None |
-| `get_capability` | `(name_ptr: i32, name_len: i32) -> i32` | None |
 | `http_fetch` | `(url_ptr: i32, url_len: i32) -> i64` | `http` |
 | `storage_get` | `(key_ptr: i32, key_len: i32) -> i64` | `storage_kv` |
 | `storage_set` | `(key_ptr: i32, key_len: i32, val_ptr: i32, val_len: i32) -> i32` | `storage_kv` |
 
 ### Sandbox limits
 
-- **Memory**: default 16 MiB, configurable via `metadata.ari.wasm.memory_limit_mb`
+- **Memory**: default 16 MiB, configurable via `metadata.ari.wasm.memory_limit_mb` (must be 1..=16, enforced by the 24-bit ptr field in the `execute` return)
 - **Fuel**: 50,000,000 units per call (~tens of milliseconds)
 - **Isolation**: fresh store per call — no state survives between invocations (use `storage_kv` for persistence)
 

@@ -6,5 +6,11 @@
   "ascMain": "assembly/index.ts",
   "peerDependencies": {
     "assemblyscript": "^0.28.0"
+  },
+  "devDependencies": {
+    "assemblyscript": "^0.28.0"
+  },
+  "scripts": {
+    "typecheck": "asc assembly/index.ts --noEmit --use abort="
   }
 }

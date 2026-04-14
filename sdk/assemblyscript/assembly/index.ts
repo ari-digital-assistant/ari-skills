@@ -27,21 +27,57 @@ export function input(ptr: i32, len: i32): string {
   return String.UTF8.decodeUnsafe(ptr as usize, len as usize);
 }
 
+// Response tag bytes. Match the host-side decoder in `ari-skill-loader`.
+export const RESPONSE_TAG_TEXT: u8 = 0x00;
+export const RESPONSE_TAG_ACTION: u8 = 0x01;
+
 /**
- * Pack a response string for return from execute().
- * Encodes to UTF-8 in bump-allocated memory and returns the packed
- * (ptr << 32) | len value the host expects.
+ * Pack a text response for return from execute().
+ * Encodes to UTF-8 in bump-allocated memory and returns the tagged
+ * `tag | ptr | len` value the host expects. Tag byte is 0x00 (implicit
+ * via the zero top byte of the returned i64) so the wire format matches
+ * the pre-tagged ABI and older skills continue to round-trip as text.
+ */
+export function respondText(s: string): i64 {
+  return packResponse(RESPONSE_TAG_TEXT, s);
+}
+
+/**
+ * Pack an action response (UTF-8 JSON) for return from execute().
+ * The host parses the payload into a serde_json::Value and wraps it in
+ * Response::Action. See docs/action-responses.md for the expected
+ * envelope shape.
+ */
+export function respondAction(json: string): i64 {
+  return packResponse(RESPONSE_TAG_ACTION, json);
+}
+
+/**
+ * Prefer `respondText`. Kept so examples written before the tagged ABI
+ * still compile.
+ * @deprecated use respondText
  */
 export function respond(s: string): i64 {
+  return respondText(s);
+}
+
+function packResponse(tag: u8, s: string): i64 {
   const buf = String.UTF8.encode(s);
   const len = buf.byteLength;
   const dest = ari_alloc(len as i32);
   memory.copy(dest as usize, changetype<usize>(buf), len as usize);
-  return (i64(dest) << 32) | i64(len);
+  // Layout must match `decode_execute_return` in ari-skill-loader/src/wasm.rs:
+  //   bits 63..56 = tag, 55..32 = ptr (24-bit), 31..0 = len (32-bit)
+  const tagBits: i64 = (i64(tag) & 0xFF) << 56;
+  const ptrBits: i64 = (i64(dest) & 0x00FFFFFF) << 32;
+  const lenBits: i64 = i64(len) & 0xFFFFFFFF;
+  return tagBits | ptrBits | lenBits;
 }
 
 /**
- * Unpack a host-returned (ptr << 32) | len into a string.
+ * Unpack a host-returned packed value into a string. Used for import returns
+ * (http_fetch, storage_get) — these carry plain (ptr, len) with no tag byte,
+ * so the 32-bit-ptr layout is preserved here deliberately.
  * Returns null if the packed value is 0 (sentinel for "not found").
  */
 export function unpack(packed: i64): string | null {
@@ -62,6 +98,14 @@ declare function host_log(level: i32, ptr: i32, len: i32): void;
 // @ts-ignore: external
 @external("ari", "get_capability")
 declare function host_get_capability(name_ptr: i32, name_len: i32): i32;
+
+// @ts-ignore: external
+@external("ari", "now_ms")
+declare function host_now_ms(): i64;
+
+// @ts-ignore: external
+@external("ari", "rand_u64")
+declare function host_rand_u64(): i64;
 
 export const TRACE: i32 = 0;
 export const DEBUG: i32 = 1;
@@ -84,4 +128,27 @@ export function hasCapability(name: string): bool {
   const ptr = ari_alloc(len as i32);
   memory.copy(ptr as usize, changetype<usize>(buf), len as usize);
   return host_get_capability(ptr, len as i32) == 1;
+}
+
+/**
+ * Current Unix time in milliseconds, as seen by the host.
+ *
+ * Wall-clock, not monotonic — the host calls `SystemTime::now()` on each
+ * invocation, so DST changes and clock adjustments are visible. Fine for
+ * timers, timestamps, and "when did the user last ask me this"; not fine
+ * for performance measurement.
+ */
+export function nowMs(): i64 {
+  return host_now_ms();
+}
+
+/**
+ * 64 bits of cryptographically-random entropy from the host.
+ *
+ * Use for ids, tokens, and anything where predictability matters. The
+ * return is typed `i64` to match the import signature — cast to `u64`
+ * with `u64(randU64())` if you want unsigned semantics.
+ */
+export function randU64(): i64 {
+  return host_rand_u64();
 }

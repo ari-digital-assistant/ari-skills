@@ -14,5 +14,8 @@ pub extern "C" fn score(ptr: i32, len: i32) -> f32 {
 pub extern "C" fn execute(ptr: i32, len: i32) -> i64 {
     let input = unsafe { ari::input(ptr, len) };
     ari::log(ari::LogLevel::Info, "skill executed");
-    ari::respond(&format!("You said: {input}"))
+    // Use `respond_text` for plain text, or `respond_action` to return a
+    // JSON envelope the frontend can interpret as a rich UI action (timer
+    // card, app launch, search, etc). See docs/action-responses.md.
+    ari::respond_text(&format!("You said: {input}"))
 }

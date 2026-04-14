@@ -1,7 +1,11 @@
 # Build artifacts
 sdk/rust/target/
+sdk/assemblyscript/node_modules/
+sdk/assemblyscript/package-lock.json
 templates/rust/target/
 templates/rust/skill.wasm
+templates/rust-action/target/
+templates/rust-action/skill.wasm
 templates/assemblyscript/node_modules/
 templates/assemblyscript/skill.wasm
 templates/assemblyscript/package-lock.json
