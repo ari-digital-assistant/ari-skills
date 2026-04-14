@@ -543,11 +543,21 @@ pub struct OnComplete {
     /// serialise explicitly to avoid ambiguity in parsers that aren't
     /// strictly schema-aware.
     dismiss_card: bool,
+    /// Notification ids to dismiss when this card's countdown fires. Use
+    /// when the skill emitted a paired ongoing notification with the card
+    /// (the typical timer pattern) so the shade entry vanishes at the
+    /// same instant the alert fires, instead of ticking past zero.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    dismiss_notifications: Vec<String>,
 }
 
 impl OnComplete {
     pub fn new() -> Self {
-        OnComplete { alert: None, dismiss_card: true }
+        OnComplete {
+            alert: None,
+            dismiss_card: true,
+            dismiss_notifications: Vec::new(),
+        }
     }
 
     pub fn alert(mut self, a: Alert) -> Self {
@@ -557,6 +567,11 @@ impl OnComplete {
 
     pub fn dismiss_card(mut self, dismiss: bool) -> Self {
         self.dismiss_card = dismiss;
+        self
+    }
+
+    pub fn dismiss_notification(mut self, id: impl Into<String>) -> Self {
+        self.dismiss_notifications.push(id.into());
         self
     }
 }
@@ -666,6 +681,34 @@ mod tests {
         assert_eq!(alert["actions"][0]["id"], "stop_alert");
         assert_eq!(alert["actions"][0]["style"], "primary");
         assert_eq!(card["on_complete"]["dismiss_card"], true);
+    }
+
+    #[test]
+    fn on_complete_dismiss_notifications_round_trip() {
+        let env = Envelope::new().card(
+            Card::new("c").title("t").countdown_to(1).on_complete(
+                OnComplete::new()
+                    .dismiss_notification("notif_a")
+                    .dismiss_notification("notif_b"),
+            ),
+        );
+        let v = value(&env);
+        assert_eq!(
+            v["cards"][0]["on_complete"]["dismiss_notifications"],
+            json!(["notif_a", "notif_b"]),
+        );
+    }
+
+    #[test]
+    fn on_complete_dismiss_notifications_elided_when_empty() {
+        // Don't pollute the envelope with an empty array. Most cards'
+        // on_complete blocks won't dismiss anything.
+        let env = Envelope::new().card(
+            Card::new("c").title("t").countdown_to(1).on_complete(OnComplete::new()),
+        );
+        let v = value(&env);
+        let oc = &v["cards"][0]["on_complete"];
+        assert!(oc.get("dismiss_notifications").is_none());
     }
 
     #[test]

@@ -241,7 +241,12 @@ fn build_card(timer_id: &str, name: &Option<String>, end_ts_ms: i64, started_ts_
         .on_complete(
             p::OnComplete::new()
                 .alert(build_alert(timer_id, name))
-                .dismiss_card(true),
+                .dismiss_card(true)
+                // Dismiss the paired ongoing shade notification at the
+                // same instant the alert fires — without this the
+                // notification ticks past zero (counting up) until the
+                // next user utterance prunes it.
+                .dismiss_notification(notif_id_for(timer_id)),
         )
 }
 
@@ -435,6 +440,13 @@ mod tests {
         assert_eq!(alert["full_takeover"], true);
         assert_eq!(alert["actions"][0]["id"], "stop_alert");
         assert_eq!(card["on_complete"]["dismiss_card"], true);
+        // The card's on_complete must dismiss the matching ongoing
+        // notification at expiry — without this the shade entry ticks
+        // past zero (counting up) until the user prompts again.
+        assert_eq!(
+            card["on_complete"]["dismiss_notifications"][0],
+            format!("notif_{timer_id}"),
+        );
     }
 
     #[test]

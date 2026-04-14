@@ -54,7 +54,8 @@ In-chat panels with optional countdown, progress, and action buttons. The fronte
   ],
   "on_complete": {
     "alert": { /* alert primitive */ },
-    "dismiss_card": true
+    "dismiss_card": true,
+    "dismiss_notifications": ["notif_t_…"]
   }
 }
 ```
@@ -66,7 +67,10 @@ In-chat panels with optional countdown, progress, and action buttons. The fronte
 - `progress` `{value: 0.0..1.0}` — static progress bar (mutually exclusive with auto-progress).
 - `accent` ∈ `default | warning | success | critical` — frontend maps to its color tokens.
 - `actions` (0..N) — buttons; tap sends `utterance` through `engine.processInput` (see Action buttons below).
-- `on_complete` (optional, only meaningful with `countdown_to_ts_ms`) — declares what happens at the deadline. The frontend schedules the `alert` and dismisses the card if `dismiss_card` is true (default).
+- `on_complete` (optional, only meaningful with `countdown_to_ts_ms`) — declares what happens at the deadline:
+  - `alert` — fires the alert primitive.
+  - `dismiss_card` (default `true`) — removes the card from the frontend's mirror.
+  - `dismiss_notifications` (default `[]`) — list of notification ids to dismiss at the same instant. Use this when the skill emitted a paired ongoing notification with the card (the typical timer pattern) so the shade entry vanishes the moment the alert fires, rather than ticking past zero.
 
 ## Alerts
 
@@ -193,15 +197,17 @@ let json = p::Envelope::new()
             .started_at(created_ts_ms)
             .action(p::Action::new("cancel", "Cancel").utterance("cancel my pasta timer").destructive())
             .on_complete(
-                p::OnComplete::new().alert(
-                    p::Alert::new("alert_t_01HZ")
-                        .title("Pasta timer done")
-                        .urgency(p::Urgency::Critical)
-                        .sound(p::Sound::asset("timer.mp3"))
-                        .speech_loop("Pasta timer")
-                        .full_takeover(true)
-                        .action(p::Action::new("stop_alert", "Stop").primary()),
-                ),
+                p::OnComplete::new()
+                    .alert(
+                        p::Alert::new("alert_t_01HZ")
+                            .title("Pasta timer done")
+                            .urgency(p::Urgency::Critical)
+                            .sound(p::Sound::asset("timer.mp3"))
+                            .speech_loop("Pasta timer")
+                            .full_takeover(true)
+                            .action(p::Action::new("stop_alert", "Stop").primary()),
+                    )
+                    .dismiss_notification("notif_t_01HZ"),
             ),
     )
     .to_json();
