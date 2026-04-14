@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-04-13T12:27:54Z",
+  "generated_at": "2026-04-14T08:41:40Z",
   "skills": [
     {
       "id": "dev.heyari.counter",
@@ -18,7 +18,7 @@
       ],
       "bundle": "bundles/dev.heyari.counter-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.counter-0.1.0.tar.gz.sig",
-      "sha256": "5823b2e8b3c4169f6260acbf404b4f7d89147602bc94e42531aed7c256eb3c64"
+      "sha256": "38e4b3daa366288404854f096c47cefcdc91fd3bcd1ebed7215ffcb0d1eea680"
     },
     {
       "id": "dev.heyari.wasmecho",
@@ -34,7 +34,7 @@
       ],
       "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
-      "sha256": "db68ae7b9021c252988562fc56394733ec7a2a5a4c14e3f5d2e20222c3719611"
+      "sha256": "9787e0379778c6bcf7f0abf7cc35cfc239a69bc52a59c50882b44cc7705d186a"
     },
     {
       "id": "dev.heyari.assistant.chatgpt",
@@ -50,7 +50,25 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.chatgpt-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.chatgpt-0.1.0.tar.gz.sig",
-      "sha256": "0e695b805744cb676a5785d82c81f2c343dfca3a709ecf863034f7682e3af952"
+      "sha256": "564329353d32f609be94e61dc4e290cb1af7d02b2490ee8e73e990d71b601d59"
+    },
+    {
+      "id": "dev.heyari.timer",
+      "version": "0.1.0",
+      "name": "timer",
+      "description": "Sets, queries, and cancels named timers. Supports natural phrasing like \"set a pasta timer for 8 minutes\" or \"set a 4 minute pasta timer\". Handles multiple simultaneous timers.",
+      "license": "MIT",
+      "author": "Ari core team",
+      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
+      "capabilities": [
+        "storage_kv"
+      ],
+      "languages": [
+        "en"
+      ],
+      "bundle": "bundles/dev.heyari.timer-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.timer-0.1.0.tar.gz.sig",
+      "sha256": "b4101ec42f952815de65727ee5e4330bd23135222dfc1ce21d208bcf0fc1bb85"
     },
     {
       "id": "dev.heyari.coinflip",
@@ -66,7 +84,7 @@
       ],
       "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "0c72f72c4b8ce5b71d60b9638a0b9c064a2df163f43055f756e22ac2bbbeae13"
+      "sha256": "3de1868a2dc4e215a77e1883cace7aface673a7d9210d456fb99e1b488b190e1"
     },
     {
       "id": "dev.heyari.githubzen",
@@ -84,7 +102,7 @@
       ],
       "bundle": "bundles/dev.heyari.githubzen-0.1.1.tar.gz",
       "signature": "bundles/dev.heyari.githubzen-0.1.1.tar.gz.sig",
-      "sha256": "eac2b86a5495c3435b7a46c6e68f1f316bc8ccc20bc652322131d7a5f0c27ac9"
+      "sha256": "54b9a5f789eccac1909aa472e19bbb488d0e88aad4bb005f789c4e184458ff47"
     },
     {
       "id": "dev.heyari.assistant.claude",
@@ -100,7 +118,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.claude-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.claude-0.1.0.tar.gz.sig",
-      "sha256": "893a5f53c1a5c2fdc3dbde704bf4995779d1d645721f95c8224923d161d4e684"
+      "sha256": "2d97d9d0f9c7923ccfb19419d01389c5e1e7153acb32396a47c996de65d56720"
     },
     {
       "id": "dev.heyari.assistant.gemini",
@@ -116,7 +134,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.gemini-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.gemini-0.1.0.tar.gz.sig",
-      "sha256": "b972bef09df708361b3e8b60feb4a1287e2cae2b9c8c2065deeac2e23824eacb"
+      "sha256": "5961dc34f9f4fa8bafe52415829b0f2af482f420b75f2eb4b780b0a3bcaa4f31"
     }
   ]
 }
