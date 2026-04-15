@@ -293,6 +293,8 @@ pub struct Alert {
     max_cycles: Option<u32>,
     #[serde(skip_serializing_if = "core::ops::Not::not")]
     full_takeover: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    icon: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     actions: Vec<Action>,
 }
@@ -309,6 +311,7 @@ impl Alert {
             auto_stop_ms: None,
             max_cycles: None,
             full_takeover: false,
+            icon: None,
             actions: Vec::new(),
         }
     }
@@ -350,6 +353,14 @@ impl Alert {
 
     pub fn full_takeover(mut self, enabled: bool) -> Self {
         self.full_takeover = enabled;
+        self
+    }
+
+    /// Skill-bundled glyph rendered on the full-takeover UI. Optional;
+    /// frontends fall back to a generic alarm-bell icon when omitted.
+    /// Path is resolved against the emitting skill's `assets/` directory.
+    pub fn icon(mut self, asset: Asset) -> Self {
+        self.icon = Some(asset.0);
         self
     }
 
@@ -709,6 +720,33 @@ mod tests {
         let v = value(&env);
         let oc = &v["cards"][0]["on_complete"];
         assert!(oc.get("dismiss_notifications").is_none());
+    }
+
+    #[test]
+    fn alert_icon_serialises_as_asset_uri() {
+        // Optional skill-bundled glyph for the takeover screen. The
+        // builder accepts an Asset; the wire format is the `asset:<path>`
+        // URI string the frontend's resolver expects.
+        let env = Envelope::new().alert(
+            Alert::new("a")
+                .title("Done")
+                .urgency(Urgency::Critical)
+                .sound(Sound::asset("ding.wav"))
+                .icon(Asset::new("icons/timer.png")),
+        );
+        let v = value(&env);
+        assert_eq!(v["alerts"][0]["icon"], "asset:icons/timer.png");
+    }
+
+    #[test]
+    fn alert_icon_elided_when_unset() {
+        // Skills that don't ship an icon get a generic alarm-bell on
+        // the frontend. Don't add a noise field to the envelope.
+        let env = Envelope::new().alert(
+            Alert::new("a").title("Done").urgency(Urgency::Critical).sound(Sound::SystemAlarm),
+        );
+        let v = value(&env);
+        assert!(v["alerts"][0].get("icon").is_none());
     }
 
     #[test]

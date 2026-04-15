@@ -90,6 +90,7 @@ Loud "right now" attention-grabbing audio + notification. Frontend implementatio
   "auto_stop_ms": 120000,
   "max_cycles": 12,
   "full_takeover": true,
+  "icon": "asset:icons/timer.png",
   "actions": [
     {"id": "stop_alert", "label": "Stop", "style": "primary"}
   ]
@@ -101,6 +102,7 @@ Loud "right now" attention-grabbing audio + notification. Frontend implementatio
 - `speech_loop` (optional) — TTS interjects this between sound cycles, Siri-style. Omit for sound-only loops.
 - `auto_stop_ms` / `max_cycles` cap the loop. Frontend stops at whichever fires first.
 - `full_takeover` requests wake-screen / full-screen-intent behavior. Frontend ignores it unless `urgency == critical` (safety gate).
+- `icon` (optional) — `asset:<path>` URI for a glyph the frontend renders large on the takeover UI. Omit and the frontend falls back to a generic alarm-bell. Same `assets/` resolution rules as `Card.icon`.
 
 ## Notifications
 
