@@ -91,12 +91,12 @@ jobs:
           set -euo pipefail
           git config user.name "ari-skills-bot"
           git config user.email "ari-skills-bot@users.noreply.github.com"
-          git add index.json bundles/
+          git add index.json bundles/ manifests/
           if git diff --cached --quiet; then
-            echo "nothing to commit — index and bundles are already up to date"
+            echo "nothing to commit — index, bundles, and manifests are already up to date"
             exit 0
           fi
-          git commit -m "chore(registry): publish signed bundles + index.json for ${{ github.sha }}"
+          git commit -m "chore(registry): publish signed bundles + manifests + index.json for ${{ github.sha }}"
           git push origin HEAD:main
 
       - name: Scrub key file

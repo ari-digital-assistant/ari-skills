@@ -12,7 +12,10 @@
 #   2. Packages skills/<slug>/ into bundles/<id>-<version>.tar.gz.
 #   3. Signs the bundle with ari-sign-bundle using the key at $ARI_SIGNING_KEY_FILE.
 #   4. Computes sha256.
-#   5. Writes index.json with one entry per skill.
+#   5. Copies skills/<slug>/SKILL.md to manifests/<id>-<version>.md so clients
+#      can fetch the full skill description (frontmatter + body) before
+#      committing to an install, without downloading the whole bundle.
+#   6. Writes index.json with one entry per skill.
 #
 # Required environment:
 #   ARI_SIGNING_KEY_FILE   path to a 32-byte Ed25519 private key file (as
@@ -82,6 +85,12 @@ fi
 rm -rf bundles
 mkdir -p bundles
 
+# Wipe and recreate the manifests sidecar directory. Each entry is a verbatim
+# copy of the skill's SKILL.md — frontmatter and body — so clients can render
+# the full detail page without pulling the whole signed bundle.
+rm -rf manifests
+mkdir -p manifests
+
 # Stream each skill through jq rather than a while-read loop this time —
 # the validator JSON now carries arrays (capabilities, languages) which
 # don't round-trip cleanly through TSV. We iterate with `jq -c '.[]'` and
@@ -103,6 +112,8 @@ echo "$SKILL_JSON" | jq -c '.[]' | while read -r SKILL_ROW; do
   slug=$(basename "$path")
   bundle_name="${id}-${version}.tar.gz"
   bundle_path="bundles/${bundle_name}"
+  manifest_name="${id}-${version}.md"
+  manifest_path="manifests/${manifest_name}"
 
   echo "build-index: packaging $id $version ($slug → $bundle_name)"
   # -C skills puts the archive root at <slug>/, which is what the engine's
@@ -113,6 +124,12 @@ echo "$SKILL_JSON" | jq -c '.[]' | while read -r SKILL_ROW; do
   $SIGN sign "$bundle_path" "$ARI_SIGNING_KEY_FILE" >/dev/null
   sha256_hex=$(cut -c1-64 <"${bundle_path}.sha256")
 
+  # Copy SKILL.md out as a standalone sidecar so clients can preview the
+  # full manifest (frontmatter + body) without fetching the bundle. The
+  # source file has already been validated above, so no extra parsing
+  # needed here — it's a byte-for-byte copy.
+  cp "${path}/SKILL.md" "$manifest_path"
+
   # Build the index entry by augmenting the validator row with the
   # bundle paths we just produced. license / author / homepage come
   # from the validator as JSON-typed values (nullable strings), so we
@@ -121,6 +138,7 @@ echo "$SKILL_JSON" | jq -c '.[]' | while read -r SKILL_ROW; do
     --arg bundle "$bundle_path" \
     --arg signature "${bundle_path}.sig" \
     --arg sha256 "$sha256_hex" \
+    --arg manifest "$manifest_path" \
     '{
       id: .id,
       version: .version,
@@ -133,7 +151,8 @@ echo "$SKILL_JSON" | jq -c '.[]' | while read -r SKILL_ROW; do
       languages: (.languages // []),
       bundle: $bundle,
       signature: $signature,
-      sha256: $sha256
+      sha256: $sha256,
+      manifest: $manifest
     }' \
     >>"$INDEX_TMP"
 done
