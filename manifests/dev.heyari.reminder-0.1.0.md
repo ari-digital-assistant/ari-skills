@@ -49,9 +49,15 @@ metadata:
       - key: default_calendar
         label: Default calendar
         type: device_calendar
+        show_when:
+          key: destination
+          equals: [calendar, both]
       - key: default_task_list
         label: Default task list
         type: device_task_list
+        show_when:
+          key: destination
+          equals: [tasks, both]
     wasm:
       module: skill.wasm
       memory_limit_mb: 4
