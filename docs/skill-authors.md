@@ -131,7 +131,7 @@ Found a bug, want to add a new keyword? Bump `metadata.ari.version`, open anothe
 | `response` | Fixed string. Use for deterministic replies. |
 | `response_pick` | List of strings. One picked at random per invocation. |
 | `response_template` | Mustache-style template with `{{var}}` placeholders. Use with `action` when the frontend or engine fills in values. |
-| `action` | A JSON object the frontend will execute (e.g. open an app, set an alarm). Combine with `response_template` to give the user verbal feedback. |
+| `action` | An action envelope the frontend renders (cards, alerts, notifications, launch_app, search, open_url, clipboard, dismissals). Combine with `response_template` to give the user verbal feedback. Full vocabulary: [action-responses.md](action-responses.md). |
 
 Example combining a template and an action:
 
@@ -139,11 +139,48 @@ Example combining a template and an action:
     declarative:
       response_template: "Opening {{target}}."
       action:
-        type: launch_app
-        target: "{{target}}"
+        v: 1
+        launch_app: "{{target}}"
 ```
 
 The capture mechanism for `{{target}}` from the input is documented in [skill-system.md](skill-system.md).
+
+## Beyond text responses — cards, alerts, notifications
+
+Most skills can return a plain string and call it done ("Heads.", "It's quarter past four."). But the response surface is much richer than that: skills can also emit a structured **action envelope** that asks the frontend to render UI primitives, fire alerts, copy to the clipboard, launch apps, and more.
+
+A timer skill, for example, emits one envelope per "set a timer" utterance carrying:
+
+- a **card** with a live countdown rendered inline in the chat — icon + title, big monospace clock, blinking colon, accent-coloured progress bar that goes red as the deadline approaches;
+- an `on_complete.alert` attached to the card — fires automatically at the deadline as a critical, full-takeover alert with looping audio + Siri-style speech, a dedicated lock-screen takeover surface, and a Stop action button that doesn't require unlocking the device;
+- a paired ongoing **notification** with an OS-rendered chronometer countdown for the shade.
+
+You declare what you want; the frontend renders it. None of that UI lives in the skill — your skill just emits primitives that say "card with these fields", "alert with this urgency", "notification with this importance". On Android the GenericCard composable renders countdowns and progress bars, AlertService runs the audio loop, AlertActivity is the alarm-clock takeover. On future Linux it'll be GTK + libnotify + GStreamer. Your skill doesn't change.
+
+The same envelope vocabulary covers `launch_app`, `search`, `open_url`, `clipboard`, dismissals, and asset-bundled icons/sounds. Anything visual or audible you'd want a skill to do, you do by composing primitives — there's no "kind" enum to add to, no platform-specific renderer to publish.
+
+For declarative skills, you can put a static envelope under `declarative.action`. For WASM skills, build it dynamically with the typed `presentation` builder in the Rust SDK.
+
+```yaml
+# Declarative example — single-shot launch
+declarative:
+  response_template: "Opening {{target}}."
+  action:
+    v: 1
+    launch_app: "{{target}}"
+```
+
+```rust
+// WASM example — minimal envelope
+use ari_skill_sdk::presentation as p;
+let json = p::Envelope::new()
+    .speak("Copied that to your clipboard.")
+    .clipboard("the text to copy")
+    .to_json();
+ari::respond_action(&json)
+```
+
+Full reference (every field, every primitive, every reserved id, asset bundling rules, lock-screen takeover semantics): **[action-responses.md](action-responses.md)**.
 
 ## When you actually need WASM
 

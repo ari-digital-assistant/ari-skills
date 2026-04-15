@@ -4,7 +4,7 @@ This document describes how skills work in [Ari](https://github.com/ari-digital-
 
 ## What a skill is
 
-A **skill** is a unit of behaviour that turns a user utterance into a response. "What time is it?" → `CurrentTimeSkill` → `"Half past four."`. "Open Spotify" → `OpenSkill` → `{"action": "open", "target": "spotify"}` for the frontend to execute.
+A **skill** is a unit of behaviour that turns a user utterance into a response. "What time is it?" → `CurrentTimeSkill` → `"Half past four."`. "Open Spotify" → `OpenSkill` → `{"v":1,"launch_app":"Spotify"}` action envelope for the frontend to execute. Action envelopes carry a vocabulary of UI primitives (cards, alerts, notifications) and single-shot slots (`launch_app`, `search`, `open_url`, `clipboard`); skills declare *what* they want, frontends render it. Full reference: [action-responses.md](action-responses.md).
 
 Ari has three flavours of skill, all implementing the same `Skill` trait at the engine boundary:
 

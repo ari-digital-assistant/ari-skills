@@ -69,8 +69,12 @@ In-chat panels with optional countdown, progress, and action buttons. The fronte
 - `actions` (0..N) — buttons; tap sends `utterance` through `engine.processInput` (see Action buttons below).
 - `on_complete` (optional, only meaningful with `countdown_to_ts_ms`) — declares what happens at the deadline:
   - `alert` — fires the alert primitive.
-  - `dismiss_card` (default `true`) — removes the card from the frontend's mirror.
+  - `dismiss_card` (default `true`) — removes the card from the frontend's mirror. **Semantics with `alert` set**: the frontend keeps the card visible while the alert rings (so the user has a Stop button right where their eye is) and removes it only when the alert ends — by user dismissal, the auto-stop cap, or external `dismiss.alerts`. Without an `alert`, removal happens at the deadline as you'd expect.
   - `dismiss_notifications` (default `[]`) — list of notification ids to dismiss at the same instant. Use this when the skill emitted a paired ongoing notification with the card (the typical timer pattern) so the shade entry vanishes the moment the alert fires, rather than ticking past zero.
+
+### Card behaviour during a ringing alert
+
+While a card's `on_complete.alert` is sounding, the frontend automatically replaces the card's declared actions with a single **Stop** button (the same reserved `stop_alert` id used on the alert primitive itself). The card becomes the user's closest control for silencing the alert without hunting through the notification shade. Skills don't need to do anything for this — declare your normal `cancel`/whatever actions for the countdown phase and the frontend handles the swap.
 
 ## Alerts
 
@@ -103,6 +107,18 @@ Loud "right now" attention-grabbing audio + notification. Frontend implementatio
 - `auto_stop_ms` / `max_cycles` cap the loop. Frontend stops at whichever fires first.
 - `full_takeover` requests wake-screen / full-screen-intent behavior. Frontend ignores it unless `urgency == critical` (safety gate).
 - `icon` (optional) — `asset:<path>` URI for a glyph the frontend renders large on the takeover UI. Omit and the frontend falls back to a generic alarm-bell. Same `assets/` resolution rules as `Card.icon`.
+
+### What `full_takeover` actually delivers
+
+When `full_takeover && urgency == critical`, the Android frontend renders a dedicated alarm-clock-style takeover surface:
+
+- Live wall-clock time at the top.
+- Your `icon` rendered large with a pulsing ring (or a generic bell if you didn't ship one).
+- Your `title`, optional `body`, and an "Alerted at HH:MM" caption.
+- Vertical gradient background tinted by `urgency`.
+- Your `actions` rendered as full-width buttons. The reserved `stop_alert` id silences the alert without an engine round-trip; other ids round-trip via `engine.processInput(utterance)`.
+
+The takeover appears over the lock screen even when Ari is the foregrounded app at the moment the screen locks (handled internally by the frontend via Background Activity Launch from the alarm receiver — you don't need to think about it). When the device is unlocked, the heads-up notification + your declared actions cover the same ground without yanking the user out of whatever they're doing.
 
 ## Notifications
 
@@ -207,6 +223,7 @@ let json = p::Envelope::new()
                             .sound(p::Sound::asset("timer.mp3"))
                             .speech_loop("Pasta timer")
                             .full_takeover(true)
+                            .icon(p::Asset::new("timer_icon.png"))
                             .action(p::Action::new("stop_alert", "Stop").primary()),
                     )
                     .dismiss_notification("notif_t_01HZ"),
@@ -235,8 +252,9 @@ export function execute(ptr: i32, len: i32): i64 {
 
 | Primitive | Component |
 |---|---|
-| `cards[]` | `PresentationCoordinator` upserts into `CardStateRepository`; `MessageBubble` renders `GenericCard` inline; `CardAlarmScheduler` schedules the `on_complete.alert` for any card with a countdown. |
-| `alerts[]` | `AlertService` (foreground service) starts immediately and runs the sound→speech loop. |
+| `cards[]` | `PresentationCoordinator` upserts into `CardStateRepository`; `MessageBubble` renders `GenericCard` inline; `CardAlarmScheduler` schedules the `on_complete.alert` for any card with a countdown. While the card's alert is sounding (tracked via `AlertRegistry`) the actions are auto-replaced with a Stop button. |
+| `alerts[]` | `AlertService` (foreground service) starts immediately and runs the sound→speech loop. `AlertRegistry` (process-local `StateFlow`) tracks active alert ids so cards and the takeover can react to start/stop. |
+| `full_takeover` alerts | `AlertActivity` is the dedicated lock-screen takeover (icon + pulse, live clock, title/body/caption, full-width buttons, urgency-tinted gradient). Launched via the FSN normally, or directly from `CardExpiryReceiver` (using the alarm's BAL grace) when Ari is top-of-stack at the moment the screen locks. |
 | `notifications[]` | `NotificationCoordinator` posts via `NotificationCompat.Builder`; `countdown_to_ts_ms` lights up the Chronometer widget. |
 | `launch_app` | `AppLauncher` resolves to an `Intent.ACTION_MAIN`. |
 | `search` | `WebSearchLauncher` opens the user's default web search. |

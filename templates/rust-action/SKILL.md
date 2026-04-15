@@ -31,7 +31,7 @@ metadata:
 
 Emits a structured `Response::Action` envelope that the frontend interprets. See [../../docs/action-responses.md](../../docs/action-responses.md) for the envelope contract.
 
-Swap `"open"` for your own action discriminator and extend the JSON with whatever fields your frontend handler needs.
+The template emits a 30-second countdown card with an attached critical alert as a starting point. Replace it with whatever primitives your skill needs — cards with progress, ongoing notifications, single-shot `launch_app` / `search` / `clipboard` slots, dismissals. The envelope is composed of named primitives, not discriminator-tagged variants; add fields, don't add types.
 
 ## Example utterances
 
