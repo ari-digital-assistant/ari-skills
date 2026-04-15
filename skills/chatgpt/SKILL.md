@@ -27,6 +27,22 @@ metadata:
       - text: "ask gpt what time zone Tokyo is in"
       - text: "use gpt to write a haiku"
       - text: "ask chat gpt for a joke"
+    settings:
+      - key: api_key
+        label: API Key
+        type: secret
+        required: true
+      - key: model
+        label: Model
+        type: select
+        default: gpt-5.4-mini
+        options:
+          - value: gpt-5.4-nano
+            label: GPT-5.4 Nano (fastest, cheapest)
+          - value: gpt-5.4-mini
+            label: GPT-5.4 Mini (small, cost-efficient)
+          - value: gpt-5.4
+            label: GPT-5.4 (smartest, slower responses)
     assistant:
       provider: api
       privacy: cloud
@@ -40,22 +56,6 @@ metadata:
           You are Ari, a helpful voice assistant.
           Answer the user's question in one short sentence.
         response_path: "choices[0].message.content"
-      config:
-        - key: api_key
-          label: API Key
-          type: secret
-          required: true
-        - key: model
-          label: Model
-          type: select
-          default: gpt-5.4-mini
-          options:
-            - value: gpt-5.4-nano
-              label: GPT-5.4 Nano (fastest, cheapest)
-            - value: gpt-5.4-mini
-              label: GPT-5.4 Mini (small, cost-efficient)
-            - value: gpt-5.4
-              label: GPT-5.4 (smartest, slower responses)
 ---
 Uses OpenAI's ChatGPT API to answer general knowledge questions.
 

@@ -27,6 +27,20 @@ metadata:
       - text: "ask gemini for a joke"
       - text: "use google ai to draft an email"
       - text: "ask gemini what the time is in Tokyo"
+    settings:
+      - key: api_key
+        label: API Key
+        type: secret
+        required: true
+      - key: model
+        label: Model
+        type: select
+        default: gemini-2.5-flash
+        options:
+          - value: gemini-2.5-flash
+            label: Gemini 2.5 Flash (fastest, cheapest)
+          - value: gemini-2.5-pro
+            label: Gemini 2.5 Pro (smartest, slower responses)
     assistant:
       provider: api
       privacy: cloud
@@ -40,20 +54,6 @@ metadata:
           You are Ari, a helpful voice assistant.
           Answer the user's question in one short sentence.
         response_path: "choices[0].message.content"
-      config:
-        - key: api_key
-          label: API Key
-          type: secret
-          required: true
-        - key: model
-          label: Model
-          type: select
-          default: gemini-2.5-flash
-          options:
-            - value: gemini-2.5-flash
-              label: Gemini 2.5 Flash (fastest, cheapest)
-            - value: gemini-2.5-pro
-              label: Gemini 2.5 Pro (smartest, slower responses)
 ---
 Uses Google's Gemini API to answer general knowledge questions.
 
