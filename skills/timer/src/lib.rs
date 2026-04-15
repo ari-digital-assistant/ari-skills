@@ -265,6 +265,7 @@ fn build_alert(timer_id: &str, name: &Option<String>) -> p::Alert {
         .auto_stop_ms(120_000)
         .max_cycles(12)
         .full_takeover(true)
+        .icon(p::Asset::new("timer_icon.png"))
         .action(p::Action::new("stop_alert", "Stop").primary());
     if let Some(s) = speech {
         alert = alert.speech_loop(s);
@@ -438,6 +439,9 @@ mod tests {
         assert_eq!(alert["sound"], "asset:timer.mp3");
         assert_eq!(alert["speech_loop"], "Pasta timer");
         assert_eq!(alert["full_takeover"], true);
+        // Glyph for the takeover screen — same asset the card uses, so
+        // the timer reads as "the timer" wherever it surfaces.
+        assert_eq!(alert["icon"], "asset:timer_icon.png");
         assert_eq!(alert["actions"][0]["id"], "stop_alert");
         assert_eq!(card["on_complete"]["dismiss_card"], true);
         // The card's on_complete must dismiss the matching ongoing
