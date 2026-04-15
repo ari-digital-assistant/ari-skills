@@ -27,6 +27,22 @@ metadata:
       - text: "ask claude for a joke"
       - text: "use claude to draft an email"
       - text: "ask claude what the time is in Tokyo"
+    settings:
+      - key: api_key
+        label: API Key
+        type: secret
+        required: true
+      - key: model
+        label: Model
+        type: select
+        default: claude-sonnet-4-6
+        options:
+          - value: claude-haiku-4-5-20251001
+            label: Haiku 4.5 (fastest, cheapest)
+          - value: claude-sonnet-4-6
+            label: Sonnet 4.6 (balanced)
+          - value: claude-opus-4-6
+            label: Opus 4.6 (smartest, slower responses)
     assistant:
       provider: api
       privacy: cloud
@@ -44,22 +60,6 @@ metadata:
           You are Ari, a helpful voice assistant.
           Answer the user's question in one short sentence.
         response_path: "content[0].text"
-      config:
-        - key: api_key
-          label: API Key
-          type: secret
-          required: true
-        - key: model
-          label: Model
-          type: select
-          default: claude-sonnet-4-6
-          options:
-            - value: claude-haiku-4-5-20251001
-              label: Haiku 4.5 (fastest, cheapest)
-            - value: claude-sonnet-4-6
-              label: Sonnet 4.6 (balanced)
-            - value: claude-opus-4-6
-              label: Opus 4.6 (smartest, slower responses)
 ---
 Uses Anthropic's Claude API to answer general knowledge questions.
 
