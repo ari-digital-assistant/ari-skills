@@ -39,6 +39,12 @@ cd my-cool-skill
 # Test against a local engine
 cd ../../ari-engine
 cargo run -p ari-cli -- --extra-skill-dir ../ari-skills/my-cool-skill "your test input"
+
+# Or sideload onto a connected Android device / emulator for end-to-end
+# testing against the real chat UI, TTS, and action-envelope renderer.
+# This is the fastest way to exercise assets, alerts, and notifications
+# — anything the CLI can't render.
+./tools/sideload-android skills/my-cool-skill
 ```
 
 ### AssemblyScript
@@ -59,6 +65,10 @@ cd my-cool-skill
 # Test against a local engine
 cd ../../ari-engine
 cargo run -p ari-cli -- --extra-skill-dir ../ari-skills/my-cool-skill "your test input"
+
+# Or sideload onto a connected Android device / emulator for end-to-end
+# testing against the real chat UI, TTS, and action-envelope renderer.
+./tools/sideload-android skills/my-cool-skill
 ```
 
 ## SDK API reference
@@ -99,7 +109,10 @@ let envelope = p::Envelope::new()
     .to_json();
 let packed: i64 = ari::respond_action(&envelope);
 
-// Logging (levels: Trace, Debug, Info, Warn, Error)
+// Logging (levels: Trace, Debug, Info, Warn, Error).
+// On Android, lines surface under logcat tag `AriSkill` with the skill
+// id prepended: `adb logcat -s AriSkill`. On the CLI engine they go
+// through the host's configured sink (stderr by default).
 ari::log(ari::LogLevel::Info, "something happened");
 
 // Wall-clock time in milliseconds, and 64 bits of entropy. Both unconditional.

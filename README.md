@@ -31,7 +31,8 @@ ari-skills/
 1. Read [docs/skill-authors.md](docs/skill-authors.md).
 2. Fork this repo, add your skill under `skills/<slug>/`.
 3. Run `./tools/validate skills/<slug>/`.
-4. Open a pull request.
+4. Iterate with `./tools/sideload-android skills/<slug>/` to try it on a real device/emulator before you open a PR — exercises TTS, UI, and action rendering that CLI testing can't.
+5. Open a pull request.
 
 CI validates the manifest. A maintainer reviews. On merge, the bundle is signed and published to the registry — and within minutes, every Ari user can install it from Settings → Skills → Browse.
 
