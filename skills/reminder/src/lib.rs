@@ -43,6 +43,21 @@ pub extern "C" fn execute(ptr: i32, len: i32) -> i64 {
 /// function of the input — no host imports touched, no clock read.
 pub fn dispatch(input: &str) -> String {
     let parsed = parse::parse(input);
+    #[cfg(target_arch = "wasm32")]
+    {
+        // Surface the parse outcome on the host's log sink so skill
+        // authors can eyeball confidence decisions in `adb logcat -s
+        // AriSkill`. Low-volume, one line per utterance.
+        ari::log(
+            ari::LogLevel::Info,
+            &alloc::format!(
+                "parse confidence={} unparsed={:?} title={:?}",
+                parsed.confidence.as_envelope_str(),
+                parsed.unparsed.as_deref().unwrap_or(""),
+                parsed.title,
+            ),
+        );
+    }
     build_envelope(&parsed)
 }
 
@@ -72,8 +87,40 @@ fn build_envelope(parsed: &parse::Parsed) -> String {
                 hour, minute, day_offset,
             ));
         }
+        parse::When::LocalClockOnWeekday {
+            hour,
+            minute,
+            weekday,
+        } => {
+            // Emit weekday as the English name rather than the ISO
+            // index. It's a six-extra-chars price for JSON that a human
+            // debugging logcat can read without an index cheat-sheet.
+            out.push_str(&format!(
+                "{{\"local_time\":\"{:02}:{:02}\",\"weekday\":\"{}\"}}",
+                hour,
+                minute,
+                weekday_name(*weekday),
+            ));
+        }
+        parse::When::LocalClockOnDate {
+            hour,
+            minute,
+            month,
+            day,
+        } => {
+            out.push_str(&format!(
+                "{{\"local_time\":\"{:02}:{:02}\",\"month\":{},\"day\":{}}}",
+                hour, minute, month, day,
+            ));
+        }
         parse::When::DateOnly { day_offset } => {
             out.push_str(&format!("{{\"day_offset\":{}}}", day_offset));
+        }
+        parse::When::DateOnlyWeekday { weekday } => {
+            out.push_str(&format!("{{\"weekday\":\"{}\"}}", weekday_name(*weekday)));
+        }
+        parse::When::DateOnlyDate { month, day } => {
+            out.push_str(&format!("{{\"month\":{},\"day\":{}}}", month, day));
         }
     }
 
@@ -86,8 +133,37 @@ fn build_envelope(parsed: &parse::Parsed) -> String {
     out.push_str(",\"speak_template\":");
     push_json_string(&mut out, &parsed.speak_template);
 
-    out.push_str("}}");
+    // Close the `create_reminder` block, then drop `confidence` and
+    // `unparsed` at envelope top-level — Layer A of the parse-confidence
+    // signal (see wtf.md). Always emitted, even for High confidence,
+    // so the Android side can treat a missing field as "old skill
+    // build, assume high" without ambiguity from newer skills.
+    out.push_str("}");
+    out.push_str(",\"confidence\":\"");
+    out.push_str(parsed.confidence.as_envelope_str());
+    out.push_str("\"");
+    if let Some(u) = &parsed.unparsed {
+        out.push_str(",\"unparsed\":");
+        push_json_string(&mut out, u);
+    }
+    out.push_str("}");
     out
+}
+
+/// ISO index (0=Monday..6=Sunday) back to its lowercase English name.
+/// Used by the envelope emitter; the Android side parses the name back
+/// into its platform-specific weekday enum.
+fn weekday_name(idx: u8) -> &'static str {
+    match idx {
+        0 => "monday",
+        1 => "tuesday",
+        2 => "wednesday",
+        3 => "thursday",
+        4 => "friday",
+        5 => "saturday",
+        6 => "sunday",
+        _ => "monday",
+    }
 }
 
 /// Minimal JSON string escaper covering the characters that actually
@@ -247,5 +323,37 @@ mod tests {
         let json = dispatch("");
         assert_eq!(field(&json, "title"), "\"\"");
         assert_eq!(field(&json, "when"), "null");
+    }
+
+    // ── Envelope-level confidence + unparsed emission ────────────────
+    // Layer A of the parse-confidence work: the skill reports how
+    // sure it is about its own output so the frontend can warn the
+    // user when the parse is dodgy. Old frontends ignore the unknown
+    // fields; new ones branch on them.
+
+    #[test]
+    fn high_confidence_emits_no_unparsed_field() {
+        let json = dispatch("remind me to walk the dog at 5pm");
+        assert_eq!(field(&json, "confidence"), "\"high\"");
+        assert!(!json.contains("\"unparsed\""), "envelope = {json}");
+    }
+
+    #[test]
+    fn partial_confidence_emits_unparsed_field() {
+        // "next" is stranded after the weekday scanner consumes
+        // "tuesday". Partial because a concrete weekday DID land.
+        let json = dispatch("remind me next tuesday at 9am to see the dentist");
+        assert_eq!(field(&json, "confidence"), "\"partial\"");
+        assert_eq!(field(&json, "unparsed"), "\"next\"");
+    }
+
+    #[test]
+    fn low_confidence_when_nothing_matched() {
+        // "tonight" is in the reserved-residue list but isn't yet
+        // recognised as an anchor, and no clock phrase is present.
+        // When=None → fallback → Low.
+        let json = dispatch("remind me to do a thing tonight");
+        assert_eq!(field(&json, "confidence"), "\"low\"");
+        assert_eq!(field(&json, "unparsed"), "\"tonight\"");
     }
 }
