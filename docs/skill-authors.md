@@ -96,7 +96,11 @@ cp ~/Downloads/coin-icon.png skills/coin-flip/assets/icon.png
 
 This is the same check the registry CI runs. It parses the frontmatter, checks AgentSkills naming rules, confirms `metadata.ari.id` doesn't collide with anything in `index.json`, verifies exactly one of `declarative`/`wasm` is present, and lints the matching patterns for obvious mistakes.
 
-### 6. Test against a local engine
+### 6. Test your skill locally
+
+You've got two complementary options. Use both — one tells you *what* matched, the other tells you how the skill actually *feels* in the app.
+
+#### With the CLI engine (fastest)
 
 If you have the Ari engine checked out:
 
@@ -107,7 +111,33 @@ cargo run -p ari-cli -- \
   "flip a coin"
 ```
 
-You should see `Heads.` or `Tails.` Try a few inputs that *shouldn't* match — `"what time is it"`, `"flip the pancakes"` — and confirm your skill stays out of it.
+You should see `Heads.` or `Tails.` Try a few inputs that *shouldn't* match — `"what time is it"`, `"flip the pancakes"` — and confirm your skill stays out of it. This is the right loop for iterating on keyword patterns and scoring — it's deterministic, instant, and prints the winning skill.
+
+#### With the Android app (end-to-end — recommended before opening a PR)
+
+Everything CLI testing can't tell you — whether TTS says the right thing, whether your action envelope renders correctly, whether a declarative `launch_app` target resolves on a real device, whether FunctionGemma routes ambiguous paraphrases — needs the real frontend. The sideload tool pushes your working tree straight into the app's private skills dir on a connected device or emulator, no PR flow required:
+
+```bash
+./tools/sideload-android skills/coin-flip
+```
+
+Under the hood: rebuild (if `build.sh` exists) → validate → push via `adb` + `run-as` → force-stop and relaunch the app so the engine re-scans on startup. A few seconds per iteration.
+
+The edit-sideload-test loop is worth using for:
+
+- **Development** — iterate on code, WASM builds, SKILL.md content. Faster than any install flow.
+- **Debugging behaviour** — confirm the skill is actually being picked up, watch `adb logcat` for engine load messages, reproduce issues that only show up with the real STT/TTS path. For WASM skills, anything your skill emits via `ari::log(...)` in the SDK surfaces under the `AriSkill` tag with the skill id prepended — `adb logcat -s AriSkill` shows every skill, grep by skill id to narrow down.
+- **Tuning your description and examples** — the `description` and `examples` fields in `metadata.ari` are what FunctionGemma routes on. Sideload the skill and try the paraphrases you wrote in `examples` as actual utterances. If they don't route to your skill, iterate on the description or the keyword patterns until they do. Doing this *before* the PR means CI's smoke test isn't the first time your routing gets exercised.
+
+Requires a **debug build** of the app installed (`run-as` doesn't work on release builds) and `adb` on your PATH. See `./tools/sideload-android --help` for flags — alternate package name, device serial, skip-rebuild, skip-validate, skip-restart. Useful `adb logcat` filters while iterating:
+
+```bash
+# Your skill's own log output (WASM skills, via ari::log)
+adb logcat -s AriSkill
+
+# Engine-level events — skill loading, errors, startup counts
+adb logcat -s EngineModule AriEngine SkillUpdateWorker AssetResolver
+```
 
 ### 7. Open a pull request
 

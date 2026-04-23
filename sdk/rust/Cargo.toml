@@ -13,6 +13,18 @@ default = ["std", "presentation"]
 std = []
 http = []
 storage = []
+# Task provider (tasks_*): list lists, insert, delete. Requires the
+# `tasks` capability in the skill's SKILL.md. Pulls in serde_json
+# because the ABI marshals complex types as JSON.
+tasks = ["dep:serde", "dep:serde_json"]
+# Calendar provider (calendar_*): list, insert, delete events.
+# Requires the `calendar` capability in SKILL.md.
+calendar = ["dep:serde", "dep:serde_json"]
+# Local-clock reader (local_now_components / local_timezone_id).
+# Ungated capability — every skill can read the wall clock — but the
+# SDK wrapper is behind a feature flag so skills that don't need it
+# ship a slightly leaner wasm.
+clock = ["dep:serde", "dep:serde_json"]
 # Pulls in serde + serde_json with `alloc` so skills can build presentation
 # envelopes (cards, alerts, notifications, …) as ergonomic Rust structs.
 # On by default; turn off if you're shipping a text-only skill and want the

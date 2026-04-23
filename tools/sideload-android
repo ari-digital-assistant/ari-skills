@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+#
+# Sideload a skill onto a connected Android device or emulator for dev testing,
+# without going through the registry / PR / signed-bundle flow.
+#
+# Usage:
+#   ./tools/sideload-android skills/reminder
+#   ./tools/sideload-android skills/reminder --package dev.heyari.ari
+#   ./tools/sideload-android skills/reminder --serial emulator-5554
+#   ./tools/sideload-android skills/reminder --no-build      # skip build.sh
+#   ./tools/sideload-android skills/reminder --no-validate   # skip validate
+#   ./tools/sideload-android skills/reminder --no-restart    # don't force-stop
+#
+# What it does:
+#   1. Runs skill build.sh if present (WASM skills).
+#   2. Runs ./tools/validate on the skill (same check CI runs).
+#   3. Pushes SKILL.md, skill.wasm (if present), and assets/ into the app's
+#      private skills dir on the device via `run-as`. No root required; the
+#      app must be a debuggable (debug) build for `run-as` to work.
+#   4. Force-stops the app and relaunches so the engine re-scans on startup.
+#
+# The on-device directory is named after the skill's slug (the last path
+# segment of the skill dir — the AgentSkills `name`). This mirrors how the
+# engine's skill-loader lays out installed bundles.
+#
+# Environment overrides:
+#   ARI_ANDROID_PACKAGE   default dev.heyari.ari
+#   ADB                   default adb
+#   ANDROID_SERIAL        picked up by adb (same as --serial)
+
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+
+PACKAGE="${ARI_ANDROID_PACKAGE:-dev.heyari.ari}"
+ADB="${ADB:-adb}"
+SERIAL=""
+DO_BUILD=1
+DO_VALIDATE=1
+DO_RESTART=1
+SKILL_DIR=""
+
+usage() {
+  sed -n '3,30p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  exit "${1:-2}"
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --package)      PACKAGE="$2"; shift 2 ;;
+    --serial)       SERIAL="$2"; shift 2 ;;
+    --no-build)     DO_BUILD=0; shift ;;
+    --no-validate)  DO_VALIDATE=0; shift ;;
+    --no-restart)   DO_RESTART=0; shift ;;
+    -h|--help)      usage 0 ;;
+    --)             shift; break ;;
+    -*)             echo "sideload-android: unknown flag: $1" >&2; usage 2 ;;
+    *)              if [[ -n "$SKILL_DIR" ]]; then
+                      echo "sideload-android: only one skill dir allowed" >&2; usage 2
+                    fi
+                    SKILL_DIR="$1"; shift ;;
+  esac
+done
+
+if [[ -z "$SKILL_DIR" ]]; then
+  echo "sideload-android: missing skill directory argument" >&2
+  usage 2
+fi
+
+if [[ ! -d "$SKILL_DIR" ]]; then
+  echo "sideload-android: not a directory: $SKILL_DIR" >&2
+  exit 1
+fi
+
+if [[ ! -f "$SKILL_DIR/SKILL.md" ]]; then
+  echo "sideload-android: no SKILL.md in $SKILL_DIR" >&2
+  exit 1
+fi
+
+SKILL_DIR="$(cd "$SKILL_DIR" && pwd)"
+SLUG="$(basename "$SKILL_DIR")"
+
+# adb wrapper that honours --serial if provided.
+adb_cmd() {
+  if [[ -n "$SERIAL" ]]; then
+    "$ADB" -s "$SERIAL" "$@"
+  else
+    "$ADB" "$@"
+  fi
+}
+
+# Confirm adb is usable and a device is reachable before we do anything
+# destructive to the app's skill directory.
+if ! command -v "$ADB" >/dev/null 2>&1; then
+  echo "sideload-android: '$ADB' not on PATH. Install platform-tools or set \$ADB." >&2
+  exit 1
+fi
+
+device_count="$(adb_cmd devices | awk 'NR>1 && $2=="device" {c++} END {print c+0}')"
+if [[ "$device_count" -eq 0 ]]; then
+  echo "sideload-android: no device/emulator connected (adb devices is empty)." >&2
+  exit 1
+fi
+
+# Confirm the package is installed on-device — otherwise there's no skills
+# directory to write into and no app to force-stop.
+if ! adb_cmd shell pm path "$PACKAGE" >/dev/null 2>&1; then
+  echo "sideload-android: package '$PACKAGE' is not installed on the device." >&2
+  echo "  Install the debug build first (e.g. ./gradlew :app:installDebug)." >&2
+  exit 1
+fi
+
+echo "==> skill:     $SKILL_DIR"
+echo "==> slug:      $SLUG"
+echo "==> package:   $PACKAGE"
+
+if [[ "$DO_BUILD" -eq 1 && -x "$SKILL_DIR/build.sh" ]]; then
+  echo "==> build.sh   $SKILL_DIR/build.sh"
+  ( cd "$SKILL_DIR" && ./build.sh )
+fi
+
+if [[ "$DO_VALIDATE" -eq 1 ]]; then
+  echo "==> validate   $SKILL_DIR"
+  "$REPO_ROOT/tools/validate" "$SKILL_DIR"
+fi
+
+# The app's private files dir is only writable via `run-as`. Push to
+# /data/local/tmp first (world-readable staging area on all Android
+# versions) and copy across with `run-as`.
+STAGING="/data/local/tmp/ari-sideload-$SLUG"
+DEST_REL="files/skills/$SLUG"
+
+echo "==> staging    $STAGING"
+adb_cmd shell "rm -rf $STAGING && mkdir -p $STAGING"
+adb_cmd push "$SKILL_DIR/SKILL.md" "$STAGING/SKILL.md" >/dev/null
+
+if [[ -f "$SKILL_DIR/skill.wasm" ]]; then
+  adb_cmd push "$SKILL_DIR/skill.wasm" "$STAGING/skill.wasm" >/dev/null
+fi
+
+if [[ -d "$SKILL_DIR/assets" ]]; then
+  adb_cmd push "$SKILL_DIR/assets" "$STAGING/assets" >/dev/null
+fi
+
+echo "==> install    $PACKAGE:$DEST_REL"
+# Clear the existing dir so stale files (old wasm, removed assets) don't
+# linger. `run-as` scopes everything to the app's UID.
+adb_cmd shell "run-as $PACKAGE sh -c 'rm -rf $DEST_REL && mkdir -p $DEST_REL'"
+adb_cmd shell "run-as $PACKAGE sh -c 'cp $STAGING/SKILL.md $DEST_REL/'"
+if [[ -f "$SKILL_DIR/skill.wasm" ]]; then
+  adb_cmd shell "run-as $PACKAGE sh -c 'cp $STAGING/skill.wasm $DEST_REL/'"
+fi
+if [[ -d "$SKILL_DIR/assets" ]]; then
+  adb_cmd shell "run-as $PACKAGE sh -c 'cp -r $STAGING/assets $DEST_REL/'"
+fi
+
+# Best-effort cleanup of the staging dir. Failure here shouldn't fail the
+# sideload — /data/local/tmp is world-writable and self-cleans on reboot.
+adb_cmd shell "rm -rf $STAGING" || true
+
+if [[ "$DO_RESTART" -eq 1 ]]; then
+  echo "==> restart    $PACKAGE"
+  adb_cmd shell "am force-stop $PACKAGE"
+  # Launch whatever the package's default activity is — avoids hard-coding
+  # the activity name, which may drift.
+  adb_cmd shell "monkey -p $PACKAGE -c android.intent.category.LAUNCHER 1" >/dev/null
+fi
+
+echo "==> done"
