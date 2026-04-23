@@ -168,6 +168,9 @@ extern "C" {
 
     #[link_name = "rand_u64"]
     fn host_rand_u64() -> i64;
+
+    #[link_name = "setting_get"]
+    fn host_setting_get(key_ptr: i32, key_len: i32) -> i64;
 }
 
 pub fn log(level: LogLevel, msg: &str) {
@@ -198,6 +201,19 @@ pub fn now_ms() -> i64 {
 /// caller does not need to seed or reset anything — each call is independent.
 pub fn rand_u64() -> u64 {
     unsafe { host_rand_u64() as u64 }
+}
+
+/// Read one of this skill's user-configurable settings (as declared
+/// in SKILL.md under `metadata.ari.settings`). Returns `None` if the
+/// key hasn't been set by the user yet — skills should treat that as
+/// "use your documented default".
+///
+/// Scoped to the calling skill's id — you can't read another skill's
+/// settings. Always available (no capability declaration required).
+pub fn setting_get(key: &str) -> Option<&'static str> {
+    let bytes = key.as_bytes();
+    let packed = unsafe { host_setting_get(bytes.as_ptr() as i32, bytes.len() as i32) };
+    unsafe { unpack(packed) }
 }
 
 // ---------------------------------------------------------------------------
