@@ -353,6 +353,271 @@ mod storage_impl {
 pub use storage_impl::{storage_get, storage_set};
 
 // ---------------------------------------------------------------------------
+// Platform tasks (feature = "tasks")
+// ---------------------------------------------------------------------------
+
+#[cfg(feature = "tasks")]
+mod tasks_impl {
+    #[cfg(not(feature = "std"))]
+    use alloc::{string::String, vec::Vec};
+
+    #[link(wasm_import_module = "ari")]
+    extern "C" {
+        #[link_name = "tasks_provider_installed"]
+        fn host_tasks_provider_installed() -> i32;
+        #[link_name = "tasks_list_lists"]
+        fn host_tasks_list_lists() -> i64;
+        #[link_name = "tasks_insert"]
+        fn host_tasks_insert(params_ptr: i32, params_len: i32) -> i64;
+        #[link_name = "tasks_delete"]
+        fn host_tasks_delete(id: i64) -> i32;
+    }
+
+    /// One writable task list the user can target. `id` is the stable
+    /// provider-supplied identifier; `account_name` disambiguates when
+    /// two lists share a display name (e.g. "Personal" across two
+    /// CalDAV accounts). Empty string if the host has no such concept.
+    #[derive(Debug, Clone, serde::Deserialize)]
+    pub struct TaskList {
+        pub id: u64,
+        pub display_name: String,
+        #[serde(default)]
+        pub account_name: String,
+    }
+
+    /// Parameters for [`tasks_insert`]. Separate struct so adding
+    /// fields later doesn't break the ABI.
+    #[derive(Debug, Clone, serde::Serialize)]
+    pub struct InsertTaskParams<'a> {
+        pub list_id: u64,
+        pub title: &'a str,
+        /// UTC epoch ms. `None` for untimed tasks (shopping list etc).
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub due_ms: Option<i64>,
+        /// When true, `due_ms` is interpreted as a wall-clock date;
+        /// the time portion is ignored by the provider.
+        pub due_all_day: bool,
+        /// IANA timezone id (`"Europe/London"`). Required by some
+        /// providers when `due_ms` is a precise instant; ignored for
+        /// all-day tasks. `None` if the skill doesn't know.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub tz_id: Option<&'a str>,
+    }
+
+    /// Is any task provider available on this host right now? Returns
+    /// false on hosts that don't implement the capability at all, and
+    /// on hosts whose backing provider isn't installed (e.g. Android
+    /// without Tasks.org / OpenTasks). The skill should call this
+    /// before list/insert/delete and degrade gracefully if false.
+    pub fn tasks_provider_installed() -> bool {
+        unsafe { host_tasks_provider_installed() == 1 }
+    }
+
+    /// All writable task lists the skill can target. Empty when the
+    /// provider isn't installed or has no lists configured yet.
+    pub fn tasks_list_lists() -> Vec<TaskList> {
+        let packed = unsafe { host_tasks_list_lists() };
+        let Some(json) = (unsafe { super::unpack(packed) }) else {
+            return Vec::new();
+        };
+        serde_json::from_str(json).unwrap_or_default()
+    }
+
+    /// Insert a task. Returns the provider's row id on success;
+    /// `None` on permission failure / invalid list / IO error. The
+    /// host logs details via the log sink.
+    pub fn tasks_insert(params: &InsertTaskParams<'_>) -> Option<u64> {
+        let json = serde_json::to_string(params).ok()?;
+        let bytes = json.as_bytes();
+        let packed = unsafe { host_tasks_insert(bytes.as_ptr() as i32, bytes.len() as i32) };
+        if packed == 0 {
+            None
+        } else {
+            Some(packed as u64)
+        }
+    }
+
+    /// Hard-delete a task by its provider row id. Returns true if the
+    /// row existed and was removed; false on permission / IO failure
+    /// or if the id doesn't exist.
+    pub fn tasks_delete(id: u64) -> bool {
+        unsafe { host_tasks_delete(id as i64) == 1 }
+    }
+}
+
+#[cfg(feature = "tasks")]
+pub use tasks_impl::{tasks_delete, tasks_insert, tasks_list_lists, tasks_provider_installed, InsertTaskParams, TaskList};
+
+// ---------------------------------------------------------------------------
+// Platform calendar (feature = "calendar")
+// ---------------------------------------------------------------------------
+
+#[cfg(feature = "calendar")]
+mod calendar_impl {
+    #[cfg(not(feature = "std"))]
+    use alloc::{string::String, vec::Vec};
+
+    #[link(wasm_import_module = "ari")]
+    extern "C" {
+        #[link_name = "calendar_has_write_permission"]
+        fn host_calendar_has_write_permission() -> i32;
+        #[link_name = "calendar_list_calendars"]
+        fn host_calendar_list_calendars() -> i64;
+        #[link_name = "calendar_insert"]
+        fn host_calendar_insert(params_ptr: i32, params_len: i32) -> i64;
+        #[link_name = "calendar_delete"]
+        fn host_calendar_delete(id: i64) -> i32;
+    }
+
+    /// One writable calendar the user can target.
+    #[derive(Debug, Clone, serde::Deserialize)]
+    pub struct Calendar {
+        pub id: u64,
+        pub display_name: String,
+        #[serde(default)]
+        pub account_name: String,
+        /// ARGB colour (Android's native format); `None` if the host
+        /// doesn't expose one.
+        #[serde(default)]
+        pub color_argb: Option<i32>,
+    }
+
+    /// Parameters for [`calendar_insert`].
+    #[derive(Debug, Clone, serde::Serialize)]
+    pub struct InsertCalendarEventParams<'a> {
+        pub calendar_id: u64,
+        pub title: &'a str,
+        /// UTC epoch ms the event starts at.
+        pub start_ms: i64,
+        /// Event length. Most providers require non-zero.
+        pub duration_minutes: u32,
+        /// Reminder offset in minutes. 0 = no reminder.
+        pub reminder_minutes_before: u32,
+        /// IANA timezone id. Provider stores this in `EVENT_TIMEZONE`.
+        pub tz_id: &'a str,
+    }
+
+    /// Does the host have write permission to at least one calendar?
+    /// On Android this reflects the runtime `WRITE_CALENDAR` grant.
+    pub fn calendar_has_write_permission() -> bool {
+        unsafe { host_calendar_has_write_permission() == 1 }
+    }
+
+    pub fn calendar_list_calendars() -> Vec<Calendar> {
+        let packed = unsafe { host_calendar_list_calendars() };
+        let Some(json) = (unsafe { super::unpack(packed) }) else {
+            return Vec::new();
+        };
+        serde_json::from_str(json).unwrap_or_default()
+    }
+
+    pub fn calendar_insert(params: &InsertCalendarEventParams<'_>) -> Option<u64> {
+        let json = serde_json::to_string(params).ok()?;
+        let bytes = json.as_bytes();
+        let packed = unsafe { host_calendar_insert(bytes.as_ptr() as i32, bytes.len() as i32) };
+        if packed == 0 {
+            None
+        } else {
+            Some(packed as u64)
+        }
+    }
+
+    pub fn calendar_delete(id: u64) -> bool {
+        unsafe { host_calendar_delete(id as i64) == 1 }
+    }
+}
+
+#[cfg(feature = "calendar")]
+pub use calendar_impl::{
+    calendar_delete, calendar_has_write_permission, calendar_insert, calendar_list_calendars,
+    Calendar, InsertCalendarEventParams,
+};
+
+// ---------------------------------------------------------------------------
+// Local clock (feature = "clock")
+// ---------------------------------------------------------------------------
+
+#[cfg(feature = "clock")]
+mod clock_impl {
+    #[cfg(not(feature = "std"))]
+    use alloc::string::{String, ToString};
+
+    #[link(wasm_import_module = "ari")]
+    extern "C" {
+        #[link_name = "local_now_components"]
+        fn host_local_now_components() -> i64;
+        #[link_name = "local_timezone_id"]
+        fn host_local_timezone_id() -> i64;
+    }
+
+    /// Current datetime broken into local-timezone components. Returned
+    /// by [`local_now_components`]. A skill uses these to interpret
+    /// "today", "next Friday", "on the 27th" relative to the user's
+    /// timezone — which the skill can't compute itself from
+    /// [`now_ms`] alone because WASM has no TZ database.
+    #[derive(Debug, Clone, serde::Deserialize)]
+    pub struct LocalTimeComponents {
+        pub year: i32,
+        /// 1..=12
+        pub month: u8,
+        /// 1..=31
+        pub day: u8,
+        /// 0..=23
+        pub hour: u8,
+        /// 0..=59
+        pub minute: u8,
+        /// 0..=59
+        pub second: u8,
+        /// ISO weekday: 0=Monday..6=Sunday.
+        pub weekday: u8,
+        /// IANA timezone id, or `"UTC"` on hosts with no TZ database.
+        pub tz_id: String,
+    }
+
+    /// Read the current datetime in the host's local timezone.
+    /// Always available (no capability required). Returns an all-zero
+    /// epoch-style fallback if the marshalling fails, which shouldn't
+    /// happen on a correctly-implemented host.
+    pub fn local_now_components() -> LocalTimeComponents {
+        let packed = unsafe { host_local_now_components() };
+        let Some(json) = (unsafe { super::unpack(packed) }) else {
+            return LocalTimeComponents {
+                year: 1970,
+                month: 1,
+                day: 1,
+                hour: 0,
+                minute: 0,
+                second: 0,
+                weekday: 3, // 1970-01-01 was a Thursday
+                tz_id: "UTC".into(),
+            };
+        };
+        serde_json::from_str(json).unwrap_or(LocalTimeComponents {
+            year: 1970,
+            month: 1,
+            day: 1,
+            hour: 0,
+            minute: 0,
+            second: 0,
+            weekday: 3,
+            tz_id: "UTC".into(),
+        })
+    }
+
+    /// IANA timezone id for the host's current locale, or `"UTC"` on
+    /// hosts without a TZ database.
+    pub fn local_timezone_id() -> String {
+        let packed = unsafe { host_local_timezone_id() };
+        unsafe { super::unpack(packed) }
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "UTC".into())
+    }
+}
+
+#[cfg(feature = "clock")]
+pub use clock_impl::{local_now_components, local_timezone_id, LocalTimeComponents};
+
+// ---------------------------------------------------------------------------
 // Unit tests (host-side only — these cover pure pack/decode logic, not the
 // wasm32 ABI, so they run under the std default feature).
 // ---------------------------------------------------------------------------
