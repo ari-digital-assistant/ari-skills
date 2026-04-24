@@ -293,13 +293,31 @@ fn resolve_local_clock_on_date(
 ) -> Resolved {
     let target_local_ms = civil_to_epoch_ms(year, month, day, hour, minute);
     let now_ms = ari::now_ms();
-    let now_local_ms = civil_to_epoch_ms(now.year, now.month, now.day, now.hour, now.minute)
-        + (now.second as i64 * 1000);
-    let offset_ms = now_local_ms - now_ms;
+    let offset_ms = tz_offset_ms(now, now_ms);
     Resolved::At {
         ms: target_local_ms - offset_ms,
         all_day,
     }
+}
+
+/// Timezone offset from UTC, in ms, at minute precision.
+///
+/// Computed from the local components vs. `now_ms`. Historically this
+/// function subtracted a second-resolution `now_local_ms` from a full-
+/// millisecond `now_ms`, which left a 0–999 ms slop in the result —
+/// when the same offset was recomputed for display, a *different*
+/// 0–999 ms slop tipped the formatted time into the previous minute
+/// (insert at 14:00:00.750, display "1:59pm").
+///
+/// TZ offsets are always whole-minute quantities (no zone uses
+/// sub-minute offsets), so truncating both sides to the minute
+/// produces the exact offset with no drift. The round-trip
+/// `target_ms + offset = target_local_ms` now holds exactly.
+fn tz_offset_ms(now: &ari_skill_sdk::LocalTimeComponents, now_ms: i64) -> i64 {
+    let now_local_minute_ms =
+        civil_to_epoch_ms(now.year, now.month, now.day, now.hour, now.minute);
+    let now_ms_minute_floor = (now_ms / 60_000) * 60_000;
+    now_local_minute_ms - now_ms_minute_floor
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -584,9 +602,7 @@ fn format_success_speech(
 fn format_when_phrase(ms: i64, _all_day: bool) -> String {
     let now = ari::local_now_components();
     let now_ms = ari::now_ms();
-    let now_local_ms = civil_to_epoch_ms(now.year, now.month, now.day, now.hour, now.minute)
-        + (now.second as i64 * 1000);
-    let offset_ms = now_local_ms - now_ms;
+    let offset_ms = tz_offset_ms(&now, now_ms);
     let target_local_ms = ms + offset_ms;
 
     let total_secs = target_local_ms.div_euclid(1000);
@@ -755,5 +771,80 @@ mod tests {
         assert_eq!(days_until_weekday(0, 4), 4);
         assert_eq!(days_until_weekday(4, 0), 3);
         assert_eq!(days_until_weekday(6, 0), 1);
+    }
+
+    /// Shorthand for constructing a `LocalTimeComponents`. Tests only
+    /// vary the time portion; year/month/day/weekday are arbitrary.
+    fn lc(hour: u8, minute: u8, second: u8) -> ari_skill_sdk::LocalTimeComponents {
+        ari_skill_sdk::LocalTimeComponents {
+            year: 2026,
+            month: 4,
+            day: 23,
+            hour,
+            minute,
+            second,
+            weekday: 3, // Thursday
+            tz_id: "Europe/London".to_string(),
+        }
+    }
+
+    #[test]
+    fn tz_offset_ms_exact_on_second_boundary() {
+        // UTC+1, now_ms on an exact second boundary → offset is a
+        // whole hour.
+        let now = lc(11, 45, 33);
+        let now_ms = civil_to_epoch_ms(2026, 4, 23, 10, 45) + 33 * 1000;
+        assert_eq!(tz_offset_ms(&now, now_ms), 3_600_000);
+    }
+
+    #[test]
+    fn tz_offset_ms_exact_with_sub_second_noise() {
+        // UTC+1, now_ms has 750 ms of sub-second noise. Old buggy
+        // code returned 3_599_250. Minute-truncated offset stays
+        // 3_600_000 exactly.
+        let now = lc(11, 45, 33);
+        let now_ms = civil_to_epoch_ms(2026, 4, 23, 10, 45) + 33 * 1000 + 750;
+        assert_eq!(tz_offset_ms(&now, now_ms), 3_600_000);
+    }
+
+    #[test]
+    fn tz_offset_ms_works_for_utc() {
+        let now = lc(10, 45, 33);
+        let now_ms = civil_to_epoch_ms(2026, 4, 23, 10, 45) + 33 * 1000 + 250;
+        assert_eq!(tz_offset_ms(&now, now_ms), 0);
+    }
+
+    #[test]
+    fn tz_offset_ms_works_for_half_hour_zone() {
+        // Simulate IST (UTC+5:30). Whole-minute offsets include half-
+        // hour zones — the math must handle them without dropping the
+        // 30-minute remainder.
+        let now = lc(16, 15, 33);
+        let now_ms = civil_to_epoch_ms(2026, 4, 23, 10, 45) + 33 * 1000 + 500;
+        assert_eq!(tz_offset_ms(&now, now_ms), 5 * 3_600_000 + 30 * 60_000);
+    }
+
+    #[test]
+    fn round_trip_target_local_ms_is_stable() {
+        // The specific bug: set a reminder for 14:00 local, format
+        // the resolved ms back to local components, confirm we get
+        // 14:00 exactly. Old code returned 13:59.
+        let now = lc(11, 45, 33);
+        let now_ms = civil_to_epoch_ms(2026, 4, 23, 10, 45) + 33 * 1000 + 750;
+
+        // Resolve: 14:00 local → stored UTC ms.
+        let target_local_ms = civil_to_epoch_ms(2026, 4, 23, 14, 0);
+        let offset = tz_offset_ms(&now, now_ms);
+        let stored_utc_ms = target_local_ms - offset;
+
+        // Format later (simulate a few ms passing + a different
+        // sub-second fraction). Offset should still round-trip to the
+        // same local instant.
+        let now_later = lc(11, 45, 33);
+        let now_ms_later = now_ms + 200; // 200 ms later
+        let display_offset = tz_offset_ms(&now_later, now_ms_later);
+        let displayed_local_ms = stored_utc_ms + display_offset;
+
+        assert_eq!(displayed_local_ms, target_local_ms, "14:00 should still display as 14:00");
     }
 }
