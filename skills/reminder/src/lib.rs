@@ -55,6 +55,18 @@ pub extern "C" fn execute(ptr: i32, len: i32) -> i64 {
 #[cfg(target_arch = "wasm32")]
 pub fn dispatch(input: &str) -> String {
     if let Some(cancel) = parse_internal_cancel(input) {
+        // Log the cancel round-trip at skill-log level so
+        // `adb logcat -s AriSkill` shows both the create and the
+        // cancel sides of a partial-confidence flow. One line per
+        // user-visible state change — not per utterance.
+        ari::log(
+            ari::LogLevel::Info,
+            &format!(
+                "handle_cancel mode={} id={}",
+                cancel.mode.as_str(),
+                cancel.id,
+            ),
+        );
         return handle_cancel(cancel);
     }
     let parsed = parse::parse(input);
@@ -88,8 +100,13 @@ pub fn dispatch(_input: &str) -> String {
 // frontend-independent — any frontend that implements `on_cancel`
 // handling + utterance round-trip works.
 //
-// Format: `__ari_cancel_reminder:<mode>:<id>` where mode is
-// `tasks`/`calendar` and id is the provider's row id.
+// Format: `aricancelreminder <mode> <id>` — space-separated tokens,
+// all alphanumeric. The engine's `normalize_input` strips non-
+// alphanumeric characters (underscores, colons) to spaces before
+// matching, so earlier formats like `__ari_cancel_reminder:tasks:42`
+// got mangled into `ari cancel reminder tasks 42` at routing time
+// and the skill's regex never fired. Keeping the prefix as one
+// contiguous word dodges the normaliser entirely.
 
 struct InternalCancel {
     mode: Mode,
@@ -112,16 +129,19 @@ impl Mode {
 }
 
 fn parse_internal_cancel(input: &str) -> Option<InternalCancel> {
-    let rest = input.strip_prefix("__ari_cancel_reminder:")?;
-    let mut parts = rest.splitn(2, ':');
-    let mode_str = parts.next()?;
-    let id_str = parts.next()?;
-    let mode = match mode_str {
+    // Tolerant of leading whitespace (the engine's normaliser may
+    // emit it) and extra trailing tokens, but the first three must
+    // be exactly `aricancelreminder <mode> <id>`.
+    let mut tokens = input.trim().split_whitespace();
+    if tokens.next()? != "aricancelreminder" {
+        return None;
+    }
+    let mode = match tokens.next()? {
         "tasks" => Mode::Tasks,
         "calendar" => Mode::Calendar,
         _ => return None,
     };
-    let id: u64 = id_str.parse().ok()?;
+    let id: u64 = tokens.next()?.parse().ok()?;
     Some(InternalCancel { mode, id })
 }
 
@@ -676,7 +696,7 @@ fn build_partial_card(
         parse::Confidence::Low => "WARNING",
         _ => "DEFAULT",
     };
-    let cancel_utterance = format!("__ari_cancel_reminder:{}:{}", mode.as_str(), row_id);
+    let cancel_utterance = format!("aricancelreminder {} {}", mode.as_str(), row_id);
 
     let mut card = String::from("{\"id\":");
     let card_id = format!("reminder-partial-{}", row_id);
@@ -724,11 +744,11 @@ mod tests {
 
     #[test]
     fn internal_cancel_parses() {
-        let c = parse_internal_cancel("__ari_cancel_reminder:tasks:42").unwrap();
+        let c = parse_internal_cancel("aricancelreminder tasks 42").unwrap();
         assert_eq!(c.id, 42);
         assert!(matches!(c.mode, Mode::Tasks));
 
-        let c = parse_internal_cancel("__ari_cancel_reminder:calendar:17").unwrap();
+        let c = parse_internal_cancel("aricancelreminder calendar 17").unwrap();
         assert_eq!(c.id, 17);
         assert!(matches!(c.mode, Mode::Calendar));
     }
@@ -736,9 +756,25 @@ mod tests {
     #[test]
     fn internal_cancel_rejects_malformed() {
         assert!(parse_internal_cancel("remind me at 5pm").is_none());
-        assert!(parse_internal_cancel("__ari_cancel_reminder:tasks").is_none());
-        assert!(parse_internal_cancel("__ari_cancel_reminder:garbage:42").is_none());
-        assert!(parse_internal_cancel("__ari_cancel_reminder:tasks:notanumber").is_none());
+        assert!(parse_internal_cancel("aricancelreminder tasks").is_none());
+        assert!(parse_internal_cancel("aricancelreminder garbage 42").is_none());
+        assert!(parse_internal_cancel("aricancelreminder tasks notanumber").is_none());
+    }
+
+    #[test]
+    fn internal_cancel_survives_engine_normalisation() {
+        // Regression for the bug that caused Cancel to no-op: the
+        // engine normalises underscores and colons into spaces
+        // before the skill sees the input. Our prefix must be one
+        // contiguous alphanumeric token so normalisation leaves it
+        // alone. This test simulates that: lowercase + minimum
+        // whitespace collapsed.
+        let c = parse_internal_cancel("aricancelreminder tasks 42").unwrap();
+        assert_eq!(c.id, 42);
+        // Also tolerate leading / trailing whitespace and extra spaces
+        // between tokens.
+        let c = parse_internal_cancel("  aricancelreminder  tasks  42  ").unwrap();
+        assert_eq!(c.id, 42);
     }
 
     #[test]

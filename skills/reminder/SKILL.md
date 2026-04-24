@@ -23,12 +23,14 @@ metadata:
         - regex: "\\b(add|put) .+ (to|on) my \\w+ list\\b"
           weight: 0.9
         # Internal cancel round-trip: the partial-confidence card's
-        # on_cancel payload emits `__ari_cancel_reminder:<mode>:<id>`
-        # as a run_utterance. The engine routes it back here and the
-        # skill calls the corresponding tasks_delete / calendar_delete
-        # host capability. Weighted highest so nothing else can steal
-        # this input.
-        - regex: "^__ari_cancel_reminder:"
+        # on_cancel payload emits `aricancelreminder <mode> <id>` as a
+        # run_utterance. The engine routes it back here and the skill
+        # calls the corresponding tasks_delete / calendar_delete host
+        # capability. Weighted highest so nothing else can steal this
+        # input. The `aricancelreminder` prefix is one contiguous
+        # token so the engine's `normalize_input` (which strips
+        # underscores/colons to spaces) leaves it unmangled.
+        - regex: "^aricancelreminder\\b"
           weight: 1.0
       custom_score: false
     examples:
