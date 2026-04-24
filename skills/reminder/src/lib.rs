@@ -30,6 +30,7 @@ use alloc::string::{String, ToString};
 #[cfg(target_arch = "wasm32")]
 use ari_skill_sdk as ari;
 
+mod layer_c;
 mod parse;
 
 #[cfg(target_arch = "wasm32")]
@@ -49,11 +50,44 @@ pub extern "C" fn execute(ptr: i32, len: i32) -> i64 {
     ari::respond_action(&envelope)
 }
 
-/// Entry point. Branches between the normal "create a reminder"
-/// flow and the internal "cancel the one I just created" flow
-/// dispatched from a card's `on_cancel` payload.
+/// Entry point. Four branches:
+/// 1. **Layer C continuation** — the engine bypasses `normalize_input`
+///    and hands us `{"_ari_continuation":{"context":...,"response":...}}`.
+///    The skill owns all post-assistant logic (AI's answer in hand;
+///    decide between commit, clarification card, or fallback).
+/// 2. **Clarification confirm** — Yes button on a clarification card
+///    emits `ariconfirmreminder <dest> <epoch_ms> <title_hex>`. Commit
+///    with the pre-staged values.
+/// 3. **Cancel round-trip** — Keep/Cancel card's `on_cancel` utterance
+///    (`aricancelreminder <mode> <id>`). Delete the row that the
+///    fallback path inserted.
+/// 4. **Normal utterance** — parse, then `High` confidence commits
+///    immediately; `Partial`/`Low` emits a `consult_assistant`
+///    directive so the engine runs an assistant round-trip and re-
+///    enters branch 1.
 #[cfg(target_arch = "wasm32")]
 pub fn dispatch(input: &str) -> String {
+    if let Some(cont) = layer_c::parse_continuation_input(input) {
+        ari::log(
+            ari::LogLevel::Info,
+            &format!(
+                "handle_continuation context_len={} response_len={}",
+                cont.context.len(),
+                cont.response.len()
+            ),
+        );
+        return handle_continuation(cont);
+    }
+    if let Some(confirm) = layer_c::parse_confirm(input) {
+        ari::log(
+            ari::LogLevel::Info,
+            &format!(
+                "handle_confirm destination={} epoch_ms={} title={:?}",
+                confirm.destination, confirm.epoch_ms, confirm.title
+            ),
+        );
+        return handle_confirm(confirm);
+    }
     if let Some(cancel) = parse_internal_cancel(input) {
         // Log the cancel round-trip at skill-log level so
         // `adb logcat -s AriSkill` shows both the create and the
@@ -79,7 +113,19 @@ pub fn dispatch(input: &str) -> String {
             parsed.title,
         ),
     );
-    handle_create(&parsed)
+
+    // Confidence-gated routing. Layer C v2 defers the commit when the
+    // parser isn't sure: we emit a `consult_assistant` envelope so the
+    // engine runs the assistant round-trip, and the continuation
+    // handler writes the reminder only once the assistant confirms.
+    // High-confidence parses short-circuit to the classic immediate
+    // commit.
+    match parsed.confidence {
+        parse::Confidence::High => handle_create(&parsed),
+        parse::Confidence::Partial | parse::Confidence::Low => {
+            build_consult_assistant_envelope(input, &parsed)
+        }
+    }
 }
 
 /// Host-side stub so unit tests that test parse() in isolation still
@@ -160,6 +206,303 @@ fn handle_cancel(cancel: InternalCancel) -> String {
     push_json_string(&mut out, speak);
     out.push('}');
     out
+}
+
+// ── Layer C phase-1 envelope ──────────────────────────────────────
+
+/// Build the phase-1 envelope the engine intercepts. Consists of:
+/// - A short `speak` ack so the user gets immediate audio feedback
+///   that the request is being worked on.
+/// - A `consult_assistant` directive with the composed prompt and the
+///   original utterance as continuation context. The engine strips
+///   the directive before rendering, spawns a background thread that
+///   calls the assistant, then re-enters the skill via
+///   `execute_continuation` (which lands in [`handle_continuation`]).
+#[cfg(target_arch = "wasm32")]
+fn build_consult_assistant_envelope(utterance: &str, parsed: &parse::Parsed) -> String {
+    let prompt = layer_c::compose_prompt(utterance, parsed);
+    let mut out = String::from("{\"v\":1,\"speak\":");
+    push_json_string(&mut out, "Let me check that with the assistant...");
+    out.push_str(",\"consult_assistant\":{\"prompt\":");
+    push_json_string(&mut out, &prompt);
+    out.push_str(",\"continuation_context\":");
+    push_json_string(&mut out, utterance);
+    out.push_str("}}");
+    out
+}
+
+// ── Layer C continuation handler ──────────────────────────────────
+
+/// Called by the engine after the assistant round-trip. Branches:
+///
+/// - AI confidence `high` + valid JSON: commit per AI's values,
+///   confirmation envelope.
+/// - Everything else (AI low/partial, invalid JSON, empty response
+///   signalling assistant unavailable): fall back to the skill's own
+///   optimistic-commit-plus-warn-card flow, parsing the original
+///   utterance locally. Same UX as pre-Layer-C Partial/Low handling.
+#[cfg(target_arch = "wasm32")]
+fn handle_continuation(cont: layer_c::Continuation) -> String {
+    // Log the first chunk of the raw response so `adb logcat` shows
+    // what the model actually returned — invaluable when tuning the
+    // prompt or debugging a cloud assistant that's deviating from the
+    // asked-for JSON shape. Cap at 200 chars so the log line stays
+    // readable.
+    let preview: String = cont.response.chars().take(200).collect();
+    ari::log(
+        ari::LogLevel::Info,
+        &format!("continuation: assistant response preview: {preview:?}"),
+    );
+
+    let parsed = parse::parse(&cont.context);
+
+    match layer_c::parse_assistant_response(&cont.response) {
+        Some(resp) if resp.confidence.eq_ignore_ascii_case("high") => {
+            ari::log(
+                ari::LogLevel::Info,
+                &format!(
+                    "continuation: AI high-confidence commit title={:?} datetime={:?}",
+                    resp.title, resp.datetime
+                ),
+            );
+            commit_per_assistant(resp, parse::Confidence::High)
+        }
+        Some(resp) if resp.is_actionable_yes_no_clarification() => {
+            // AI flagged partial AND gave us a yes/no question to
+            // put in front of the user. Defer the commit — emit a
+            // clarification card whose Yes button commits with the
+            // AI's values and whose No button is a no-op.
+            ari::log(
+                ari::LogLevel::Info,
+                &format!(
+                    "continuation: AI partial + yes_no clarification — emitting card: {:?}",
+                    resp.clarification.as_deref().unwrap_or("")
+                ),
+            );
+            build_clarification_envelope(resp)
+        }
+        Some(resp) if resp.confidence.eq_ignore_ascii_case("partial") => {
+            // AI was partial but didn't give us a usable yes/no
+            // question (empty clarification, or follow_up=open_ended
+            // which we don't render yet). Commit with the AI's
+            // sharpened values + warn-and-commit card so the user
+            // can Cancel. Same UX shell as Layer B, sharper content.
+            ari::log(
+                ari::LogLevel::Info,
+                &format!(
+                    "continuation: AI partial (no actionable clarification) — warn-and-commit with AI values title={:?} datetime={:?}",
+                    resp.title, resp.datetime
+                ),
+            );
+            commit_per_assistant(resp, parse::Confidence::Partial)
+        }
+        Some(resp) => {
+            ari::log(
+                ari::LogLevel::Warn,
+                &format!(
+                    "continuation: AI returned confidence={:?} — falling back to warn-and-commit with skill's first-pass parse",
+                    resp.confidence
+                ),
+            );
+            handle_create(&parsed)
+        }
+        None => {
+            ari::log(
+                ari::LogLevel::Warn,
+                "continuation: assistant unavailable or response unparseable — falling back to warn-and-commit with skill's first-pass parse",
+            );
+            handle_create(&parsed)
+        }
+    }
+}
+
+/// Yes button on a clarification card fires this. The AI's
+/// pre-staged values (destination, epoch_ms, title) are carried in the
+/// utterance itself — no stored skill state is required, and the
+/// commit happens right here without another assistant round-trip.
+#[cfg(target_arch = "wasm32")]
+fn handle_confirm(confirm: layer_c::Confirm) -> String {
+    let resolved = if confirm.epoch_ms == 0 {
+        Resolved::Untimed
+    } else {
+        // Titled reminders: we stored UTC epoch ms in the utterance,
+        // so no further timezone conversion is needed at commit time.
+        // `all_day = false` matches the way `commit_per_assistant`
+        // packaged this earlier; if the AI intended an all-day date,
+        // it sent the time as 00:00 and the frontend's calendar writer
+        // infers all-day from that anyway.
+        Resolved::At {
+            ms: confirm.epoch_ms,
+            all_day: false,
+        }
+    };
+
+    let effective_destination = match &resolved {
+        Resolved::Untimed => "tasks".to_string(),
+        _ => confirm.destination.clone(),
+    };
+
+    let pseudo_parsed = parse::Parsed {
+        title: confirm.title,
+        when: parse::When::None,
+        list_hint: None,
+        speak_template: String::new(),
+        confidence: parse::Confidence::High,
+        unparsed: None,
+    };
+
+    let result = match effective_destination.as_str() {
+        "tasks" => insert_into_tasks(&pseudo_parsed, &resolved),
+        "calendar" => insert_into_calendar(&pseudo_parsed, &resolved),
+        "both" => {
+            let tasks_outcome = insert_into_tasks(&pseudo_parsed, &resolved);
+            let calendar_outcome = insert_into_calendar(&pseudo_parsed, &resolved);
+            match &calendar_outcome {
+                Outcome::Success { .. } => calendar_outcome,
+                _ => tasks_outcome,
+            }
+        }
+        _ => insert_into_tasks(&pseudo_parsed, &resolved),
+    };
+
+    build_envelope(&pseudo_parsed, &resolved, &result)
+}
+
+/// Build a clarification card envelope with Yes (commits via
+/// `ariconfirmreminder ...`) and No (no-op dismiss) actions. Speak
+/// the AI's question so the user hears it — TTS is the primary
+/// channel for the clarification, the card is the visible / tappable
+/// backup.
+#[cfg(target_arch = "wasm32")]
+fn build_clarification_envelope(resp: layer_c::AssistantResponse) -> String {
+    let clarification = resp.clarification.clone().unwrap_or_default();
+    let title = resp.title.clone();
+    let epoch_ms = datetime_to_epoch_ms(resp.datetime.as_deref());
+
+    // Destination needs to match what the skill would have picked if
+    // it had committed optimistically. Re-read the setting here so
+    // the Yes path routes to the same list/calendar.
+    let destination = ari::setting_get("destination")
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "tasks".to_string());
+    let effective_destination = if epoch_ms == 0 {
+        "tasks".to_string()
+    } else {
+        destination
+    };
+
+    let confirm_utterance =
+        layer_c::encode_confirm(&effective_destination, epoch_ms, &title);
+
+    // Unique card id so multiple clarifications in one session don't
+    // collide. Epoch ms changes per request, title differs, combined
+    // they're effectively unique for a given user's input stream.
+    let card_id = format!("reminder-clarify-{}", epoch_ms);
+
+    let mut out = String::from("{\"v\":1,\"speak\":");
+    push_json_string(&mut out, &clarification);
+    out.push_str(",\"cards\":[{\"id\":");
+    push_json_string(&mut out, &card_id);
+    out.push_str(",\"title\":\"Is this right?\",\"body\":");
+    push_json_string(&mut out, &clarification);
+    out.push_str(",\"accent\":\"DEFAULT\",\"actions\":[");
+    out.push_str("{\"id\":\"yes\",\"label\":\"Yes\",\"style\":\"PRIMARY\",\"utterance\":");
+    push_json_string(&mut out, &confirm_utterance);
+    out.push_str("},{\"id\":\"no\",\"label\":\"No\",\"style\":\"DEFAULT\"}");
+    out.push_str("]}]}");
+    out
+}
+
+/// Convert an optional ISO-8601 datetime string to UTC epoch ms, or 0
+/// when the input is null/missing/unparseable. The commit path relies
+/// on the sentinel 0 to route to the untimed (Tasks) path.
+#[cfg(target_arch = "wasm32")]
+fn datetime_to_epoch_ms(datetime: Option<&str>) -> i64 {
+    let Some(dt_str) = datetime else { return 0 };
+    let Some(p) = layer_c::parse_iso_datetime(dt_str) else {
+        return 0;
+    };
+    let local_ms = civil_to_epoch_ms(p.year, p.month, p.day, p.hour, p.minute);
+    let now = ari::local_now_components();
+    let now_ms = ari::now_ms();
+    let offset = tz_offset_ms(&now, now_ms);
+    local_ms - offset
+}
+
+/// Commit the reminder per the assistant's structured response and
+/// emit the confirmation envelope. `confidence_on_output` determines
+/// whether the envelope includes a warn-and-commit card: pass
+/// `High` when the AI was fully confident (no card, straight
+/// confirmation), `Partial` to surface the Keep/Cancel card so the
+/// user can roll back if the AI's disambiguation fell the wrong way.
+#[cfg(target_arch = "wasm32")]
+fn commit_per_assistant(
+    resp: layer_c::AssistantResponse,
+    confidence_on_output: parse::Confidence,
+) -> String {
+    let resolved = resolved_from_assistant_datetime(resp.datetime.as_deref());
+
+    let destination = ari::setting_get("destination")
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "tasks".to_string());
+    let effective_destination = match &resolved {
+        Resolved::Untimed => "tasks".to_string(),
+        _ => destination,
+    };
+
+    let pseudo_parsed = parse::Parsed {
+        title: resp.title,
+        when: parse::When::None,
+        list_hint: None,
+        speak_template: String::new(),
+        confidence: confidence_on_output,
+        unparsed: None,
+    };
+
+    let result = match effective_destination.as_str() {
+        "tasks" => insert_into_tasks(&pseudo_parsed, &resolved),
+        "calendar" => insert_into_calendar(&pseudo_parsed, &resolved),
+        "both" => {
+            let tasks_outcome = insert_into_tasks(&pseudo_parsed, &resolved);
+            let calendar_outcome = insert_into_calendar(&pseudo_parsed, &resolved);
+            match &calendar_outcome {
+                Outcome::Success { .. } => calendar_outcome,
+                _ => tasks_outcome,
+            }
+        }
+        _ => insert_into_tasks(&pseudo_parsed, &resolved),
+    };
+
+    build_envelope(&pseudo_parsed, &resolved, &result)
+}
+
+/// Convert the assistant's ISO-8601 datetime string to the skill's
+/// internal [`Resolved`] representation. Null/missing/unparseable →
+/// untimed (the safest degradation — a reminder without a time still
+/// lands in the Tasks list).
+#[cfg(target_arch = "wasm32")]
+fn resolved_from_assistant_datetime(datetime: Option<&str>) -> Resolved {
+    let Some(dt_str) = datetime else {
+        return Resolved::Untimed;
+    };
+    let Some(p) = layer_c::parse_iso_datetime(dt_str) else {
+        ari::log(
+            ari::LogLevel::Warn,
+            &format!(
+                "continuation: couldn't parse AI datetime {:?}, treating as untimed",
+                dt_str
+            ),
+        );
+        return Resolved::Untimed;
+    };
+    let local_ms = civil_to_epoch_ms(p.year, p.month, p.day, p.hour, p.minute);
+    let now = ari::local_now_components();
+    let now_ms = ari::now_ms();
+    let offset = tz_offset_ms(&now, now_ms);
+    Resolved::At {
+        ms: local_ms - offset,
+        all_day: p.hour == 0 && p.minute == 0,
+    }
 }
 
 // ── Normal create-reminder flow ───────────────────────────────────

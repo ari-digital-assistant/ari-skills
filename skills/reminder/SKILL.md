@@ -32,6 +32,14 @@ metadata:
         # underscores/colons to spaces) leaves it unmangled.
         - regex: "^aricancelreminder\\b"
           weight: 1.0
+        # Layer C clarification-card confirm round-trip: the Yes
+        # button's utterance is `ariconfirmreminder <dest> <epoch_ms>
+        # <title_hex>`. Carries the AI's pre-staged commit values
+        # directly; skill decodes and writes the reminder without
+        # another assistant round-trip. Same contiguous-alphanumeric
+        # prefix trick as aricancelreminder.
+        - regex: "^ariconfirmreminder\\b"
+          weight: 1.0
       custom_score: false
     examples:
       - text: "remind me to walk the dog at 5pm"
