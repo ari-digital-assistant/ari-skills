@@ -29,15 +29,52 @@ mod bump {
         static __heap_base: u8;
     }
 
+    /// One WASM linear-memory page = 64 KiB.
+    const PAGE_BYTES: u32 = 65_536;
+
     static mut BUMP: u32 = 0;
 
+    /// Allocate `size` bytes aligned to `align` from the bump arena.
+    /// Grows the WASM linear memory via `memory.grow` when the next
+    /// allocation would run past the current end-of-memory; without
+    /// this growth a long-running skill (or any skill that produces
+    /// big format! / String buffers in a single call) would silently
+    /// return a pointer outside addressable memory and the next write
+    /// would trap.
+    ///
+    /// Never frees — bump-only by design. The whole arena is reset
+    /// implicitly when the host re-instantiates the skill module.
     pub fn bump_alloc(size: u32, align: u32) -> *mut u8 {
         unsafe {
             if BUMP == 0 {
                 BUMP = &__heap_base as *const u8 as u32;
             }
             let aligned = (BUMP + align - 1) & !(align - 1);
-            BUMP = aligned + size;
+            let new_bump = aligned + size;
+
+            // memory.size returns the current linear memory size in
+            // pages (64 KiB each). If our allocation would land past
+            // the end, grow by enough pages to cover it.
+            #[cfg(target_arch = "wasm32")]
+            {
+                let current_bytes = (core::arch::wasm32::memory_size(0) as u32) * PAGE_BYTES;
+                if new_bump > current_bytes {
+                    let extra_bytes = new_bump - current_bytes;
+                    let extra_pages = (extra_bytes + PAGE_BYTES - 1) / PAGE_BYTES;
+                    // memory.grow returns -1 on failure. If it fails
+                    // there's nothing reasonable we can do from a
+                    // panic-handler-less no_std skill, so trap by
+                    // returning a null pointer; the caller's write
+                    // will trap with a clear out-of-bounds rather
+                    // than silently corrupting memory.
+                    let prev = core::arch::wasm32::memory_grow(0, extra_pages as usize);
+                    if prev == usize::MAX {
+                        return core::ptr::null_mut();
+                    }
+                }
+            }
+
+            BUMP = new_bump;
             aligned as *mut u8
         }
     }
@@ -387,6 +424,8 @@ mod tasks_impl {
         fn host_tasks_insert(params_ptr: i32, params_len: i32) -> i64;
         #[link_name = "tasks_delete"]
         fn host_tasks_delete(id: i64) -> i32;
+        #[link_name = "tasks_query_in_range"]
+        fn host_tasks_query_in_range(start_ms: i64, end_ms: i64, limit: i32) -> i64;
     }
 
     /// One writable task list the user can target. `id` is the stable
@@ -459,10 +498,40 @@ mod tasks_impl {
     pub fn tasks_delete(id: u64) -> bool {
         unsafe { host_tasks_delete(id as i64) == 1 }
     }
+
+    /// One row from [`tasks_query_in_range`]. Always-timed: untimed
+    /// tasks (no `due` value) don't appear in range queries.
+    #[derive(Debug, Clone, serde::Deserialize)]
+    pub struct TaskRow {
+        pub id: u64,
+        pub title: String,
+        /// UTC epoch ms for the task's due time.
+        pub due_ms: i64,
+        /// True when only the date portion of `due_ms` is meaningful
+        /// (the provider stored it as an all-day task).
+        pub due_all_day: bool,
+        pub list_id: u64,
+    }
+
+    /// Tasks with due time in `[start_ms, end_ms)`, ordered by due
+    /// ascending and capped at `limit`. Empty Vec when no provider
+    /// is installed, the read permission is missing, or the range
+    /// is empty.
+    pub fn tasks_query_in_range(start_ms: i64, end_ms: i64, limit: u32) -> Vec<TaskRow> {
+        let packed =
+            unsafe { host_tasks_query_in_range(start_ms, end_ms, limit as i32) };
+        let Some(json) = (unsafe { super::unpack(packed) }) else {
+            return Vec::new();
+        };
+        serde_json::from_str(json).unwrap_or_default()
+    }
 }
 
 #[cfg(feature = "tasks")]
-pub use tasks_impl::{tasks_delete, tasks_insert, tasks_list_lists, tasks_provider_installed, InsertTaskParams, TaskList};
+pub use tasks_impl::{
+    tasks_delete, tasks_insert, tasks_list_lists, tasks_provider_installed,
+    tasks_query_in_range, InsertTaskParams, TaskList, TaskRow,
+};
 
 // ---------------------------------------------------------------------------
 // Platform calendar (feature = "calendar")
@@ -483,6 +552,8 @@ mod calendar_impl {
         fn host_calendar_insert(params_ptr: i32, params_len: i32) -> i64;
         #[link_name = "calendar_delete"]
         fn host_calendar_delete(id: i64) -> i32;
+        #[link_name = "calendar_query_in_range"]
+        fn host_calendar_query_in_range(start_ms: i64, end_ms: i64, limit: i32) -> i64;
     }
 
     /// One writable calendar the user can target.
@@ -541,11 +612,43 @@ mod calendar_impl {
     pub fn calendar_delete(id: u64) -> bool {
         unsafe { host_calendar_delete(id as i64) == 1 }
     }
+
+    /// One row from [`calendar_query_in_range`]. Recurring events
+    /// expand to one row per concrete instance whose start lands in
+    /// the queried window.
+    #[derive(Debug, Clone, serde::Deserialize)]
+    pub struct CalendarEventRow {
+        pub id: u64,
+        pub title: String,
+        /// UTC epoch ms the instance starts at.
+        pub start_ms: i64,
+        /// UTC epoch ms the instance ends at. May equal `start_ms`
+        /// when the provider doesn't store a duration.
+        pub end_ms: i64,
+        pub all_day: bool,
+        pub calendar_id: u64,
+    }
+
+    /// Event instances starting in `[start_ms, end_ms)`, ordered by
+    /// start ascending and capped at `limit`.
+    pub fn calendar_query_in_range(
+        start_ms: i64,
+        end_ms: i64,
+        limit: u32,
+    ) -> Vec<CalendarEventRow> {
+        let packed =
+            unsafe { host_calendar_query_in_range(start_ms, end_ms, limit as i32) };
+        let Some(json) = (unsafe { super::unpack(packed) }) else {
+            return Vec::new();
+        };
+        serde_json::from_str(json).unwrap_or_default()
+    }
 }
 
 #[cfg(feature = "calendar")]
 pub use calendar_impl::{
     calendar_delete, calendar_has_write_permission, calendar_insert, calendar_list_calendars,
+    calendar_query_in_range, CalendarEventRow,
     Calendar, InsertCalendarEventParams,
 };
 

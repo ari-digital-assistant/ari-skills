@@ -26,11 +26,14 @@ extern crate alloc;
 
 use alloc::format;
 use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
 #[cfg(target_arch = "wasm32")]
 use ari_skill_sdk as ari;
 
+mod layer_c;
 mod parse;
+mod query;
 
 #[cfg(target_arch = "wasm32")]
 #[no_mangle]
@@ -49,14 +52,73 @@ pub extern "C" fn execute(ptr: i32, len: i32) -> i64 {
     ari::respond_action(&envelope)
 }
 
-/// Entry point. Branches between the normal "create a reminder"
-/// flow and the internal "cancel the one I just created" flow
-/// dispatched from a card's `on_cancel` payload.
+/// Entry point. Four branches:
+/// 1. **Layer C continuation** — the engine bypasses `normalize_input`
+///    and hands us `{"_ari_continuation":{"context":...,"response":...}}`.
+///    The skill owns all post-assistant logic (AI's answer in hand;
+///    decide between commit, clarification card, or fallback).
+/// 2. **Clarification confirm** — Yes button on a clarification card
+///    emits `ariconfirmreminder <dest> <epoch_ms> <title_hex>`. Commit
+///    with the pre-staged values.
+/// 3. **Cancel round-trip** — Keep/Cancel card's `on_cancel` utterance
+///    (`aricancelreminder <mode> <id>`). Delete the row that the
+///    fallback path inserted.
+/// 4. **Normal utterance** — parse, then `High` confidence commits
+///    immediately; `Partial`/`Low` emits a `consult_assistant`
+///    directive so the engine runs an assistant round-trip and re-
+///    enters branch 1.
 #[cfg(target_arch = "wasm32")]
 pub fn dispatch(input: &str) -> String {
+    if let Some(cont) = layer_c::parse_continuation_input(input) {
+        ari::log(
+            ari::LogLevel::Info,
+            &format!(
+                "handle_continuation context_len={} response_len={}",
+                cont.context.len(),
+                cont.response.len()
+            ),
+        );
+        return handle_continuation(cont);
+    }
+    if let Some(confirm) = layer_c::parse_confirm(input) {
+        ari::log(
+            ari::LogLevel::Info,
+            &format!(
+                "handle_confirm destination={} epoch_ms={} title={:?}",
+                confirm.destination, confirm.epoch_ms, confirm.title
+            ),
+        );
+        return handle_confirm(confirm);
+    }
     if let Some(cancel) = parse_internal_cancel(input) {
+        // Log the cancel round-trip at skill-log level so
+        // `adb logcat -s AriSkill` shows both the create and the
+        // cancel sides of a partial-confidence flow. One line per
+        // user-visible state change — not per utterance.
+        ari::log(
+            ari::LogLevel::Info,
+            &format!(
+                "handle_cancel mode={} id={}",
+                cancel.mode.as_str(),
+                cancel.id,
+            ),
+        );
         return handle_cancel(cancel);
     }
+    // Read-only query branch: "what reminders do I have today",
+    // "what's my next reminder", etc. Checked before parse() because
+    // parse treats these as "remind me about today" → low confidence
+    // and would punt to the AI unnecessarily. The query classifier
+    // is purely lexical; it returns None for anything that isn't
+    // visibly a question, so create-style utterances fall through.
+    if let Some(window) = query::classify(input) {
+        ari::log(
+            ari::LogLevel::Info,
+            &format!("handle_query window={:?}", window),
+        );
+        return handle_query(window);
+    }
+
     let parsed = parse::parse(input);
     ari::log(
         ari::LogLevel::Info,
@@ -67,7 +129,19 @@ pub fn dispatch(input: &str) -> String {
             parsed.title,
         ),
     );
-    handle_create(&parsed)
+
+    // Confidence-gated routing. Layer C v2 defers the commit when the
+    // parser isn't sure: we emit a `consult_assistant` envelope so the
+    // engine runs the assistant round-trip, and the continuation
+    // handler writes the reminder only once the assistant confirms.
+    // High-confidence parses short-circuit to the classic immediate
+    // commit.
+    match parsed.confidence {
+        parse::Confidence::High => handle_create(&parsed),
+        parse::Confidence::Partial | parse::Confidence::Low => {
+            build_consult_assistant_envelope(input, &parsed)
+        }
+    }
 }
 
 /// Host-side stub so unit tests that test parse() in isolation still
@@ -88,8 +162,13 @@ pub fn dispatch(_input: &str) -> String {
 // frontend-independent — any frontend that implements `on_cancel`
 // handling + utterance round-trip works.
 //
-// Format: `__ari_cancel_reminder:<mode>:<id>` where mode is
-// `tasks`/`calendar` and id is the provider's row id.
+// Format: `aricancelreminder <mode> <id>` — space-separated tokens,
+// all alphanumeric. The engine's `normalize_input` strips non-
+// alphanumeric characters (underscores, colons) to spaces before
+// matching, so earlier formats like `__ari_cancel_reminder:tasks:42`
+// got mangled into `ari cancel reminder tasks 42` at routing time
+// and the skill's regex never fired. Keeping the prefix as one
+// contiguous word dodges the normaliser entirely.
 
 struct InternalCancel {
     mode: Mode,
@@ -112,16 +191,19 @@ impl Mode {
 }
 
 fn parse_internal_cancel(input: &str) -> Option<InternalCancel> {
-    let rest = input.strip_prefix("__ari_cancel_reminder:")?;
-    let mut parts = rest.splitn(2, ':');
-    let mode_str = parts.next()?;
-    let id_str = parts.next()?;
-    let mode = match mode_str {
+    // Tolerant of leading whitespace (the engine's normaliser may
+    // emit it) and extra trailing tokens, but the first three must
+    // be exactly `aricancelreminder <mode> <id>`.
+    let mut tokens = input.trim().split_whitespace();
+    if tokens.next()? != "aricancelreminder" {
+        return None;
+    }
+    let mode = match tokens.next()? {
         "tasks" => Mode::Tasks,
         "calendar" => Mode::Calendar,
         _ => return None,
     };
-    let id: u64 = id_str.parse().ok()?;
+    let id: u64 = tokens.next()?.parse().ok()?;
     Some(InternalCancel { mode, id })
 }
 
@@ -140,6 +222,504 @@ fn handle_cancel(cancel: InternalCancel) -> String {
     push_json_string(&mut out, speak);
     out.push('}');
     out
+}
+
+// ── Layer C phase-1 envelope ──────────────────────────────────────
+
+/// Build the phase-1 envelope the engine intercepts. Deliberately
+/// silent — no `speak`, no cards. Most cloud-assistant round-trips
+/// finish in a couple of seconds, faster than a TTS ack would even
+/// finish playing, so saying "let me check..." just delays the real
+/// answer. If the round-trip turns out to be slow (>4s) the engine
+/// pushes a delay phrase (`Hang on...`, `One moment...`, etc.) on
+/// its own.
+///
+/// The envelope only carries the `consult_assistant` directive. The
+/// engine strips that field before returning, so what reaches the
+/// frontend is `{"v":1}` — empty enough that the conversation UI
+/// shouldn't render a bubble (see ConversationViewModel's
+/// blank-skip).
+#[cfg(target_arch = "wasm32")]
+fn build_consult_assistant_envelope(utterance: &str, parsed: &parse::Parsed) -> String {
+    let prompt = layer_c::compose_prompt(utterance, parsed);
+    let mut out = String::from("{\"v\":1,\"consult_assistant\":{\"prompt\":");
+    push_json_string(&mut out, &prompt);
+    out.push_str(",\"continuation_context\":");
+    push_json_string(&mut out, utterance);
+    out.push_str("}}");
+    out
+}
+
+// ── Layer C continuation handler ──────────────────────────────────
+
+/// Called by the engine after the assistant round-trip. Branches:
+///
+/// - AI confidence `high` + valid JSON: commit per AI's values,
+///   confirmation envelope.
+/// - Everything else (AI low/partial, invalid JSON, empty response
+///   signalling assistant unavailable): fall back to the skill's own
+///   optimistic-commit-plus-warn-card flow, parsing the original
+///   utterance locally. Same UX as pre-Layer-C Partial/Low handling.
+#[cfg(target_arch = "wasm32")]
+fn handle_continuation(cont: layer_c::Continuation) -> String {
+    // Log the first chunk of the raw response so `adb logcat` shows
+    // what the model actually returned — invaluable when tuning the
+    // prompt or debugging a cloud assistant that's deviating from the
+    // asked-for JSON shape. Cap at 200 chars so the log line stays
+    // readable.
+    let preview: String = cont.response.chars().take(200).collect();
+    ari::log(
+        ari::LogLevel::Info,
+        &format!("continuation: assistant response preview: {preview:?}"),
+    );
+
+    let parsed = parse::parse(&cont.context);
+
+    match layer_c::parse_assistant_response(&cont.response) {
+        Some(resp) if resp.confidence.eq_ignore_ascii_case("high") => {
+            ari::log(
+                ari::LogLevel::Info,
+                &format!(
+                    "continuation: AI high-confidence commit title={:?} datetime={:?}",
+                    resp.title, resp.datetime
+                ),
+            );
+            commit_per_assistant(resp, parse::Confidence::High)
+        }
+        Some(resp) if resp.is_actionable_yes_no_clarification() => {
+            // AI flagged partial AND gave us a yes/no question to
+            // put in front of the user. Defer the commit — emit a
+            // clarification card whose Yes button commits with the
+            // AI's values and whose No button is a no-op.
+            ari::log(
+                ari::LogLevel::Info,
+                &format!(
+                    "continuation: AI partial + yes_no clarification — emitting card: {:?}",
+                    resp.clarification.as_deref().unwrap_or("")
+                ),
+            );
+            build_clarification_envelope(resp)
+        }
+        Some(resp) if resp.confidence.eq_ignore_ascii_case("partial") => {
+            // AI was partial but didn't give us a usable yes/no
+            // question (empty clarification, or follow_up=open_ended
+            // which we don't render yet). Commit with the AI's
+            // sharpened values + warn-and-commit card so the user
+            // can Cancel. Same UX shell as Layer B, sharper content.
+            ari::log(
+                ari::LogLevel::Info,
+                &format!(
+                    "continuation: AI partial (no actionable clarification) — warn-and-commit with AI values title={:?} datetime={:?}",
+                    resp.title, resp.datetime
+                ),
+            );
+            commit_per_assistant(resp, parse::Confidence::Partial)
+        }
+        Some(resp) => {
+            ari::log(
+                ari::LogLevel::Warn,
+                &format!(
+                    "continuation: AI returned confidence={:?} — falling back to warn-and-commit with skill's first-pass parse",
+                    resp.confidence
+                ),
+            );
+            handle_create(&parsed)
+        }
+        None => {
+            ari::log(
+                ari::LogLevel::Warn,
+                "continuation: assistant unavailable or response unparseable — falling back to warn-and-commit with skill's first-pass parse",
+            );
+            handle_create(&parsed)
+        }
+    }
+}
+
+/// Yes button on a clarification card fires this. The AI's
+/// pre-staged values (destination, epoch_ms, title) are carried in the
+/// utterance itself — no stored skill state is required, and the
+/// commit happens right here without another assistant round-trip.
+#[cfg(target_arch = "wasm32")]
+fn handle_confirm(confirm: layer_c::Confirm) -> String {
+    let resolved = if confirm.epoch_ms == 0 {
+        Resolved::Untimed
+    } else {
+        // Titled reminders: we stored UTC epoch ms in the utterance,
+        // so no further timezone conversion is needed at commit time.
+        // `all_day = false` matches the way `commit_per_assistant`
+        // packaged this earlier; if the AI intended an all-day date,
+        // it sent the time as 00:00 and the frontend's calendar writer
+        // infers all-day from that anyway.
+        Resolved::At {
+            ms: confirm.epoch_ms,
+            all_day: false,
+        }
+    };
+
+    let effective_destination = match &resolved {
+        Resolved::Untimed => "tasks".to_string(),
+        _ => confirm.destination.clone(),
+    };
+
+    let pseudo_parsed = parse::Parsed {
+        title: confirm.title,
+        when: parse::When::None,
+        list_hint: None,
+        speak_template: String::new(),
+        confidence: parse::Confidence::High,
+        unparsed: None,
+    };
+
+    let result = match effective_destination.as_str() {
+        "tasks" => insert_into_tasks(&pseudo_parsed, &resolved),
+        "calendar" => insert_into_calendar(&pseudo_parsed, &resolved),
+        "both" => {
+            let tasks_outcome = insert_into_tasks(&pseudo_parsed, &resolved);
+            let calendar_outcome = insert_into_calendar(&pseudo_parsed, &resolved);
+            match &calendar_outcome {
+                Outcome::Success { .. } => calendar_outcome,
+                _ => tasks_outcome,
+            }
+        }
+        _ => insert_into_tasks(&pseudo_parsed, &resolved),
+    };
+
+    build_envelope(&pseudo_parsed, &resolved, &result)
+}
+
+/// Build a clarification card envelope with Yes (commits via
+/// `ariconfirmreminder ...`) and No (no-op dismiss) actions. Speak
+/// the AI's question so the user hears it — TTS is the primary
+/// channel for the clarification, the card is the visible / tappable
+/// backup.
+#[cfg(target_arch = "wasm32")]
+fn build_clarification_envelope(resp: layer_c::AssistantResponse) -> String {
+    let clarification = resp.clarification.clone().unwrap_or_default();
+    let title = resp.title.clone();
+    let epoch_ms = datetime_to_epoch_ms(resp.datetime.as_deref());
+
+    // Destination needs to match what the skill would have picked if
+    // it had committed optimistically. Re-read the setting here so
+    // the Yes path routes to the same list/calendar.
+    let destination = ari::setting_get("destination")
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "tasks".to_string());
+    let effective_destination = if epoch_ms == 0 {
+        "tasks".to_string()
+    } else {
+        destination
+    };
+
+    let confirm_utterance =
+        layer_c::encode_confirm(&effective_destination, epoch_ms, &title);
+
+    // Unique card id so multiple clarifications in one session don't
+    // collide. Epoch ms changes per request, title differs, combined
+    // they're effectively unique for a given user's input stream.
+    let card_id = format!("reminder-clarify-{}", epoch_ms);
+
+    let mut out = String::from("{\"v\":1,\"speak\":");
+    push_json_string(&mut out, &clarification);
+    out.push_str(",\"cards\":[{\"id\":");
+    push_json_string(&mut out, &card_id);
+    out.push_str(",\"title\":\"Is this right?\",\"body\":");
+    push_json_string(&mut out, &clarification);
+    out.push_str(",\"accent\":\"DEFAULT\",\"actions\":[");
+    out.push_str("{\"id\":\"yes\",\"label\":\"Yes\",\"style\":\"PRIMARY\",\"utterance\":");
+    push_json_string(&mut out, &confirm_utterance);
+    out.push_str("},{\"id\":\"no\",\"label\":\"No\",\"style\":\"DEFAULT\"}");
+    out.push_str("]}]}");
+    out
+}
+
+/// Convert an optional ISO-8601 datetime string to UTC epoch ms, or 0
+/// when the input is null/missing/unparseable. The commit path relies
+/// on the sentinel 0 to route to the untimed (Tasks) path.
+#[cfg(target_arch = "wasm32")]
+fn datetime_to_epoch_ms(datetime: Option<&str>) -> i64 {
+    let Some(dt_str) = datetime else { return 0 };
+    let Some(p) = layer_c::parse_iso_datetime(dt_str) else {
+        return 0;
+    };
+    let local_ms = civil_to_epoch_ms(p.year, p.month, p.day, p.hour, p.minute);
+    let now = ari::local_now_components();
+    let now_ms = ari::now_ms();
+    let offset = tz_offset_ms(&now, now_ms);
+    local_ms - offset
+}
+
+/// Commit the reminder per the assistant's structured response and
+/// emit the confirmation envelope. `confidence_on_output` determines
+/// whether the envelope includes a warn-and-commit card: pass
+/// `High` when the AI was fully confident (no card, straight
+/// confirmation), `Partial` to surface the Keep/Cancel card so the
+/// user can roll back if the AI's disambiguation fell the wrong way.
+#[cfg(target_arch = "wasm32")]
+fn commit_per_assistant(
+    resp: layer_c::AssistantResponse,
+    confidence_on_output: parse::Confidence,
+) -> String {
+    let resolved = resolved_from_assistant_datetime(resp.datetime.as_deref());
+
+    let destination = ari::setting_get("destination")
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "tasks".to_string());
+    let effective_destination = match &resolved {
+        Resolved::Untimed => "tasks".to_string(),
+        _ => destination,
+    };
+
+    let pseudo_parsed = parse::Parsed {
+        title: resp.title,
+        when: parse::When::None,
+        list_hint: None,
+        speak_template: String::new(),
+        confidence: confidence_on_output,
+        unparsed: None,
+    };
+
+    let result = match effective_destination.as_str() {
+        "tasks" => insert_into_tasks(&pseudo_parsed, &resolved),
+        "calendar" => insert_into_calendar(&pseudo_parsed, &resolved),
+        "both" => {
+            let tasks_outcome = insert_into_tasks(&pseudo_parsed, &resolved);
+            let calendar_outcome = insert_into_calendar(&pseudo_parsed, &resolved);
+            match &calendar_outcome {
+                Outcome::Success { .. } => calendar_outcome,
+                _ => tasks_outcome,
+            }
+        }
+        _ => insert_into_tasks(&pseudo_parsed, &resolved),
+    };
+
+    build_envelope(&pseudo_parsed, &resolved, &result)
+}
+
+/// Convert the assistant's ISO-8601 datetime string to the skill's
+/// internal [`Resolved`] representation. Null/missing/unparseable →
+/// untimed (the safest degradation — a reminder without a time still
+/// lands in the Tasks list).
+#[cfg(target_arch = "wasm32")]
+fn resolved_from_assistant_datetime(datetime: Option<&str>) -> Resolved {
+    let Some(dt_str) = datetime else {
+        return Resolved::Untimed;
+    };
+    let Some(p) = layer_c::parse_iso_datetime(dt_str) else {
+        ari::log(
+            ari::LogLevel::Warn,
+            &format!(
+                "continuation: couldn't parse AI datetime {:?}, treating as untimed",
+                dt_str
+            ),
+        );
+        return Resolved::Untimed;
+    };
+    let local_ms = civil_to_epoch_ms(p.year, p.month, p.day, p.hour, p.minute);
+    let now = ari::local_now_components();
+    let now_ms = ari::now_ms();
+    let offset = tz_offset_ms(&now, now_ms);
+    Resolved::At {
+        ms: local_ms - offset,
+        all_day: p.hour == 0 && p.minute == 0,
+    }
+}
+
+// ── Read-only query path ──────────────────────────────────────────
+
+/// Resolve the user's window into a UTC range, query both tasks and
+/// calendar in parallel (gated by the destination setting), then
+/// render a combined sorted list as speak + a card. Always-timed:
+/// untimed reminders don't fit a date-range query and are skipped.
+#[cfg(target_arch = "wasm32")]
+fn handle_query(window: query::Window) -> String {
+    let now = ari::local_now_components();
+    let now_ms = ari::now_ms();
+    let offset = tz_offset_ms(&now, now_ms);
+
+    let (start_ms, end_ms) = window.resolve(
+        now.year,
+        now.month,
+        now.day,
+        offset,
+        now_ms,
+        civil_to_epoch_ms,
+    );
+    let limit = match window {
+        query::Window::Next => 1,
+        _ => 20,
+    };
+
+    let destination = ari::setting_get("destination")
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "tasks".to_string());
+
+    let mut rows: Vec<QueryRow> = Vec::new();
+    if destination == "tasks" || destination == "both" {
+        for r in ari::tasks_query_in_range(start_ms, end_ms, limit) {
+            rows.push(QueryRow {
+                title: r.title,
+                start_ms: r.due_ms,
+                all_day: r.due_all_day,
+            });
+        }
+    }
+    if destination == "calendar" || destination == "both" {
+        for r in ari::calendar_query_in_range(start_ms, end_ms, limit) {
+            rows.push(QueryRow {
+                title: r.title,
+                start_ms: r.start_ms,
+                all_day: r.all_day,
+            });
+        }
+    }
+    // Combined-source sort: tasks-first vs calendar-first interleaving
+    // shouldn't depend on which loop ran first.
+    rows.sort_by_key(|r| r.start_ms);
+    if rows.len() > limit as usize {
+        rows.truncate(limit as usize);
+    }
+
+    build_query_envelope(window, &rows, offset)
+}
+
+#[cfg(target_arch = "wasm32")]
+struct QueryRow {
+    title: String,
+    /// UTC epoch ms.
+    start_ms: i64,
+    all_day: bool,
+}
+
+#[cfg(target_arch = "wasm32")]
+fn build_query_envelope(
+    window: query::Window,
+    rows: &[QueryRow],
+    tz_offset_ms_value: i64,
+) -> String {
+    let speak = format_query_speak(window, rows, tz_offset_ms_value);
+    let mut out = String::from("{\"v\":1,\"speak\":");
+    push_json_string(&mut out, &speak);
+    if !rows.is_empty() {
+        out.push_str(",\"cards\":[");
+        out.push_str(&build_query_card(window, rows, tz_offset_ms_value));
+        out.push(']');
+    }
+    out.push('}');
+    out
+}
+
+#[cfg(target_arch = "wasm32")]
+fn format_query_speak(
+    window: query::Window,
+    rows: &[QueryRow],
+    tz_offset_ms_value: i64,
+) -> String {
+    if rows.is_empty() {
+        return match window {
+            query::Window::Next => String::from("You don't have any upcoming reminders."),
+            query::Window::Today => String::from("You have nothing on your list for today."),
+            query::Window::Tomorrow => String::from("You have nothing on your list for tomorrow."),
+        };
+    }
+    if matches!(window, query::Window::Next) {
+        let r = &rows[0];
+        let when = format_query_when(r.start_ms, r.all_day, tz_offset_ms_value);
+        return format!("Your next reminder is to {} {}.", r.title, when);
+    }
+    let label = window.day_label();
+    if rows.len() == 1 {
+        let r = &rows[0];
+        let clock = query::format_clock_local(r.start_ms, tz_offset_ms_value, r.all_day);
+        return format!("You have one reminder {}: {} at {}.", label, r.title, clock);
+    }
+    let mut speak = format!("You have {} reminders {}: ", rows.len(), label);
+    for (i, r) in rows.iter().enumerate() {
+        let clock = query::format_clock_local(r.start_ms, tz_offset_ms_value, r.all_day);
+        if i == 0 {
+            speak.push_str(&format!("{} at {}", r.title, clock));
+        } else if i == rows.len() - 1 {
+            speak.push_str(&format!(", and {} at {}", r.title, clock));
+        } else {
+            speak.push_str(&format!(", {} at {}", r.title, clock));
+        }
+    }
+    speak.push('.');
+    speak
+}
+
+/// Long-form when phrase used by the "next" branch — includes the
+/// day name (today / tomorrow / 1st of May) plus the clock. Local
+/// "today" / "tomorrow" computed from the same now-components the
+/// query did, so a query at 23:59 produces consistent labels with
+/// what the user sees on the device.
+#[cfg(target_arch = "wasm32")]
+fn format_query_when(epoch_ms: i64, all_day: bool, tz_offset_ms_value: i64) -> String {
+    let local_ms = epoch_ms + tz_offset_ms_value;
+    let total_secs = local_ms.div_euclid(1000);
+    let days = total_secs.div_euclid(86_400);
+    let (_year, month, day) = days_to_civil(days);
+
+    let now = ari::local_now_components();
+    let today_days = civil_to_days(now.year, now.month, now.day);
+
+    let day_label = if days == today_days {
+        String::from("today")
+    } else if days == today_days + 1 {
+        String::from("tomorrow")
+    } else {
+        let month_name = match month {
+            1 => "January",
+            2 => "February",
+            3 => "March",
+            4 => "April",
+            5 => "May",
+            6 => "June",
+            7 => "July",
+            8 => "August",
+            9 => "September",
+            10 => "October",
+            11 => "November",
+            12 => "December",
+            _ => "unknown",
+        };
+        format!("on {} {}", day, month_name)
+    };
+    if all_day {
+        day_label
+    } else {
+        let clock = query::format_clock_local(epoch_ms, tz_offset_ms_value, false);
+        format!("{} at {}", day_label, clock)
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn build_query_card(
+    window: query::Window,
+    rows: &[QueryRow],
+    tz_offset_ms_value: i64,
+) -> String {
+    let title = match window {
+        query::Window::Today => "Reminders today",
+        query::Window::Tomorrow => "Reminders tomorrow",
+        query::Window::Next => "Next reminder",
+    };
+    // Multi-line body: one line per reminder. Plain text — the card
+    // renderer treats `body` as text, so newlines lay out naturally.
+    let mut body = String::new();
+    for (i, r) in rows.iter().enumerate() {
+        if i > 0 {
+            body.push('\n');
+        }
+        let clock = query::format_clock_local(r.start_ms, tz_offset_ms_value, r.all_day);
+        body.push_str(&format!("• {} — {}", r.title, clock));
+    }
+
+    let mut card = String::from("{\"id\":\"reminder-list\",\"title\":");
+    push_json_string(&mut card, title);
+    card.push_str(",\"body\":");
+    push_json_string(&mut card, &body);
+    card.push_str(",\"accent\":\"DEFAULT\"}");
+    card
 }
 
 // ── Normal create-reminder flow ───────────────────────────────────
@@ -293,13 +873,31 @@ fn resolve_local_clock_on_date(
 ) -> Resolved {
     let target_local_ms = civil_to_epoch_ms(year, month, day, hour, minute);
     let now_ms = ari::now_ms();
-    let now_local_ms = civil_to_epoch_ms(now.year, now.month, now.day, now.hour, now.minute)
-        + (now.second as i64 * 1000);
-    let offset_ms = now_local_ms - now_ms;
+    let offset_ms = tz_offset_ms(now, now_ms);
     Resolved::At {
         ms: target_local_ms - offset_ms,
         all_day,
     }
+}
+
+/// Timezone offset from UTC, in ms, at minute precision.
+///
+/// Computed from the local components vs. `now_ms`. Historically this
+/// function subtracted a second-resolution `now_local_ms` from a full-
+/// millisecond `now_ms`, which left a 0–999 ms slop in the result —
+/// when the same offset was recomputed for display, a *different*
+/// 0–999 ms slop tipped the formatted time into the previous minute
+/// (insert at 14:00:00.750, display "1:59pm").
+///
+/// TZ offsets are always whole-minute quantities (no zone uses
+/// sub-minute offsets), so truncating both sides to the minute
+/// produces the exact offset with no drift. The round-trip
+/// `target_ms + offset = target_local_ms` now holds exactly.
+fn tz_offset_ms(now: &ari_skill_sdk::LocalTimeComponents, now_ms: i64) -> i64 {
+    let now_local_minute_ms =
+        civil_to_epoch_ms(now.year, now.month, now.day, now.hour, now.minute);
+    let now_ms_minute_floor = (now_ms / 60_000) * 60_000;
+    now_local_minute_ms - now_ms_minute_floor
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -584,9 +1182,7 @@ fn format_success_speech(
 fn format_when_phrase(ms: i64, _all_day: bool) -> String {
     let now = ari::local_now_components();
     let now_ms = ari::now_ms();
-    let now_local_ms = civil_to_epoch_ms(now.year, now.month, now.day, now.hour, now.minute)
-        + (now.second as i64 * 1000);
-    let offset_ms = now_local_ms - now_ms;
+    let offset_ms = tz_offset_ms(&now, now_ms);
     let target_local_ms = ms + offset_ms;
 
     let total_secs = target_local_ms.div_euclid(1000);
@@ -660,7 +1256,7 @@ fn build_partial_card(
         parse::Confidence::Low => "WARNING",
         _ => "DEFAULT",
     };
-    let cancel_utterance = format!("__ari_cancel_reminder:{}:{}", mode.as_str(), row_id);
+    let cancel_utterance = format!("aricancelreminder {} {}", mode.as_str(), row_id);
 
     let mut card = String::from("{\"id\":");
     let card_id = format!("reminder-partial-{}", row_id);
@@ -708,11 +1304,11 @@ mod tests {
 
     #[test]
     fn internal_cancel_parses() {
-        let c = parse_internal_cancel("__ari_cancel_reminder:tasks:42").unwrap();
+        let c = parse_internal_cancel("aricancelreminder tasks 42").unwrap();
         assert_eq!(c.id, 42);
         assert!(matches!(c.mode, Mode::Tasks));
 
-        let c = parse_internal_cancel("__ari_cancel_reminder:calendar:17").unwrap();
+        let c = parse_internal_cancel("aricancelreminder calendar 17").unwrap();
         assert_eq!(c.id, 17);
         assert!(matches!(c.mode, Mode::Calendar));
     }
@@ -720,9 +1316,25 @@ mod tests {
     #[test]
     fn internal_cancel_rejects_malformed() {
         assert!(parse_internal_cancel("remind me at 5pm").is_none());
-        assert!(parse_internal_cancel("__ari_cancel_reminder:tasks").is_none());
-        assert!(parse_internal_cancel("__ari_cancel_reminder:garbage:42").is_none());
-        assert!(parse_internal_cancel("__ari_cancel_reminder:tasks:notanumber").is_none());
+        assert!(parse_internal_cancel("aricancelreminder tasks").is_none());
+        assert!(parse_internal_cancel("aricancelreminder garbage 42").is_none());
+        assert!(parse_internal_cancel("aricancelreminder tasks notanumber").is_none());
+    }
+
+    #[test]
+    fn internal_cancel_survives_engine_normalisation() {
+        // Regression for the bug that caused Cancel to no-op: the
+        // engine normalises underscores and colons into spaces
+        // before the skill sees the input. Our prefix must be one
+        // contiguous alphanumeric token so normalisation leaves it
+        // alone. This test simulates that: lowercase + minimum
+        // whitespace collapsed.
+        let c = parse_internal_cancel("aricancelreminder tasks 42").unwrap();
+        assert_eq!(c.id, 42);
+        // Also tolerate leading / trailing whitespace and extra spaces
+        // between tokens.
+        let c = parse_internal_cancel("  aricancelreminder  tasks  42  ").unwrap();
+        assert_eq!(c.id, 42);
     }
 
     #[test]
@@ -755,5 +1367,80 @@ mod tests {
         assert_eq!(days_until_weekday(0, 4), 4);
         assert_eq!(days_until_weekday(4, 0), 3);
         assert_eq!(days_until_weekday(6, 0), 1);
+    }
+
+    /// Shorthand for constructing a `LocalTimeComponents`. Tests only
+    /// vary the time portion; year/month/day/weekday are arbitrary.
+    fn lc(hour: u8, minute: u8, second: u8) -> ari_skill_sdk::LocalTimeComponents {
+        ari_skill_sdk::LocalTimeComponents {
+            year: 2026,
+            month: 4,
+            day: 23,
+            hour,
+            minute,
+            second,
+            weekday: 3, // Thursday
+            tz_id: "Europe/London".to_string(),
+        }
+    }
+
+    #[test]
+    fn tz_offset_ms_exact_on_second_boundary() {
+        // UTC+1, now_ms on an exact second boundary → offset is a
+        // whole hour.
+        let now = lc(11, 45, 33);
+        let now_ms = civil_to_epoch_ms(2026, 4, 23, 10, 45) + 33 * 1000;
+        assert_eq!(tz_offset_ms(&now, now_ms), 3_600_000);
+    }
+
+    #[test]
+    fn tz_offset_ms_exact_with_sub_second_noise() {
+        // UTC+1, now_ms has 750 ms of sub-second noise. Old buggy
+        // code returned 3_599_250. Minute-truncated offset stays
+        // 3_600_000 exactly.
+        let now = lc(11, 45, 33);
+        let now_ms = civil_to_epoch_ms(2026, 4, 23, 10, 45) + 33 * 1000 + 750;
+        assert_eq!(tz_offset_ms(&now, now_ms), 3_600_000);
+    }
+
+    #[test]
+    fn tz_offset_ms_works_for_utc() {
+        let now = lc(10, 45, 33);
+        let now_ms = civil_to_epoch_ms(2026, 4, 23, 10, 45) + 33 * 1000 + 250;
+        assert_eq!(tz_offset_ms(&now, now_ms), 0);
+    }
+
+    #[test]
+    fn tz_offset_ms_works_for_half_hour_zone() {
+        // Simulate IST (UTC+5:30). Whole-minute offsets include half-
+        // hour zones — the math must handle them without dropping the
+        // 30-minute remainder.
+        let now = lc(16, 15, 33);
+        let now_ms = civil_to_epoch_ms(2026, 4, 23, 10, 45) + 33 * 1000 + 500;
+        assert_eq!(tz_offset_ms(&now, now_ms), 5 * 3_600_000 + 30 * 60_000);
+    }
+
+    #[test]
+    fn round_trip_target_local_ms_is_stable() {
+        // The specific bug: set a reminder for 14:00 local, format
+        // the resolved ms back to local components, confirm we get
+        // 14:00 exactly. Old code returned 13:59.
+        let now = lc(11, 45, 33);
+        let now_ms = civil_to_epoch_ms(2026, 4, 23, 10, 45) + 33 * 1000 + 750;
+
+        // Resolve: 14:00 local → stored UTC ms.
+        let target_local_ms = civil_to_epoch_ms(2026, 4, 23, 14, 0);
+        let offset = tz_offset_ms(&now, now_ms);
+        let stored_utc_ms = target_local_ms - offset;
+
+        // Format later (simulate a few ms passing + a different
+        // sub-second fraction). Offset should still round-trip to the
+        // same local instant.
+        let now_later = lc(11, 45, 33);
+        let now_ms_later = now_ms + 200; // 200 ms later
+        let display_offset = tz_offset_ms(&now_later, now_ms_later);
+        let displayed_local_ms = stored_utc_ms + display_offset;
+
+        assert_eq!(displayed_local_ms, target_local_ms, "14:00 should still display as 14:00");
     }
 }
