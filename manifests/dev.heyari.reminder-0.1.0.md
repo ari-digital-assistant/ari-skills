@@ -22,13 +22,36 @@ metadata:
           weight: 0.95
         - regex: "\\b(add|put) .+ (to|on) my \\w+ list\\b"
           weight: 0.9
+        # Read-only queries — list reminders for today/tomorrow, or
+        # the next upcoming reminder. Patterns assume the input has
+        # been through `normalize_input`, which expands `what's` →
+        # `what is` and lowercases everything BEFORE the engine runs
+        # the regex. So no apostrophes here, ever.
+        - regex: "\\bwhat is (my|the) next reminder\\b"
+          weight: 0.95
+        - regex: "\\bwhat reminders? do i have\\b"
+          weight: 0.9
+        - regex: "\\b(do i have any|any|got any|have i got any) reminders?\\b"
+          weight: 0.9
+        - regex: "\\bwhat is (coming up|on my list|on today|on tomorrow)\\b"
+          weight: 0.85
         # Internal cancel round-trip: the partial-confidence card's
-        # on_cancel payload emits `__ari_cancel_reminder:<mode>:<id>`
-        # as a run_utterance. The engine routes it back here and the
-        # skill calls the corresponding tasks_delete / calendar_delete
-        # host capability. Weighted highest so nothing else can steal
-        # this input.
-        - regex: "^__ari_cancel_reminder:"
+        # on_cancel payload emits `aricancelreminder <mode> <id>` as a
+        # run_utterance. The engine routes it back here and the skill
+        # calls the corresponding tasks_delete / calendar_delete host
+        # capability. Weighted highest so nothing else can steal this
+        # input. The `aricancelreminder` prefix is one contiguous
+        # token so the engine's `normalize_input` (which strips
+        # underscores/colons to spaces) leaves it unmangled.
+        - regex: "^aricancelreminder\\b"
+          weight: 1.0
+        # Layer C clarification-card confirm round-trip: the Yes
+        # button's utterance is `ariconfirmreminder <dest> <epoch_ms>
+        # <title_hex>`. Carries the AI's pre-staged commit values
+        # directly; skill decodes and writes the reminder without
+        # another assistant round-trip. Same contiguous-alphanumeric
+        # prefix trick as aricancelreminder.
+        - regex: "^ariconfirmreminder\\b"
           weight: 1.0
       custom_score: false
     examples:
