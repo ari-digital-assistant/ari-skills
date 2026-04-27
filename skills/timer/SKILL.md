@@ -33,6 +33,15 @@ metadata:
       - text: "cancel my pasta timer"
       - text: "what timers do i have"
       - text: "set a timer for 5 minutes and another for 15 minutes"
+      # Paraphrases without literal "set/start/cancel timer" triggers —
+      # teach the router that countdown-style requests also belong here.
+      - text: "give me 8 minutes for pasta"
+      - text: "10 minute countdown for the bread"
+      - text: "kick off a 4 minute timer for tea"
+      - text: "I need a 5 minute countdown"
+      - text: "count down 12 minutes for me"
+      - text: "how long left on the pasta timer"
+      - text: "scrap the bread timer"
     wasm:
       module: skill.wasm
       memory_limit_mb: 4
