@@ -298,8 +298,20 @@ pub fn compose_prompt(utterance: &str, parsed: &parse::Parsed) -> String {
            specific detail (one word, one date, one reading), \"low\" if the request is too vague \
            to act on at all\n\
          - clarification: when confidence is \"partial\", a short one-sentence question asking \
-           the user to confirm the specific detail you were unsure about — phrase it so the user \
-           can answer with a straight yes or no (e.g. \"Did you mean the 1st of May?\"). \
+           the user to confirm the specific detail you were unsure about. PHRASING RULES — \
+           READ CAREFULLY:\n\
+           1. Reference the *concrete resolved value* you put in `datetime` or `title`, not the \
+              user's original phrasing. If the user said \"next Friday\" and you resolved it to \
+              `2026-05-01`, your clarification must say something like \"the 1st of May\", NOT \
+              \"next Friday\". The whole point is to surface what you decided so the user can \
+              confirm or reject the resolution. Echoing their words back tells them nothing.\n\
+           2. Phrase it for a yes/no answer. \"Did you mean the 1st of May at 3pm?\" — good. \
+              \"When did you mean?\" — wrong format.\n\
+           3. One short sentence, no preamble.\n\
+           Bad clarifications (avoid): \"Did you mean next Friday at 3pm?\" (paraphrasing the \
+           user's input). \"Are you sure?\" (vague). \"Could you clarify?\" (open-ended).\n\
+           Good clarifications: \"Did you mean the 1st of May at 3pm?\" / \"Did you mean the \
+           27th of this month?\" / \"Is that Sarah from Marketing?\".\n\
            Empty string when confidence is \"high\" or \"low\".\n\
          - follow_up: \"yes_no\" when the clarification expects a yes/no answer, \"open_ended\" \
            when it needs more than that (currently treat open_ended as a future extension — \
@@ -666,5 +678,36 @@ mod tests {
         assert!(prompt.contains("call sarah on the 27th"));
         assert!(prompt.contains("27th"));
         assert!(prompt.contains("STRICT JSON"));
+    }
+
+    #[test]
+    fn compose_prompt_includes_concrete_clarification_guidance() {
+        // Regression for the "Did you mean next Friday at 3pm?" echo
+        // bug — the prompt must explicitly tell the model to phrase
+        // its clarification using the resolved concrete value, not
+        // the user's original wording.
+        let parsed = parse::Parsed {
+            title: "call mum".to_string(),
+            when: parse::When::None,
+            list_hint: None,
+            speak_template: String::new(),
+            confidence: parse::Confidence::Partial,
+            unparsed: Some("next".to_string()),
+        };
+        let prompt = compose_prompt("remind me next friday at 3pm to call mum", &parsed);
+        // Two guard rails: instruction to use concrete resolved values,
+        // AND a worked example so the model has a pattern to match.
+        assert!(
+            prompt.contains("concrete resolved value"),
+            "prompt must explicitly require the concrete resolved value in the clarification"
+        );
+        assert!(
+            prompt.contains("the 1st of May"),
+            "prompt should include a worked example of a good clarification phrasing"
+        );
+        assert!(
+            prompt.contains("paraphrasing the user's input"),
+            "prompt should call out the bad paraphrase pattern explicitly so the model avoids it"
+        );
     }
 }
