@@ -29,15 +29,52 @@ mod bump {
         static __heap_base: u8;
     }
 
+    /// One WASM linear-memory page = 64 KiB.
+    const PAGE_BYTES: u32 = 65_536;
+
     static mut BUMP: u32 = 0;
 
+    /// Allocate `size` bytes aligned to `align` from the bump arena.
+    /// Grows the WASM linear memory via `memory.grow` when the next
+    /// allocation would run past the current end-of-memory; without
+    /// this growth a long-running skill (or any skill that produces
+    /// big format! / String buffers in a single call) would silently
+    /// return a pointer outside addressable memory and the next write
+    /// would trap.
+    ///
+    /// Never frees — bump-only by design. The whole arena is reset
+    /// implicitly when the host re-instantiates the skill module.
     pub fn bump_alloc(size: u32, align: u32) -> *mut u8 {
         unsafe {
             if BUMP == 0 {
                 BUMP = &__heap_base as *const u8 as u32;
             }
             let aligned = (BUMP + align - 1) & !(align - 1);
-            BUMP = aligned + size;
+            let new_bump = aligned + size;
+
+            // memory.size returns the current linear memory size in
+            // pages (64 KiB each). If our allocation would land past
+            // the end, grow by enough pages to cover it.
+            #[cfg(target_arch = "wasm32")]
+            {
+                let current_bytes = (core::arch::wasm32::memory_size(0) as u32) * PAGE_BYTES;
+                if new_bump > current_bytes {
+                    let extra_bytes = new_bump - current_bytes;
+                    let extra_pages = (extra_bytes + PAGE_BYTES - 1) / PAGE_BYTES;
+                    // memory.grow returns -1 on failure. If it fails
+                    // there's nothing reasonable we can do from a
+                    // panic-handler-less no_std skill, so trap by
+                    // returning a null pointer; the caller's write
+                    // will trap with a clear out-of-bounds rather
+                    // than silently corrupting memory.
+                    let prev = core::arch::wasm32::memory_grow(0, extra_pages as usize);
+                    if prev == usize::MAX {
+                        return core::ptr::null_mut();
+                    }
+                }
+            }
+
+            BUMP = new_bump;
             aligned as *mut u8
         }
     }

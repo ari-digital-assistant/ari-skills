@@ -210,20 +210,23 @@ fn handle_cancel(cancel: InternalCancel) -> String {
 
 // ── Layer C phase-1 envelope ──────────────────────────────────────
 
-/// Build the phase-1 envelope the engine intercepts. Consists of:
-/// - A short `speak` ack so the user gets immediate audio feedback
-///   that the request is being worked on.
-/// - A `consult_assistant` directive with the composed prompt and the
-///   original utterance as continuation context. The engine strips
-///   the directive before rendering, spawns a background thread that
-///   calls the assistant, then re-enters the skill via
-///   `execute_continuation` (which lands in [`handle_continuation`]).
+/// Build the phase-1 envelope the engine intercepts. Deliberately
+/// silent — no `speak`, no cards. Most cloud-assistant round-trips
+/// finish in a couple of seconds, faster than a TTS ack would even
+/// finish playing, so saying "let me check..." just delays the real
+/// answer. If the round-trip turns out to be slow (>4s) the engine
+/// pushes a delay phrase (`Hang on...`, `One moment...`, etc.) on
+/// its own.
+///
+/// The envelope only carries the `consult_assistant` directive. The
+/// engine strips that field before returning, so what reaches the
+/// frontend is `{"v":1}` — empty enough that the conversation UI
+/// shouldn't render a bubble (see ConversationViewModel's
+/// blank-skip).
 #[cfg(target_arch = "wasm32")]
 fn build_consult_assistant_envelope(utterance: &str, parsed: &parse::Parsed) -> String {
     let prompt = layer_c::compose_prompt(utterance, parsed);
-    let mut out = String::from("{\"v\":1,\"speak\":");
-    push_json_string(&mut out, "Let me check that with the assistant...");
-    out.push_str(",\"consult_assistant\":{\"prompt\":");
+    let mut out = String::from("{\"v\":1,\"consult_assistant\":{\"prompt\":");
     push_json_string(&mut out, &prompt);
     out.push_str(",\"continuation_context\":");
     push_json_string(&mut out, utterance);
