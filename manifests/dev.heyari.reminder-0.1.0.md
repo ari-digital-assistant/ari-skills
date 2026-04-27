@@ -65,6 +65,16 @@ metadata:
       - text: "put eggs on the shopping list"
       - text: "add deadline review to my work list"
       - text: "remind me about the meeting at 4pm"
+      # Paraphrases without literal "remind me" / "set a reminder" /
+      # "add to list" triggers — teach the router that future-time
+      # nudges with no explicit reminder verb still belong here.
+      - text: "ping me at 5pm to walk the dog"
+      - text: "tell me at 9 tomorrow to call the dentist"
+      - text: "buzz me about the meeting at 2pm"
+      - text: "wake me up at 7am"
+      - text: "let me know to take the bins out tonight"
+      - text: "give me a heads up at 3pm to leave for work"
+      - text: "nudge me about the dentist on Friday at 9"
     settings:
       - key: destination
         label: Save reminders to
