@@ -241,13 +241,73 @@ fn handle_cancel(cancel: InternalCancel) -> String {
 /// blank-skip).
 #[cfg(target_arch = "wasm32")]
 fn build_consult_assistant_envelope(utterance: &str, parsed: &parse::Parsed) -> String {
-    let prompt = layer_c::compose_prompt(utterance, parsed);
+    let now = ari::local_now_components();
+    let today = format_today_for_prompt(&now);
+    let prompt = layer_c::compose_prompt(utterance, parsed, &today);
     let mut out = String::from("{\"v\":1,\"consult_assistant\":{\"prompt\":");
     push_json_string(&mut out, &prompt);
     out.push_str(",\"continuation_context\":");
     push_json_string(&mut out, utterance);
     out.push_str("}}");
     out
+}
+
+/// Format today's local date for the Layer C prompt as a multi-line
+/// block that gives the model everything it needs to resolve relative
+/// day-of-month references without doing any month arithmetic itself.
+/// Small models like Gemma 4 E2B are unreliable at "advance to next
+/// month if the day is in the past", so we pre-compute the YYYY-MM
+/// prefix for both this month and next month and hand it over as a
+/// lookup table. The model just picks the right prefix and fills in
+/// the day.
+#[cfg(target_arch = "wasm32")]
+fn format_today_for_prompt(now: &ari::LocalTimeComponents) -> String {
+    let weekday = match now.weekday {
+        0 => "Monday",
+        1 => "Tuesday",
+        2 => "Wednesday",
+        3 => "Thursday",
+        4 => "Friday",
+        5 => "Saturday",
+        6 => "Sunday",
+        _ => "Unknown",
+    };
+    let month_name = month_name(now.month);
+    let (next_year, next_month) = if now.month == 12 {
+        (now.year + 1, 1u8)
+    } else {
+        (now.year, now.month + 1)
+    };
+    format!(
+        "{weekday}, {day} {month_name} {year} ({year:04}-{month:02}-{day:02}). \
+         Day-of-month lookup: this month is {year:04}-{month:02}, next month is \
+         {next_year:04}-{next_month:02}. When the user names a day-of-month N: if \
+         N < {day}, the date is next month ({next_year:04}-{next_month:02}-NN); \
+         otherwise it's this month ({year:04}-{month:02}-NN). NEVER produce a \
+         datetime before today.",
+        day = now.day,
+        year = now.year,
+        month = now.month,
+    )
+}
+
+#[cfg(target_arch = "wasm32")]
+fn month_name(m: u8) -> &'static str {
+    match m {
+        1 => "January",
+        2 => "February",
+        3 => "March",
+        4 => "April",
+        5 => "May",
+        6 => "June",
+        7 => "July",
+        8 => "August",
+        9 => "September",
+        10 => "October",
+        11 => "November",
+        12 => "December",
+        _ => "Unknown",
+    }
 }
 
 // ── Layer C continuation handler ──────────────────────────────────
@@ -427,7 +487,8 @@ fn build_clarification_envelope(resp: layer_c::AssistantResponse) -> String {
     out.push_str(",\"accent\":\"DEFAULT\",\"actions\":[");
     out.push_str("{\"id\":\"yes\",\"label\":\"Yes\",\"style\":\"PRIMARY\",\"utterance\":");
     push_json_string(&mut out, &confirm_utterance);
-    out.push_str("},{\"id\":\"no\",\"label\":\"No\",\"style\":\"DEFAULT\"}");
+    out.push_str("},{\"id\":\"no\",\"label\":\"No\",\"style\":\"DEFAULT\",");
+    out.push_str("\"speak\":\"OK, I won't add that reminder.\"}");
     out.push_str("]}]}");
     out
 }

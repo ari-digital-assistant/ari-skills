@@ -265,10 +265,14 @@ fn strip_to_outer_object(s: &str) -> Option<&str> {
 }
 
 /// Build the prompt the engine sends to the assistant. Substitutes the
-/// utterance, the parser's first-pass extraction, and the flagged
-/// residue, asking for a strict JSON object back. Deliberately verbose
-/// — small cloud models reward unambiguous framing over terseness.
-pub fn compose_prompt(utterance: &str, parsed: &parse::Parsed) -> String {
+/// utterance, the parser's first-pass extraction, the flagged residue,
+/// and today's local date so the model can resolve relative references
+/// like "the 7th" or "next Friday". `today` is a pre-formatted
+/// human-readable date plus ISO form, e.g.
+/// `"Monday, 27 April 2026 (2026-04-27)"`. Deliberately verbose —
+/// small cloud and on-device models reward unambiguous framing over
+/// terseness.
+pub fn compose_prompt(utterance: &str, parsed: &parse::Parsed, today: &str) -> String {
     let when_desc = when_summary(&parsed.when);
     let unparsed = parsed
         .unparsed
@@ -280,8 +284,9 @@ pub fn compose_prompt(utterance: &str, parsed: &parse::Parsed) -> String {
          The user said: \"{utterance}\"\n\
          \n\
          A first-pass parser on-device extracted this much: title=\"{title}\", when={when}, \
-         and flagged \"{unparsed}\" as a fragment it couldn't resolve. \
-         Today is whatever today is in the user's local timezone.\n\
+         and flagged \"{unparsed}\" as a fragment it couldn't resolve.\n\
+         \n\
+         Today: {today}\n\
          \n\
          Return a STRICT JSON object and nothing else — no preamble, no code fences, no trailing text:\n\
          {{\"title\": string, \"datetime\": string|null, \"confidence\": string, \
@@ -323,6 +328,7 @@ pub fn compose_prompt(utterance: &str, parsed: &parse::Parsed) -> String {
         title = escape_for_prompt(&parsed.title),
         when = when_desc,
         unparsed = escape_for_prompt(unparsed),
+        today = today,
     )
 }
 
@@ -673,11 +679,16 @@ mod tests {
             confidence: parse::Confidence::Low,
             unparsed: Some("27th".to_string()),
         };
-        let prompt = compose_prompt("remind me to call sarah on the 27th", &parsed);
+        let prompt = compose_prompt(
+            "remind me to call sarah on the 27th",
+            &parsed,
+            "Monday, 27 April 2026 (2026-04-27)",
+        );
         assert!(prompt.contains("remind me to call sarah on the 27th"));
         assert!(prompt.contains("call sarah on the 27th"));
         assert!(prompt.contains("27th"));
         assert!(prompt.contains("STRICT JSON"));
+        assert!(prompt.contains("Monday, 27 April 2026"));
     }
 
     #[test]
@@ -694,7 +705,11 @@ mod tests {
             confidence: parse::Confidence::Partial,
             unparsed: Some("next".to_string()),
         };
-        let prompt = compose_prompt("remind me next friday at 3pm to call mum", &parsed);
+        let prompt = compose_prompt(
+            "remind me next friday at 3pm to call mum",
+            &parsed,
+            "Monday, 27 April 2026 (2026-04-27)",
+        );
         // Two guard rails: instruction to use concrete resolved values,
         // AND a worked example so the model has a pattern to match.
         assert!(
