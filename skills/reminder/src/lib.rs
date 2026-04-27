@@ -26,12 +26,14 @@ extern crate alloc;
 
 use alloc::format;
 use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
 #[cfg(target_arch = "wasm32")]
 use ari_skill_sdk as ari;
 
 mod layer_c;
 mod parse;
+mod query;
 
 #[cfg(target_arch = "wasm32")]
 #[no_mangle]
@@ -103,6 +105,20 @@ pub fn dispatch(input: &str) -> String {
         );
         return handle_cancel(cancel);
     }
+    // Read-only query branch: "what reminders do I have today",
+    // "what's my next reminder", etc. Checked before parse() because
+    // parse treats these as "remind me about today" → low confidence
+    // and would punt to the AI unnecessarily. The query classifier
+    // is purely lexical; it returns None for anything that isn't
+    // visibly a question, so create-style utterances fall through.
+    if let Some(window) = query::classify(input) {
+        ari::log(
+            ari::LogLevel::Info,
+            &format!("handle_query window={:?}", window),
+        );
+        return handle_query(window);
+    }
+
     let parsed = parse::parse(input);
     ari::log(
         ari::LogLevel::Info,
@@ -506,6 +522,204 @@ fn resolved_from_assistant_datetime(datetime: Option<&str>) -> Resolved {
         ms: local_ms - offset,
         all_day: p.hour == 0 && p.minute == 0,
     }
+}
+
+// ── Read-only query path ──────────────────────────────────────────
+
+/// Resolve the user's window into a UTC range, query both tasks and
+/// calendar in parallel (gated by the destination setting), then
+/// render a combined sorted list as speak + a card. Always-timed:
+/// untimed reminders don't fit a date-range query and are skipped.
+#[cfg(target_arch = "wasm32")]
+fn handle_query(window: query::Window) -> String {
+    let now = ari::local_now_components();
+    let now_ms = ari::now_ms();
+    let offset = tz_offset_ms(&now, now_ms);
+
+    let (start_ms, end_ms) = window.resolve(
+        now.year,
+        now.month,
+        now.day,
+        offset,
+        now_ms,
+        civil_to_epoch_ms,
+    );
+    let limit = match window {
+        query::Window::Next => 1,
+        _ => 20,
+    };
+
+    let destination = ari::setting_get("destination")
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "tasks".to_string());
+
+    let mut rows: Vec<QueryRow> = Vec::new();
+    if destination == "tasks" || destination == "both" {
+        for r in ari::tasks_query_in_range(start_ms, end_ms, limit) {
+            rows.push(QueryRow {
+                title: r.title,
+                start_ms: r.due_ms,
+                all_day: r.due_all_day,
+            });
+        }
+    }
+    if destination == "calendar" || destination == "both" {
+        for r in ari::calendar_query_in_range(start_ms, end_ms, limit) {
+            rows.push(QueryRow {
+                title: r.title,
+                start_ms: r.start_ms,
+                all_day: r.all_day,
+            });
+        }
+    }
+    // Combined-source sort: tasks-first vs calendar-first interleaving
+    // shouldn't depend on which loop ran first.
+    rows.sort_by_key(|r| r.start_ms);
+    if rows.len() > limit as usize {
+        rows.truncate(limit as usize);
+    }
+
+    build_query_envelope(window, &rows, offset)
+}
+
+#[cfg(target_arch = "wasm32")]
+struct QueryRow {
+    title: String,
+    /// UTC epoch ms.
+    start_ms: i64,
+    all_day: bool,
+}
+
+#[cfg(target_arch = "wasm32")]
+fn build_query_envelope(
+    window: query::Window,
+    rows: &[QueryRow],
+    tz_offset_ms_value: i64,
+) -> String {
+    let speak = format_query_speak(window, rows, tz_offset_ms_value);
+    let mut out = String::from("{\"v\":1,\"speak\":");
+    push_json_string(&mut out, &speak);
+    if !rows.is_empty() {
+        out.push_str(",\"cards\":[");
+        out.push_str(&build_query_card(window, rows, tz_offset_ms_value));
+        out.push(']');
+    }
+    out.push('}');
+    out
+}
+
+#[cfg(target_arch = "wasm32")]
+fn format_query_speak(
+    window: query::Window,
+    rows: &[QueryRow],
+    tz_offset_ms_value: i64,
+) -> String {
+    if rows.is_empty() {
+        return match window {
+            query::Window::Next => String::from("You don't have any upcoming reminders."),
+            query::Window::Today => String::from("You have nothing on your list for today."),
+            query::Window::Tomorrow => String::from("You have nothing on your list for tomorrow."),
+        };
+    }
+    if matches!(window, query::Window::Next) {
+        let r = &rows[0];
+        let when = format_query_when(r.start_ms, r.all_day, tz_offset_ms_value);
+        return format!("Your next reminder is to {} {}.", r.title, when);
+    }
+    let label = window.day_label();
+    if rows.len() == 1 {
+        let r = &rows[0];
+        let clock = query::format_clock_local(r.start_ms, tz_offset_ms_value, r.all_day);
+        return format!("You have one reminder {}: {} at {}.", label, r.title, clock);
+    }
+    let mut speak = format!("You have {} reminders {}: ", rows.len(), label);
+    for (i, r) in rows.iter().enumerate() {
+        let clock = query::format_clock_local(r.start_ms, tz_offset_ms_value, r.all_day);
+        if i == 0 {
+            speak.push_str(&format!("{} at {}", r.title, clock));
+        } else if i == rows.len() - 1 {
+            speak.push_str(&format!(", and {} at {}", r.title, clock));
+        } else {
+            speak.push_str(&format!(", {} at {}", r.title, clock));
+        }
+    }
+    speak.push('.');
+    speak
+}
+
+/// Long-form when phrase used by the "next" branch — includes the
+/// day name (today / tomorrow / 1st of May) plus the clock. Local
+/// "today" / "tomorrow" computed from the same now-components the
+/// query did, so a query at 23:59 produces consistent labels with
+/// what the user sees on the device.
+#[cfg(target_arch = "wasm32")]
+fn format_query_when(epoch_ms: i64, all_day: bool, tz_offset_ms_value: i64) -> String {
+    let local_ms = epoch_ms + tz_offset_ms_value;
+    let total_secs = local_ms.div_euclid(1000);
+    let days = total_secs.div_euclid(86_400);
+    let (_year, month, day) = days_to_civil(days);
+
+    let now = ari::local_now_components();
+    let today_days = civil_to_days(now.year, now.month, now.day);
+
+    let day_label = if days == today_days {
+        String::from("today")
+    } else if days == today_days + 1 {
+        String::from("tomorrow")
+    } else {
+        let month_name = match month {
+            1 => "January",
+            2 => "February",
+            3 => "March",
+            4 => "April",
+            5 => "May",
+            6 => "June",
+            7 => "July",
+            8 => "August",
+            9 => "September",
+            10 => "October",
+            11 => "November",
+            12 => "December",
+            _ => "unknown",
+        };
+        format!("on {} {}", day, month_name)
+    };
+    if all_day {
+        day_label
+    } else {
+        let clock = query::format_clock_local(epoch_ms, tz_offset_ms_value, false);
+        format!("{} at {}", day_label, clock)
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn build_query_card(
+    window: query::Window,
+    rows: &[QueryRow],
+    tz_offset_ms_value: i64,
+) -> String {
+    let title = match window {
+        query::Window::Today => "Reminders today",
+        query::Window::Tomorrow => "Reminders tomorrow",
+        query::Window::Next => "Next reminder",
+    };
+    // Multi-line body: one line per reminder. Plain text — the card
+    // renderer treats `body` as text, so newlines lay out naturally.
+    let mut body = String::new();
+    for (i, r) in rows.iter().enumerate() {
+        if i > 0 {
+            body.push('\n');
+        }
+        let clock = query::format_clock_local(r.start_ms, tz_offset_ms_value, r.all_day);
+        body.push_str(&format!("• {} — {}", r.title, clock));
+    }
+
+    let mut card = String::from("{\"id\":\"reminder-list\",\"title\":");
+    push_json_string(&mut card, title);
+    card.push_str(",\"body\":");
+    push_json_string(&mut card, &body);
+    card.push_str(",\"accent\":\"DEFAULT\"}");
+    card
 }
 
 // ── Normal create-reminder flow ───────────────────────────────────

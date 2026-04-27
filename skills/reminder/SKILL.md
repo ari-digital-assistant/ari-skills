@@ -22,6 +22,19 @@ metadata:
           weight: 0.95
         - regex: "\\b(add|put) .+ (to|on) my \\w+ list\\b"
           weight: 0.9
+        # Read-only queries — list reminders for today/tomorrow, or
+        # the next upcoming reminder. Patterns assume the input has
+        # been through `normalize_input`, which expands `what's` →
+        # `what is` and lowercases everything BEFORE the engine runs
+        # the regex. So no apostrophes here, ever.
+        - regex: "\\bwhat is (my|the) next reminder\\b"
+          weight: 0.95
+        - regex: "\\bwhat reminders? do i have\\b"
+          weight: 0.9
+        - regex: "\\b(do i have any|any|got any|have i got any) reminders?\\b"
+          weight: 0.9
+        - regex: "\\bwhat is (coming up|on my list|on today|on tomorrow)\\b"
+          weight: 0.85
         # Internal cancel round-trip: the partial-confidence card's
         # on_cancel payload emits `aricancelreminder <mode> <id>` as a
         # run_utterance. The engine routes it back here and the skill

@@ -424,6 +424,8 @@ mod tasks_impl {
         fn host_tasks_insert(params_ptr: i32, params_len: i32) -> i64;
         #[link_name = "tasks_delete"]
         fn host_tasks_delete(id: i64) -> i32;
+        #[link_name = "tasks_query_in_range"]
+        fn host_tasks_query_in_range(start_ms: i64, end_ms: i64, limit: i32) -> i64;
     }
 
     /// One writable task list the user can target. `id` is the stable
@@ -496,10 +498,40 @@ mod tasks_impl {
     pub fn tasks_delete(id: u64) -> bool {
         unsafe { host_tasks_delete(id as i64) == 1 }
     }
+
+    /// One row from [`tasks_query_in_range`]. Always-timed: untimed
+    /// tasks (no `due` value) don't appear in range queries.
+    #[derive(Debug, Clone, serde::Deserialize)]
+    pub struct TaskRow {
+        pub id: u64,
+        pub title: String,
+        /// UTC epoch ms for the task's due time.
+        pub due_ms: i64,
+        /// True when only the date portion of `due_ms` is meaningful
+        /// (the provider stored it as an all-day task).
+        pub due_all_day: bool,
+        pub list_id: u64,
+    }
+
+    /// Tasks with due time in `[start_ms, end_ms)`, ordered by due
+    /// ascending and capped at `limit`. Empty Vec when no provider
+    /// is installed, the read permission is missing, or the range
+    /// is empty.
+    pub fn tasks_query_in_range(start_ms: i64, end_ms: i64, limit: u32) -> Vec<TaskRow> {
+        let packed =
+            unsafe { host_tasks_query_in_range(start_ms, end_ms, limit as i32) };
+        let Some(json) = (unsafe { super::unpack(packed) }) else {
+            return Vec::new();
+        };
+        serde_json::from_str(json).unwrap_or_default()
+    }
 }
 
 #[cfg(feature = "tasks")]
-pub use tasks_impl::{tasks_delete, tasks_insert, tasks_list_lists, tasks_provider_installed, InsertTaskParams, TaskList};
+pub use tasks_impl::{
+    tasks_delete, tasks_insert, tasks_list_lists, tasks_provider_installed,
+    tasks_query_in_range, InsertTaskParams, TaskList, TaskRow,
+};
 
 // ---------------------------------------------------------------------------
 // Platform calendar (feature = "calendar")
@@ -520,6 +552,8 @@ mod calendar_impl {
         fn host_calendar_insert(params_ptr: i32, params_len: i32) -> i64;
         #[link_name = "calendar_delete"]
         fn host_calendar_delete(id: i64) -> i32;
+        #[link_name = "calendar_query_in_range"]
+        fn host_calendar_query_in_range(start_ms: i64, end_ms: i64, limit: i32) -> i64;
     }
 
     /// One writable calendar the user can target.
@@ -578,11 +612,43 @@ mod calendar_impl {
     pub fn calendar_delete(id: u64) -> bool {
         unsafe { host_calendar_delete(id as i64) == 1 }
     }
+
+    /// One row from [`calendar_query_in_range`]. Recurring events
+    /// expand to one row per concrete instance whose start lands in
+    /// the queried window.
+    #[derive(Debug, Clone, serde::Deserialize)]
+    pub struct CalendarEventRow {
+        pub id: u64,
+        pub title: String,
+        /// UTC epoch ms the instance starts at.
+        pub start_ms: i64,
+        /// UTC epoch ms the instance ends at. May equal `start_ms`
+        /// when the provider doesn't store a duration.
+        pub end_ms: i64,
+        pub all_day: bool,
+        pub calendar_id: u64,
+    }
+
+    /// Event instances starting in `[start_ms, end_ms)`, ordered by
+    /// start ascending and capped at `limit`.
+    pub fn calendar_query_in_range(
+        start_ms: i64,
+        end_ms: i64,
+        limit: u32,
+    ) -> Vec<CalendarEventRow> {
+        let packed =
+            unsafe { host_calendar_query_in_range(start_ms, end_ms, limit as i32) };
+        let Some(json) = (unsafe { super::unpack(packed) }) else {
+            return Vec::new();
+        };
+        serde_json::from_str(json).unwrap_or_default()
+    }
 }
 
 #[cfg(feature = "calendar")]
 pub use calendar_impl::{
     calendar_delete, calendar_has_write_permission, calendar_insert, calendar_list_calendars,
+    calendar_query_in_range, CalendarEventRow,
     Calendar, InsertCalendarEventParams,
 };
 
