@@ -208,6 +208,9 @@ extern "C" {
 
     #[link_name = "setting_get"]
     fn host_setting_get(key_ptr: i32, key_len: i32) -> i64;
+
+    #[link_name = "args"]
+    fn host_args() -> i64;
 }
 
 pub fn log(level: LogLevel, msg: &str) {
@@ -250,6 +253,29 @@ pub fn rand_u64() -> u64 {
 pub fn setting_get(key: &str) -> Option<&'static str> {
     let bytes = key.as_bytes();
     let packed = unsafe { host_setting_get(bytes.as_ptr() as i32, bytes.len() as i32) };
+    unsafe { unpack(packed) }
+}
+
+/// Typed JSON args extracted from the user's utterance by the
+/// FunctionGemma skill router. Returns `Some(json)` when the skill
+/// was invoked via the router's typed-args path; `None` when invoked
+/// via the keyword scorer or with no extracted slots.
+///
+/// The JSON object's shape matches whatever the skill declared in
+/// `parameters_schema()` (built-in skills) or inferred from
+/// `metadata.ari.examples[].args` (community skills). For example, a
+/// reminder might receive `{"title":"call mum","when":"tomorrow at 3pm"}`.
+///
+/// Skills using this should still keep their own input parser as a
+/// fallback for keyword-scorer dispatches and for cases where the
+/// model's extraction is missing fields. Self-report parse-confidence
+/// `low` on the response envelope when the args look dodgy and Layer
+/// C will consult the assistant for a better extraction.
+///
+/// Always available (no capability declaration required). Only
+/// meaningful inside `execute()` — `score()` is invoked without args.
+pub fn args() -> Option<&'static str> {
+    let packed = unsafe { host_args() };
     unsafe { unpack(packed) }
 }
 

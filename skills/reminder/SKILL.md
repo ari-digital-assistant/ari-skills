@@ -56,25 +56,75 @@ metadata:
       custom_score: false
     examples:
       - text: "remind me to walk the dog at 5pm"
+        args:
+          title: "walk the dog"
+          when: "at 5pm"
       - text: "remind me to buy milk"
+        args:
+          title: "buy milk"
       - text: "remind me to take out the bins tonight"
+        args:
+          title: "take out the bins"
+          when: "tonight"
       - text: "remind me at 9am tomorrow to call the dentist"
+        args:
+          title: "call the dentist"
+          when: "at 9am tomorrow"
       - text: "remind me in 30 minutes to check the oven"
+        args:
+          title: "check the oven"
+          when: "in 30 minutes"
       - text: "set a reminder to email Sarah on Friday at 3"
+        args:
+          title: "email Sarah"
+          when: "on Friday at 3"
       - text: "add milk to my shopping list"
+        args:
+          title: "milk"
+          list_hint: "shopping"
       - text: "put eggs on the shopping list"
+        args:
+          title: "eggs"
+          list_hint: "shopping"
       - text: "add deadline review to my work list"
+        args:
+          title: "deadline review"
+          list_hint: "work"
       - text: "remind me about the meeting at 4pm"
+        args:
+          title: "the meeting"
+          when: "at 4pm"
       # Paraphrases without literal "remind me" / "set a reminder" /
       # "add to list" triggers — teach the router that future-time
       # nudges with no explicit reminder verb still belong here.
       - text: "ping me at 5pm to walk the dog"
+        args:
+          title: "walk the dog"
+          when: "at 5pm"
       - text: "tell me at 9 tomorrow to call the dentist"
+        args:
+          title: "call the dentist"
+          when: "at 9 tomorrow"
       - text: "buzz me about the meeting at 2pm"
+        args:
+          title: "the meeting"
+          when: "at 2pm"
       - text: "wake me up at 7am"
+        args:
+          title: "wake up"
+          when: "at 7am"
       - text: "let me know to take the bins out tonight"
+        args:
+          title: "take the bins out"
+          when: "tonight"
       - text: "give me a heads up at 3pm to leave for work"
+        args:
+          title: "leave for work"
+          when: "at 3pm"
       - text: "nudge me about the dentist on Friday at 9"
+        args:
+          title: "the dentist"
+          when: "on Friday at 9"
     settings:
       - key: destination
         label: Save reminders to

@@ -119,16 +119,39 @@ pub fn dispatch(input: &str) -> String {
         return handle_query(window);
     }
 
-    let parsed = parse::parse(input);
-    ari::log(
-        ari::LogLevel::Info,
-        &format!(
-            "parse confidence={} unparsed={:?} title={:?}",
-            parsed.confidence.as_envelope_str(),
-            parsed.unparsed.as_deref().unwrap_or(""),
-            parsed.title,
-        ),
-    );
+    // Typed-args fast path: when the FunctionGemma router dispatched
+    // this skill via execute_with_args, it pre-extracted the slots
+    // (title / when / list_hint) and we skip parse.rs's grammar
+    // entirely. parse.rs still runs as the fallback for keyword-
+    // scorer dispatches and for cases where the model's args came
+    // back missing or ill-shaped. See `parsed_from_args` for the
+    // shape contract.
+    let parsed = match parsed_from_args() {
+        Some(p) => {
+            ari::log(
+                ari::LogLevel::Info,
+                &format!(
+                    "parse via typed args confidence={} title={:?}",
+                    p.confidence.as_envelope_str(),
+                    p.title,
+                ),
+            );
+            p
+        }
+        None => {
+            let p = parse::parse(input);
+            ari::log(
+                ari::LogLevel::Info,
+                &format!(
+                    "parse confidence={} unparsed={:?} title={:?}",
+                    p.confidence.as_envelope_str(),
+                    p.unparsed.as_deref().unwrap_or(""),
+                    p.title,
+                ),
+            );
+            p
+        }
+    };
 
     // Confidence-gated routing. Layer C v2 defers the commit when the
     // parser isn't sure: we emit a `consult_assistant` envelope so the
@@ -142,6 +165,83 @@ pub fn dispatch(input: &str) -> String {
             build_consult_assistant_envelope(input, &parsed)
         }
     }
+}
+
+/// Build a [`parse::Parsed`] from the FunctionGemma router's typed
+/// args, when present and well-shaped. Returns `None` when:
+/// - the router didn't dispatch this skill via `execute_with_args`
+/// - the args JSON is malformed
+/// - `title` is missing or empty (the only required slot — without
+///   it we can't sensibly create anything)
+///
+/// Any of those send us back to parse.rs as the fallback. When args
+/// are well-shaped, the model's `when` string (e.g. "tomorrow at
+/// 3pm", "in 30 minutes", or an ISO datetime) is fed to parse.rs's
+/// scanner just on that fragment so we get the existing date/time
+/// machinery without reimplementing it. Confidence reports `Partial`
+/// when `when` was supplied but couldn't be parsed cleanly, so Layer
+/// C can step in to disambiguate.
+#[cfg(target_arch = "wasm32")]
+fn parsed_from_args() -> Option<parse::Parsed> {
+    let args_json = ari::args()?;
+    let value: serde_json::Value = serde_json::from_str(args_json).ok()?;
+    let obj = value.as_object()?;
+
+    let title = obj
+        .get("title")
+        .and_then(|v| v.as_str())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())?;
+
+    let when_str = obj
+        .get("when")
+        .and_then(|v| v.as_str())
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty());
+
+    let list_hint = obj
+        .get("list_hint")
+        .and_then(|v| v.as_str())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty());
+
+    // Run parse.rs against the model's `when` fragment (if any) to
+    // crack it into a `When` variant. We deliberately don't reparse
+    // the full input — the model's title extraction is what we
+    // wanted, and parse.rs would just re-derive it.
+    let (when, when_confidence) = match when_str {
+        None => (parse::When::None, parse::Confidence::High),
+        Some(w) => {
+            // Synthesize a minimal "remind me at <when>" so the
+            // parser's date scanner has the framing it expects.
+            let synthetic = format!("remind me at {w}");
+            let parsed = parse::parse(&synthetic);
+            // If parse.rs flagged residue, treat the args as partial
+            // so Layer C disambiguates rather than committing on a
+            // half-understood time.
+            let confidence = if parsed.unparsed.is_some() {
+                parse::Confidence::Partial
+            } else {
+                parse::Confidence::High
+            };
+            (parsed.when, confidence)
+        }
+    };
+
+    Some(parse::Parsed {
+        title,
+        when,
+        list_hint,
+        speak_template: String::new(),
+        confidence: when_confidence,
+        unparsed: None,
+    })
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn parsed_from_args() -> Option<parse::Parsed> {
+    // Host-side stub — no router, no args, no typed-args path.
+    None
 }
 
 /// Host-side stub so unit tests that test parse() in isolation still
