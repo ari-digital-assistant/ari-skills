@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-04-28T09:11:30Z",
+  "generated_at": "2026-04-29T10:17:27Z",
   "skills": [
     {
       "id": "dev.heyari.counter",
@@ -18,7 +18,7 @@
       ],
       "bundle": "bundles/dev.heyari.counter-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.counter-0.1.0.tar.gz.sig",
-      "sha256": "dc52d4e2b646086595c987260e34d8baf83462c3df76b36a5a46a95b961172df",
+      "sha256": "ae727ba26e3cc25c8ff8414d268ecc7cf75247a027416af3b8b4500fb1be21bc",
       "manifest": "manifests/dev.heyari.counter-0.1.0.md"
     },
     {
@@ -35,12 +35,12 @@
       ],
       "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
-      "sha256": "9bb7af2949282d2453e4bb7e248471f3bb4cd93522cec09bd323292122991f2b",
+      "sha256": "80016b82aa0d4ed708163c6bb58bc9e8b7168e1bc1f59629878257b44e426bf2",
       "manifest": "manifests/dev.heyari.wasmecho-0.1.0.md"
     },
     {
       "id": "dev.heyari.assistant.chatgpt",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "name": "chatgpt",
       "description": "Use OpenAI's ChatGPT to answer general questions. Requires an API key from platform.openai.com. Your questions are sent to OpenAI's servers.\n",
       "license": "MIT",
@@ -50,10 +50,10 @@
       "languages": [
         "en"
       ],
-      "bundle": "bundles/dev.heyari.assistant.chatgpt-0.1.0.tar.gz",
-      "signature": "bundles/dev.heyari.assistant.chatgpt-0.1.0.tar.gz.sig",
-      "sha256": "f2073bc45bc5fd66a8825ab05cca22bdc8e2218455beae51fc42c8d73bea5062",
-      "manifest": "manifests/dev.heyari.assistant.chatgpt-0.1.0.md"
+      "bundle": "bundles/dev.heyari.assistant.chatgpt-0.2.0.tar.gz",
+      "signature": "bundles/dev.heyari.assistant.chatgpt-0.2.0.tar.gz.sig",
+      "sha256": "4297df91b97f13897723b4b5753d4a544b5f5cc588c0bd1cf2d0282c38b2b9bb",
+      "manifest": "manifests/dev.heyari.assistant.chatgpt-0.2.0.md"
     },
     {
       "id": "dev.heyari.timer",
@@ -71,7 +71,7 @@
       ],
       "bundle": "bundles/dev.heyari.timer-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.timer-0.1.0.tar.gz.sig",
-      "sha256": "d54958ac2679fc5b5556f9d50842c8c232870d8de1821c2520f3aa77bd172496",
+      "sha256": "07ff4fb06ec86b71e5fad70211f7d12da7006d1ff3af010f7492255f1fb9d213",
       "manifest": "manifests/dev.heyari.timer-0.1.0.md"
     },
     {
@@ -88,7 +88,7 @@
       ],
       "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "28e6bb71b16f73b6529dd00c2536c8e8c04dc6381be0c81e558d860ad547cb50",
+      "sha256": "965233fb56a7e9627589b2747c9b5237391003247def7b9aeca18cd3ce0c4091",
       "manifest": "manifests/dev.heyari.coinflip-0.1.0.md"
     },
     {
@@ -107,12 +107,12 @@
       ],
       "bundle": "bundles/dev.heyari.githubzen-0.1.1.tar.gz",
       "signature": "bundles/dev.heyari.githubzen-0.1.1.tar.gz.sig",
-      "sha256": "579afd0f76c765739baa7b5266b14187b2896ed63ffb2b9e3fe04a50c9baf80d",
+      "sha256": "dc233e90ac30b2dae465cdfdb0df5f6b1d2bf107b50c4c6bc65cf44269c6522a",
       "manifest": "manifests/dev.heyari.githubzen-0.1.1.md"
     },
     {
       "id": "dev.heyari.assistant.claude",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "name": "claude",
       "description": "Use Anthropic's Claude to answer general questions. Requires an API key from console.anthropic.com. Your questions are sent to Anthropic's servers.\n",
       "license": "MIT",
@@ -122,14 +122,14 @@
       "languages": [
         "en"
       ],
-      "bundle": "bundles/dev.heyari.assistant.claude-0.1.0.tar.gz",
-      "signature": "bundles/dev.heyari.assistant.claude-0.1.0.tar.gz.sig",
-      "sha256": "fb2c13c956f23b9a9126eaef455c24d9a66077817391fb78d2382686ab2bb1e0",
-      "manifest": "manifests/dev.heyari.assistant.claude-0.1.0.md"
+      "bundle": "bundles/dev.heyari.assistant.claude-0.2.0.tar.gz",
+      "signature": "bundles/dev.heyari.assistant.claude-0.2.0.tar.gz.sig",
+      "sha256": "7c080e92820e1a53fb205ec14c3a33e182f6073bce1f460e069e7afb3f9760e8",
+      "manifest": "manifests/dev.heyari.assistant.claude-0.2.0.md"
     },
     {
       "id": "dev.heyari.assistant.gemini",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "name": "gemini",
       "description": "Use Google's Gemini to answer general questions. Requires an API key from aistudio.google.com. Your questions are sent to Google's servers.\n",
       "license": "MIT",
@@ -139,10 +139,10 @@
       "languages": [
         "en"
       ],
-      "bundle": "bundles/dev.heyari.assistant.gemini-0.1.0.tar.gz",
-      "signature": "bundles/dev.heyari.assistant.gemini-0.1.0.tar.gz.sig",
-      "sha256": "9f3c2cb1ea44c5501d410d0bd601787d6588dc09fba4c488973f3556cff3c8bb",
-      "manifest": "manifests/dev.heyari.assistant.gemini-0.1.0.md"
+      "bundle": "bundles/dev.heyari.assistant.gemini-0.2.0.tar.gz",
+      "signature": "bundles/dev.heyari.assistant.gemini-0.2.0.tar.gz.sig",
+      "sha256": "ae7e869db388bda07ee67096d72a2840281ee8394fbf5009a3d4d641f1b89521",
+      "manifest": "manifests/dev.heyari.assistant.gemini-0.2.0.md"
     },
     {
       "id": "dev.heyari.reminder",
@@ -161,7 +161,7 @@
       ],
       "bundle": "bundles/dev.heyari.reminder-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.reminder-0.1.0.tar.gz.sig",
-      "sha256": "089e3f51cefae1bd5c78a4e02a8ad159bc043524d5ca356dd8888df736595a01",
+      "sha256": "7d1cb8bceb4359431fdc099bdf202bd5080ab863fe3187bad917a1c0a12f72fb",
       "manifest": "manifests/dev.heyari.reminder-0.1.0.md"
     }
   ]
