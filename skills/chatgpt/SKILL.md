@@ -8,7 +8,7 @@ description: >
 metadata:
   ari:
     id: dev.heyari.assistant.chatgpt
-    version: "0.1.0"
+    version: "0.2.0"
     type: assistant
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari
@@ -46,6 +46,7 @@ metadata:
     assistant:
       provider: api
       privacy: cloud
+      aliases: [chatgpt, chat gpt, gpt, openai]
       api:
         endpoint: https://api.openai.com/v1/chat/completions
         auth: bearer

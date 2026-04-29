@@ -8,7 +8,7 @@ description: >
 metadata:
   ari:
     id: dev.heyari.assistant.gemini
-    version: "0.1.0"
+    version: "0.2.0"
     type: assistant
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari
@@ -44,6 +44,7 @@ metadata:
     assistant:
       provider: api
       privacy: cloud
+      aliases: [gemini, google ai]
       api:
         endpoint: https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
         auth: bearer
