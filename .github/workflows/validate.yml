@@ -23,6 +23,8 @@ permissions:
 # engine release changes manifest semantics.
 env:
   ARI_ENGINE_REF: main
+  # Force JS actions onto Node 24 ahead of the 2026-06-02 default flip.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
   validate:
