@@ -217,6 +217,27 @@ extern "C" {
 
     #[link_name = "t"]
     fn host_t(key_ptr: i32, key_len: i32, args_ptr: i32, args_len: i32) -> i64;
+
+    #[link_name = "format_date"]
+    fn host_format_date(
+        ts_ms: i64,
+        locale_ptr: i32, locale_len: i32,
+        style_ptr: i32, style_len: i32,
+    ) -> i64;
+
+    #[link_name = "format_number"]
+    fn host_format_number(
+        value: f64,
+        locale_ptr: i32, locale_len: i32,
+        style_ptr: i32, style_len: i32,
+    ) -> i64;
+
+    #[link_name = "format_currency"]
+    fn host_format_currency(
+        amount: f64,
+        currency_ptr: i32, currency_len: i32,
+        locale_ptr: i32, locale_len: i32,
+    ) -> i64;
 }
 
 pub fn log(level: LogLevel, msg: &str) {
@@ -342,6 +363,77 @@ pub fn t(key: &str, args: &[(&str, &str)]) -> Option<&'static str> {
             key_bytes.len() as i32,
             json_bytes.as_ptr() as i32,
             json_bytes.len() as i32,
+        )
+    };
+    unsafe { unpack(packed) }
+}
+
+/// Format a Unix epoch millisecond timestamp as a date in the given
+/// locale. Pass `""` for `locale` to use the user's currently-active
+/// language. `style` is `"short"`, `"medium"`, `"long"`, or `"full"`;
+/// unrecognised values default to `"medium"`.
+///
+/// ```ignore
+/// // Italian user: "30 aprile 2026"; English user: "30 April 2026"
+/// let when = ari::format_date(ari::now_ms(), "", "long")
+///     .unwrap_or("today");
+/// ```
+///
+/// Always available, no capability declaration required.
+pub fn format_date(ts_ms: i64, locale: &str, style: &str) -> Option<&'static str> {
+    let locale_bytes = locale.as_bytes();
+    let style_bytes = style.as_bytes();
+    let packed = unsafe {
+        host_format_date(
+            ts_ms,
+            locale_bytes.as_ptr() as i32,
+            locale_bytes.len() as i32,
+            style_bytes.as_ptr() as i32,
+            style_bytes.len() as i32,
+        )
+    };
+    unsafe { unpack(packed) }
+}
+
+/// Format a number using the locale's decimal and group separators
+/// (e.g. `1,234.56` in English, `1.234,56` in Italian). Pass `""` for
+/// `locale` to use the active locale. `style` is reserved for future
+/// distinctions (decimal vs percent vs scientific) — currently only
+/// the decimal form is implemented and `style` is ignored.
+///
+/// Always available, no capability declaration required.
+pub fn format_number(value: f64, locale: &str, style: &str) -> Option<&'static str> {
+    let locale_bytes = locale.as_bytes();
+    let style_bytes = style.as_bytes();
+    let packed = unsafe {
+        host_format_number(
+            value,
+            locale_bytes.as_ptr() as i32,
+            locale_bytes.len() as i32,
+            style_bytes.as_ptr() as i32,
+            style_bytes.len() as i32,
+        )
+    };
+    unsafe { unpack(packed) }
+}
+
+/// Format a monetary amount with a currency symbol or code, in the
+/// locale's customary position (`$1,234.56` in en-USD, `1.234,56 €`
+/// in it-EUR). `currency` is the ISO 4217 code; unknown codes pass
+/// through verbatim instead of failing. Pass `""` for `locale` to use
+/// the active locale.
+///
+/// Always available, no capability declaration required.
+pub fn format_currency(amount: f64, currency: &str, locale: &str) -> Option<&'static str> {
+    let currency_bytes = currency.as_bytes();
+    let locale_bytes = locale.as_bytes();
+    let packed = unsafe {
+        host_format_currency(
+            amount,
+            currency_bytes.as_ptr() as i32,
+            currency_bytes.len() as i32,
+            locale_bytes.as_ptr() as i32,
+            locale_bytes.len() as i32,
         )
     };
     unsafe { unpack(packed) }
