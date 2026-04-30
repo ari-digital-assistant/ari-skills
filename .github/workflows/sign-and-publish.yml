@@ -34,6 +34,9 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+      - name: Silence git default-branch hint
+        run: git config --global init.defaultBranch main
+
       - name: Check out ari-skills
         uses: actions/checkout@v5
 
