@@ -211,6 +211,12 @@ extern "C" {
 
     #[link_name = "args"]
     fn host_args() -> i64;
+
+    #[link_name = "get_locale"]
+    fn host_get_locale() -> i64;
+
+    #[link_name = "t"]
+    fn host_t(key_ptr: i32, key_len: i32, args_ptr: i32, args_len: i32) -> i64;
 }
 
 pub fn log(level: LogLevel, msg: &str) {
@@ -277,6 +283,184 @@ pub fn setting_get(key: &str) -> Option<&'static str> {
 pub fn args() -> Option<&'static str> {
     let packed = unsafe { host_args() };
     unsafe { unpack(packed) }
+}
+
+// ---------------------------------------------------------------------------
+// Locale + i18n
+// ---------------------------------------------------------------------------
+
+/// The user's currently-active language as an ISO 639-1 lowercase
+/// code (`"en"`, `"it"`, …). Read fresh on every call from the host's
+/// locale provider — skills that fork their behaviour on language
+/// (different parsers, different default settings) should call this
+/// once at the top of `execute()` and branch from there.
+///
+/// Always available, no capability declaration required.
+pub fn get_locale() -> &'static str {
+    let packed = unsafe { host_get_locale() };
+    // The host always writes *something* (defaulting to "en" when no
+    // provider is wired). A 0-packed return would mean the wasm
+    // memory export is broken, which the SDK can't recover from
+    // — fall through to "en" as a last-resort sentinel rather than
+    // panicking.
+    unsafe { unpack(packed) }.unwrap_or("en")
+}
+
+/// Look up a translation key in the skill's `strings/{locale}.json`
+/// table for the user's active locale, falling back to English when
+/// the requested locale doesn't have the key. Substitutes
+/// `{placeholder}` slots from the `args` slice.
+///
+/// On a full miss (key absent in both the active locale and English),
+/// the host returns the bare key as the resolved string — visible-
+/// failure UX so a typo stays visible rather than rendering empty.
+/// `None` only on the degenerate case where the host can't read this
+/// skill's WASM memory at all (effectively unreachable from a
+/// running skill); pair with `.unwrap_or(...)` to a fallback string
+/// at the call site.
+///
+/// `args` is a slice of `(name, value)` string pairs. The SDK
+/// serialises it to a flat JSON object before crossing the WASM
+/// boundary; numeric placeholders should be stringified by the
+/// caller (`{"count": "3"}`). Empty args is fine — many keys have no
+/// placeholders.
+///
+/// Always available, no capability declaration required.
+///
+/// ```ignore
+/// let greeting = ari::t("greet.hello", &[("name", "Keith")])
+///     .unwrap_or("Hello!");
+/// // → "Hi Keith!" in English, "Ciao Keith!" in Italian, …
+/// ```
+pub fn t(key: &str, args: &[(&str, &str)]) -> Option<&'static str> {
+    let json = encode_args_json(args);
+    let key_bytes = key.as_bytes();
+    let json_bytes = json.as_bytes();
+    let packed = unsafe {
+        host_t(
+            key_bytes.as_ptr() as i32,
+            key_bytes.len() as i32,
+            json_bytes.as_ptr() as i32,
+            json_bytes.len() as i32,
+        )
+    };
+    unsafe { unpack(packed) }
+}
+
+/// Encode a slice of (name, value) pairs as a flat JSON object.
+/// Hand-rolled to keep `t()` available without the `serde` features
+/// — it's a core capability every skill might want, and forcing the
+/// `serde_json` dep on every translation call would bloat lean text-
+/// only skills.
+fn encode_args_json(args: &[(&str, &str)]) -> String {
+    if args.is_empty() {
+        return String::new();
+    }
+    let mut s = String::with_capacity(args.len() * 32);
+    s.push('{');
+    for (i, (k, v)) in args.iter().enumerate() {
+        if i > 0 {
+            s.push(',');
+        }
+        json_escape_into(&mut s, k);
+        s.push(':');
+        json_escape_into(&mut s, v);
+    }
+    s.push('}');
+    s
+}
+
+fn json_escape_into(out: &mut String, val: &str) {
+    out.push('"');
+    for c in val.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            // ASCII control chars get \uXXXX-escaped; everything
+            // else (including all printable Unicode) goes through
+            // verbatim — JSON allows raw UTF-8 for non-control chars.
+            c if (c as u32) < 0x20 => {
+                out.push_str("\\u00");
+                let n = c as u32;
+                out.push(hex_nibble((n >> 4) & 0xf));
+                out.push(hex_nibble(n & 0xf));
+            }
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+}
+
+fn hex_nibble(n: u32) -> char {
+    match n {
+        0..=9 => (b'0' + n as u8) as char,
+        10..=15 => (b'a' + (n - 10) as u8) as char,
+        _ => '0',
+    }
+}
+
+#[cfg(test)]
+mod i18n_tests {
+    use super::{encode_args_json, hex_nibble, json_escape_into};
+
+    #[test]
+    fn encode_args_empty_yields_empty_string() {
+        // Convention: empty args → empty JSON, host treats this as
+        // "no args" without a parse attempt.
+        assert_eq!(encode_args_json(&[]), "");
+    }
+
+    #[test]
+    fn encode_args_single_pair() {
+        assert_eq!(
+            encode_args_json(&[("name", "Keith")]),
+            r#"{"name":"Keith"}"#
+        );
+    }
+
+    #[test]
+    fn encode_args_multiple_pairs() {
+        assert_eq!(
+            encode_args_json(&[("name", "Keith"), ("count", "3")]),
+            r#"{"name":"Keith","count":"3"}"#
+        );
+    }
+
+    #[test]
+    fn encode_args_escapes_quotes_and_backslashes() {
+        // Carefully constructed values — we want both quote and
+        // backslash to be escaped properly so the host's
+        // serde_json::from_str round-trips.
+        let escaped = encode_args_json(&[("k", "she said \"hi\\there\"")]);
+        assert_eq!(escaped, r#"{"k":"she said \"hi\\there\""}"#);
+    }
+
+    #[test]
+    fn encode_args_escapes_control_characters() {
+        let mut s = String::new();
+        json_escape_into(&mut s, "a\x01b");
+        assert_eq!(s, r#""a\u0001b""#);
+    }
+
+    #[test]
+    fn encode_args_passes_unicode_verbatim() {
+        // Italian "Ciao!" with non-ASCII characters should NOT be
+        // \uXXXX-escaped — JSON allows raw UTF-8 in strings.
+        let mut s = String::new();
+        json_escape_into(&mut s, "Ciaò");
+        assert_eq!(s, r#""Ciaò""#);
+    }
+
+    #[test]
+    fn hex_nibble_covers_full_range() {
+        assert_eq!(hex_nibble(0), '0');
+        assert_eq!(hex_nibble(9), '9');
+        assert_eq!(hex_nibble(10), 'a');
+        assert_eq!(hex_nibble(15), 'f');
+    }
 }
 
 // ---------------------------------------------------------------------------
