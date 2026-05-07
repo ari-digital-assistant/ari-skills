@@ -3,6 +3,13 @@
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
+// String / Vec live in `alloc` under no_std and are part of the prelude
+// under std. Make them available at module level so helpers like
+// `encode_args_json` (declared outside the per-section blocks that
+// already do their own imports) compile against either.
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
+
 #[cfg(feature = "presentation")]
 pub mod presentation;
 
