@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-05-07T11:03:03Z",
+  "generated_at": "2026-05-07T11:23:20Z",
   "skills": [
     {
       "id": "dev.heyari.counter",
@@ -18,7 +18,7 @@
       ],
       "bundle": "bundles/dev.heyari.counter-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.counter-0.1.0.tar.gz.sig",
-      "sha256": "114990a9bb334cf1df60753065b1d212d5d2005dae002722583982060a9ce503",
+      "sha256": "8668ac96c7d818ef83a4ea4d766e6d2eaafda7d21ad4738dd4b56e9220e0dbbf",
       "manifest": "manifests/dev.heyari.counter-0.1.0.md"
     },
     {
@@ -35,7 +35,7 @@
       ],
       "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
-      "sha256": "2d9a688c7ea5325eb682f242a89c97a8012e8fa6cd91fd2f2b95513bb19196f4",
+      "sha256": "ff38d70c7d6ad32bf0ea4867a756b168b9290a43bd2b49c9e2a8f6dca9a67cb5",
       "manifest": "manifests/dev.heyari.wasmecho-0.1.0.md"
     },
     {
@@ -56,7 +56,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz.sig",
-      "sha256": "9bf72fd2ca42e730a5ab76d4b946d9ea8e4c44cd665d30913eccb074f6e685ac",
+      "sha256": "2c3049eea5ae89a7bd1ea2d995119c34727f0b41025031f5fd6e5f0b9e6cfa7a",
       "manifest": "manifests/dev.heyari.assistant.chatgpt-0.3.0.md"
     },
     {
@@ -75,7 +75,7 @@
       ],
       "bundle": "bundles/dev.heyari.timer-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.timer-0.1.0.tar.gz.sig",
-      "sha256": "7131506e327190022cee9d01a5a7a3a51ecc8ed869de15bcb75cfd64689291cc",
+      "sha256": "6195357d92e02e16dd72581e8d84874cad9f7810c08f5d7310e5e507b86a88c0",
       "manifest": "manifests/dev.heyari.timer-0.1.0.md"
     },
     {
@@ -92,7 +92,7 @@
       ],
       "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "7ea8c27c119f7f640b5e701d8ce8fa873c6ff94858a44c58cd7920c872c206f5",
+      "sha256": "249c2c5c536a33d57e082019014db4df179f23cfa9d69260a744998c948d8278",
       "manifest": "manifests/dev.heyari.coinflip-0.1.0.md"
     },
     {
@@ -111,7 +111,7 @@
       ],
       "bundle": "bundles/dev.heyari.githubzen-0.1.1.tar.gz",
       "signature": "bundles/dev.heyari.githubzen-0.1.1.tar.gz.sig",
-      "sha256": "d8eec664626d47bf8f2fe7a2802f8eb9316ec13d45d389525028b23f26931acb",
+      "sha256": "aa33e549dccb5f23ecd39c3b50f16f37a5ef3cc46f7bb9df5aa6ba4687412236",
       "manifest": "manifests/dev.heyari.githubzen-0.1.1.md"
     },
     {
@@ -132,7 +132,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz.sig",
-      "sha256": "749fba382cccfe00a0cc6f52b1dd2e798931af3154b2f7eb98bb3b6b8885113d",
+      "sha256": "2acd0855004777d9b400046ce27906ab69bb67a3f3c6d0ef46ad5338083cff1d",
       "manifest": "manifests/dev.heyari.assistant.claude-0.3.0.md"
     },
     {
@@ -153,8 +153,29 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.gemini-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.gemini-0.3.0.tar.gz.sig",
-      "sha256": "85dd93f915dd658f471c63f2cdda3f0e6e073c02cf4ba51f6c96b6e9b08f9be9",
+      "sha256": "cccf169a349cee64e24d7bbb1a5644bbb5589c67f7c034b09ea1105b14c7254e",
       "manifest": "manifests/dev.heyari.assistant.gemini-0.3.0.md"
+    },
+    {
+      "id": "dev.heyari.reminder",
+      "version": "0.2.0",
+      "name": "reminder",
+      "description": "Sets timed reminders and untimed list items. Routes to the user's tasks app (default), calendar, or both, with optional voice-named lists like \"add milk to my shopping list\".",
+      "license": "MIT",
+      "author": "Ari core team",
+      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
+      "capabilities": [
+        "calendar",
+        "tasks"
+      ],
+      "languages": [
+        "en",
+        "it"
+      ],
+      "bundle": "bundles/dev.heyari.reminder-0.2.0.tar.gz",
+      "signature": "bundles/dev.heyari.reminder-0.2.0.tar.gz.sig",
+      "sha256": "44d084f92ea9b260bbd8a5cbcc1ce79d524556b0206552a785fec106783615d5",
+      "manifest": "manifests/dev.heyari.reminder-0.2.0.md"
     }
   ]
 }
