@@ -1,0 +1,72 @@
+{
+  "cancel.success": "OK, cancelled that.",
+  "cancel.not_found": "I couldn't find that to cancel — it might have already been removed.",
+
+  "clarification.no_button.speak": "OK, I won't add that reminder.",
+  "clarification.card.title": "Is this right?",
+  "clarification.card.yes": "Yes",
+  "clarification.card.no": "No",
+
+  "query.empty.next": "You don't have any upcoming reminders.",
+  "query.empty.today": "You have nothing on your list for today.",
+  "query.empty.tomorrow": "You have nothing on your list for tomorrow.",
+  "query.next.template": "Your next reminder is to {title} {when}.",
+  "query.single.template": "You have one reminder {label}: {title} at {clock}.",
+  "query.multi.preface": "You have {count} reminders {label}: ",
+  "query.multi.first_item": "{title} at {clock}",
+  "query.multi.middle_item": ", {title} at {clock}",
+  "query.multi.last_item": ", and {title} at {clock}",
+  "query.card.title.today": "Reminders today",
+  "query.card.title.tomorrow": "Reminders tomorrow",
+  "query.card.title.next": "Next reminder",
+
+  "label.today": "today",
+  "label.tomorrow": "tomorrow",
+  "label.on_day_month": "on {day} {month}",
+  "label.day_month": "{day} {month}",
+
+  "success.untimed": "Added {title} to your {destination_name} list.",
+  "success.timed": "Set {title} for {when_phrase}.",
+  "success.partial.untimed_preface": "I've added {title} to your {destination_name} list",
+  "success.partial.timed_preface": "I've set this for {when_phrase}",
+  "success.partial.aside_unparsed": ". I wasn't sure what \"{unparsed}\" meant — tap Cancel on the card if that was important.",
+  "success.partial.aside_no_unparsed": ". Tap Cancel on the card if that's not what you meant.",
+
+  "when_phrase.untimed": "your list",
+
+  "error.no_tasks_app": "I can't add tasks because no tasks app is installed.",
+  "error.no_lists": "Your tasks app doesn't have any lists set up yet.",
+  "error.tasks_save_failed": "I couldn't save that task. Check the tasks app has permission.",
+  "error.calendar_no_time": "That reminder has no time, so I can't put it on the calendar.",
+  "error.calendar_no_permission": "I need calendar write access to save that.",
+  "error.calendar_no_writable": "I couldn't find any writable calendars.",
+  "error.calendar_save_failed": "I couldn't add that to the calendar.",
+
+  "partial_card.subtitle.untimed": "no specific time",
+  "partial_card.body.unparsed": "I didn't understand \"{unparsed}\". Tap Cancel if that was important.",
+  "partial_card.body.no_unparsed": "Tap Cancel if that's not what you meant.",
+
+  "time.format.minute_zero": "{day_label} at {clock}",
+  "time.format.minute_nonzero": "{day_label} at {clock}",
+
+  "month.1": "January",
+  "month.2": "February",
+  "month.3": "March",
+  "month.4": "April",
+  "month.5": "May",
+  "month.6": "June",
+  "month.7": "July",
+  "month.8": "August",
+  "month.9": "September",
+  "month.10": "October",
+  "month.11": "November",
+  "month.12": "December",
+
+  "weekday.0": "Monday",
+  "weekday.1": "Tuesday",
+  "weekday.2": "Wednesday",
+  "weekday.3": "Thursday",
+  "weekday.4": "Friday",
+  "weekday.5": "Saturday",
+  "weekday.6": "Sunday"
+}

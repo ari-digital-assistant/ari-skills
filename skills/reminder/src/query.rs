@@ -13,7 +13,6 @@
 //! meant.
 
 use alloc::string::String;
-use alloc::string::ToString;
 
 /// Time scope the user asked about. Resolved into a concrete
 /// `[start_ms, end_ms)` window by [`Window::resolve`] using the host
@@ -135,43 +134,56 @@ impl Window {
         }
     }
 
-    /// Human label used in the response speak ("today" / "tomorrow"
-    /// / "" — the `Next` case doesn't need a label).
-    pub fn day_label(&self) -> &'static str {
-        match self {
-            Window::Today => "today",
-            Window::Tomorrow => "tomorrow",
-            Window::Next => "",
-        }
-    }
 }
 
 /// Render an HH:MM clock from a UTC epoch ms + the local TZ offset.
-/// Returns an `am`/`pm` formatted string. Uses the same conventions
-/// as `format_when_phrase` in `lib.rs` so the query response and
-/// the create confirmation phrase the same way.
-pub fn format_clock_local(epoch_ms: i64, tz_offset_ms: i64, all_day: bool) -> String {
+/// `locale` switches the format:
+///   - `"en"` → 12-hour with `am`/`pm` ("9:30am", "3pm")
+///   - everything else → 24-hour ("09:30", "15:00")
+///
+/// Italian, Spanish, French, German all conventionally use 24-hour
+/// in writing for fixed times. The 12-hour format is largely English-
+/// specific. If a future locale needs a different rule, branch here.
+pub fn format_clock_local(
+    epoch_ms: i64,
+    tz_offset_ms: i64,
+    all_day: bool,
+    locale: &str,
+) -> String {
     if all_day {
-        return String::from("all day");
+        return match locale {
+            "it" => String::from("tutto il giorno"),
+            "es" => String::from("todo el día"),
+            "fr" => String::from("toute la journée"),
+            "de" => String::from("ganztägig"),
+            _ => String::from("all day"),
+        };
     }
     let local_ms = epoch_ms + tz_offset_ms;
     let total_secs = local_ms.div_euclid(1000);
     let secs_of_day = total_secs.rem_euclid(86_400);
     let hour = (secs_of_day / 3600) as u8;
     let minute = ((secs_of_day % 3600) / 60) as u8;
-    let (h12, ampm) = if hour == 0 {
-        (12, "am")
-    } else if hour < 12 {
-        (hour, "am")
-    } else if hour == 12 {
-        (12, "pm")
+    if locale == "en" {
+        let (h12, ampm) = if hour == 0 {
+            (12, "am")
+        } else if hour < 12 {
+            (hour, "am")
+        } else if hour == 12 {
+            (12, "pm")
+        } else {
+            (hour - 12, "pm")
+        };
+        if minute == 0 {
+            alloc::format!("{}{}", h12, ampm)
+        } else {
+            alloc::format!("{}:{:02}{}", h12, minute, ampm)
+        }
     } else {
-        (hour - 12, "pm")
-    };
-    if minute == 0 {
-        alloc::format!("{}{}", h12, ampm)
-    } else {
-        alloc::format!("{}:{:02}{}", h12, minute, ampm)
+        // 24-hour. Always two-digit hour for visual consistency
+        // ("09:30" / "15:00") — the leading zero is the conventional
+        // form in IT/ES/FR/DE writing.
+        alloc::format!("{:02}:{:02}", hour, minute)
     }
 }
 
@@ -220,33 +232,61 @@ mod tests {
     }
 
     #[test]
-    fn format_clock_local_handles_morning() {
+    fn format_clock_local_handles_morning_en() {
         // 09:30 UTC + 0 offset = 9:30am
         let ms = 9 * 3_600_000 + 30 * 60_000;
-        assert_eq!(format_clock_local(ms, 0, false), "9:30am");
+        assert_eq!(format_clock_local(ms, 0, false, "en"), "9:30am");
     }
 
     #[test]
-    fn format_clock_local_handles_pm() {
+    fn format_clock_local_handles_pm_en() {
         let ms = 15 * 3_600_000;
-        assert_eq!(format_clock_local(ms, 0, false), "3pm");
+        assert_eq!(format_clock_local(ms, 0, false, "en"), "3pm");
     }
 
     #[test]
-    fn format_clock_local_handles_midnight() {
-        assert_eq!(format_clock_local(0, 0, false), "12am");
+    fn format_clock_local_handles_midnight_en() {
+        assert_eq!(format_clock_local(0, 0, false, "en"), "12am");
     }
 
     #[test]
-    fn format_clock_local_handles_all_day() {
-        assert_eq!(format_clock_local(0, 0, true), "all day");
+    fn format_clock_local_handles_all_day_en() {
+        assert_eq!(format_clock_local(0, 0, true, "en"), "all day");
     }
 
     #[test]
-    fn format_clock_local_applies_offset() {
+    fn format_clock_local_applies_offset_en() {
         // 09:00 UTC + 1 hour offset = 10am local
         let ms = 9 * 3_600_000;
-        assert_eq!(format_clock_local(ms, 3_600_000, false), "10am");
+        assert_eq!(format_clock_local(ms, 3_600_000, false, "en"), "10am");
+    }
+
+    #[test]
+    fn format_clock_local_24h_for_italian() {
+        // Italian conventionally uses 24-hour format. 15:00 stays 15:00,
+        // 09:30 stays 09:30 (with leading-zero hour for consistency).
+        let ms = 15 * 3_600_000;
+        assert_eq!(format_clock_local(ms, 0, false, "it"), "15:00");
+        let ms = 9 * 3_600_000 + 30 * 60_000;
+        assert_eq!(format_clock_local(ms, 0, false, "it"), "09:30");
+    }
+
+    #[test]
+    fn format_clock_local_24h_midnight_italian() {
+        assert_eq!(format_clock_local(0, 0, false, "it"), "00:00");
+    }
+
+    #[test]
+    fn format_clock_local_all_day_italian() {
+        assert_eq!(format_clock_local(0, 0, true, "it"), "tutto il giorno");
+    }
+
+    #[test]
+    fn format_clock_local_24h_for_unknown_locale() {
+        // Locales we haven't explicitly cased fall through to 24-hour
+        // — safer default than 12-hour, which is largely English-specific.
+        let ms = 15 * 3_600_000;
+        assert_eq!(format_clock_local(ms, 0, false, "ja"), "15:00");
     }
 
     fn fake_civil_to_epoch_ms(year: i32, month: u8, day: u8, h: u8, m: u8) -> i64 {

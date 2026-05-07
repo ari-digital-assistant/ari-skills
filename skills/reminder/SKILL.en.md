@@ -5,12 +5,12 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.reminder
-    version: "0.1.0"
+    version: "0.2.0"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
     capabilities: [calendar, tasks]
-    languages: [en]
+    languages: [en, it]
     specificity: high
     matching:
       patterns:
@@ -234,8 +234,13 @@ shared envelope schema.
 
 ## Notes
 
-Time parsing is English-only for v0.1. Future translations are the
-skill's own responsibility — the engine and frontend stay locale-naive.
+Time parsing is locale-aware as of v0.2.0 — English ("at 5pm",
+"tomorrow", "in 30 minutes") and Italian ("alle 17", "domani", "tra 30
+minuti") shapes are both recognised by the same parser. Italian users
+get the matching `SKILL.it.md` manifest for routing and the
+`strings/it.json` table for response phrasing. Adding a third language
+is a one-pass addition to the parser's union dictionaries plus a new
+`SKILL.<locale>.md` and `strings/<locale>.json`.
 
 Untimed reminders always route to Tasks regardless of the
 **Save reminders to** setting, since calendar grids have no useful
