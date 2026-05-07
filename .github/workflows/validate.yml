@@ -22,7 +22,14 @@ permissions:
 # Pin the engine version that CI validates against. Bump this when a new
 # engine release changes manifest semantics.
 env:
-  ARI_ENGINE_REF: main
+  # Pinned to `project-multilang` while the multi-language work is in
+  # flight on the ari-engine side — the localised manifest support
+  # (`SKILL.en.md` / `SKILL.it.md`, the per-locale strings table loader)
+  # lives on that branch and isn't on `main` yet. Bump back to `main`
+  # once project-multilang merges down. Without this, any skill that
+  # adopts the per-locale layout fails validation against an older
+  # loader that only knows about SKILL.md.
+  ARI_ENGINE_REF: project-multilang
   # Force JS actions onto Node 24 ahead of the 2026-06-02 default flip.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
