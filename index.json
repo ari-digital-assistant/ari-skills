@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-05-07T11:23:20Z",
+  "generated_at": "2026-05-07T12:34:40Z",
   "skills": [
     {
       "id": "dev.heyari.counter",
@@ -18,8 +18,9 @@
       ],
       "bundle": "bundles/dev.heyari.counter-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.counter-0.1.0.tar.gz.sig",
-      "sha256": "8668ac96c7d818ef83a4ea4d766e6d2eaafda7d21ad4738dd4b56e9220e0dbbf",
-      "manifest": "manifests/dev.heyari.counter-0.1.0.md"
+      "sha256": "f1d6994fd125d48b76308af15bdfeade4cb575d6df62983a88563c64bf32554b",
+      "manifest": "manifests/dev.heyari.counter-0.1.0.md",
+      "localizations": {}
     },
     {
       "id": "dev.heyari.wasmecho",
@@ -35,8 +36,9 @@
       ],
       "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
-      "sha256": "ff38d70c7d6ad32bf0ea4867a756b168b9290a43bd2b49c9e2a8f6dca9a67cb5",
-      "manifest": "manifests/dev.heyari.wasmecho-0.1.0.md"
+      "sha256": "88bd0bba11d634aaad55a52dfc59aa6a36c931d619aa349395029e5213db6f39",
+      "manifest": "manifests/dev.heyari.wasmecho-0.1.0.md",
+      "localizations": {}
     },
     {
       "id": "dev.heyari.assistant.chatgpt",
@@ -56,8 +58,9 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz.sig",
-      "sha256": "2c3049eea5ae89a7bd1ea2d995119c34727f0b41025031f5fd6e5f0b9e6cfa7a",
-      "manifest": "manifests/dev.heyari.assistant.chatgpt-0.3.0.md"
+      "sha256": "30becfc5c3258359bc4fd31d90c1ca2a7b15ecdb7fe9d304e47068b30428a93e",
+      "manifest": "manifests/dev.heyari.assistant.chatgpt-0.3.0.md",
+      "localizations": {}
     },
     {
       "id": "dev.heyari.timer",
@@ -75,8 +78,9 @@
       ],
       "bundle": "bundles/dev.heyari.timer-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.timer-0.1.0.tar.gz.sig",
-      "sha256": "6195357d92e02e16dd72581e8d84874cad9f7810c08f5d7310e5e507b86a88c0",
-      "manifest": "manifests/dev.heyari.timer-0.1.0.md"
+      "sha256": "567b45fdbfa526813ee035fcf9d2798927d01efd593e13da8be86086621f80d7",
+      "manifest": "manifests/dev.heyari.timer-0.1.0.md",
+      "localizations": {}
     },
     {
       "id": "dev.heyari.coinflip",
@@ -92,8 +96,9 @@
       ],
       "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "249c2c5c536a33d57e082019014db4df179f23cfa9d69260a744998c948d8278",
-      "manifest": "manifests/dev.heyari.coinflip-0.1.0.md"
+      "sha256": "b8b01e17084cefcb0b769ce924504d6c1999ab175d05c94f3354bb34b1e02434",
+      "manifest": "manifests/dev.heyari.coinflip-0.1.0.md",
+      "localizations": {}
     },
     {
       "id": "dev.heyari.githubzen",
@@ -111,8 +116,9 @@
       ],
       "bundle": "bundles/dev.heyari.githubzen-0.1.1.tar.gz",
       "signature": "bundles/dev.heyari.githubzen-0.1.1.tar.gz.sig",
-      "sha256": "aa33e549dccb5f23ecd39c3b50f16f37a5ef3cc46f7bb9df5aa6ba4687412236",
-      "manifest": "manifests/dev.heyari.githubzen-0.1.1.md"
+      "sha256": "0a376d56413f664dc512acd25b8bf22e28980eb07645c3fa91959eb1babd77bb",
+      "manifest": "manifests/dev.heyari.githubzen-0.1.1.md",
+      "localizations": {}
     },
     {
       "id": "dev.heyari.assistant.claude",
@@ -132,8 +138,9 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz.sig",
-      "sha256": "2acd0855004777d9b400046ce27906ab69bb67a3f3c6d0ef46ad5338083cff1d",
-      "manifest": "manifests/dev.heyari.assistant.claude-0.3.0.md"
+      "sha256": "cb81824e892e8ddbda4113a626948927e39614bec8238160bdd5ce3d29ecd84e",
+      "manifest": "manifests/dev.heyari.assistant.claude-0.3.0.md",
+      "localizations": {}
     },
     {
       "id": "dev.heyari.assistant.gemini",
@@ -153,8 +160,9 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.gemini-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.gemini-0.3.0.tar.gz.sig",
-      "sha256": "cccf169a349cee64e24d7bbb1a5644bbb5589c67f7c034b09ea1105b14c7254e",
-      "manifest": "manifests/dev.heyari.assistant.gemini-0.3.0.md"
+      "sha256": "a1e368d9e9c798c355480a82ea3cc6c3073baca2e306175c5fd4382923f47388",
+      "manifest": "manifests/dev.heyari.assistant.gemini-0.3.0.md",
+      "localizations": {}
     },
     {
       "id": "dev.heyari.reminder",
@@ -174,8 +182,14 @@
       ],
       "bundle": "bundles/dev.heyari.reminder-0.2.0.tar.gz",
       "signature": "bundles/dev.heyari.reminder-0.2.0.tar.gz.sig",
-      "sha256": "44d084f92ea9b260bbd8a5cbcc1ce79d524556b0206552a785fec106783615d5",
-      "manifest": "manifests/dev.heyari.reminder-0.2.0.md"
+      "sha256": "faf89e9914c843cc9f8fb88a1bd5ec8caa298f8bdccb2e0b548422b952118d35",
+      "manifest": "manifests/dev.heyari.reminder-0.2.0.md",
+      "localizations": {
+        "it": {
+          "name": "reminder",
+          "description": "Imposta promemoria con orario e voci di lista senza orario. Indirizza all'app delle attività dell'utente (predefinita), al calendario, o a entrambi, con liste personalizzate vocalmente come \"aggiungi latte alla lista della spesa\"."
+        }
+      }
     }
   ]
 }
