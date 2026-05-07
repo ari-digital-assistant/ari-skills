@@ -124,11 +124,17 @@ echo "$SKILL_JSON" | jq -c '.[]' | while read -r SKILL_ROW; do
   $SIGN sign "$bundle_path" "$ARI_SIGNING_KEY_FILE" >/dev/null
   sha256_hex=$(cut -c1-64 <"${bundle_path}.sha256")
 
-  # Copy SKILL.md out as a standalone sidecar so clients can preview the
-  # full manifest (frontmatter + body) without fetching the bundle. The
+  # Copy the canonical-locale manifest out as a standalone sidecar so
+  # clients can preview the full manifest (frontmatter + body) without
+  # fetching the bundle. Prefer SKILL.en.md (per-locale layout); fall
+  # back to legacy SKILL.md for skills that haven't migrated. The
   # source file has already been validated above, so no extra parsing
   # needed here — it's a byte-for-byte copy.
-  cp "${path}/SKILL.md" "$manifest_path"
+  if [[ -f "${path}/SKILL.en.md" ]]; then
+    cp "${path}/SKILL.en.md" "$manifest_path"
+  else
+    cp "${path}/SKILL.md" "$manifest_path"
+  fi
 
   # Build the index entry by augmenting the validator row with the
   # bundle paths we just produced. license / author / homepage come
