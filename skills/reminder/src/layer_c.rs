@@ -272,12 +272,32 @@ fn strip_to_outer_object(s: &str) -> Option<&str> {
 /// `"Monday, 27 April 2026 (2026-04-27)"`. Deliberately verbose —
 /// small cloud and on-device models reward unambiguous framing over
 /// terseness.
-pub fn compose_prompt(utterance: &str, parsed: &parse::Parsed, today: &str) -> String {
+pub fn compose_prompt(
+    utterance: &str,
+    parsed: &parse::Parsed,
+    today: &str,
+    locale: &str,
+) -> String {
     let when_desc = when_summary(&parsed.when);
     let unparsed = parsed
         .unparsed
         .as_deref()
         .unwrap_or("(parser didn't flag a specific fragment)");
+
+    // Locale tail: appended for every non-English locale we ship.
+    // Tells the model to render the human-language fields (`title`,
+    // `clarification`) in the user's language while keeping the
+    // structural fields (`datetime`, `confidence`, `follow_up`) as
+    // machine-readable enums. Cloud LLMs honour this reliably; the
+    // on-device LLM tier still defaults to English-trained instruction
+    // following so we phrase the directive in English.
+    let locale_tail = match locale {
+        "it" => "\n\nThe user is speaking Italian. Output `title` and `clarification` in Italian. Keep `datetime`, `confidence`, and `follow_up` as the exact enum strings specified above.",
+        "es" => "\n\nThe user is speaking Spanish. Output `title` and `clarification` in Spanish. Keep `datetime`, `confidence`, and `follow_up` as the exact enum strings specified above.",
+        "fr" => "\n\nThe user is speaking French. Output `title` and `clarification` in French. Keep `datetime`, `confidence`, and `follow_up` as the exact enum strings specified above.",
+        "de" => "\n\nThe user is speaking German. Output `title` and `clarification` in German. Keep `datetime`, `confidence`, and `follow_up` as the exact enum strings specified above.",
+        _ => "",
+    };
 
     format!(
         "You are helping interpret an ambiguous voice-assistant request. \
@@ -323,12 +343,13 @@ pub fn compose_prompt(utterance: &str, parsed: &parse::Parsed, today: &str) -> S
            prefer yes_no whenever you can sensibly phrase it that way). Empty string when \
            confidence is \"high\" or \"low\".\n\
          \n\
-         Output the JSON object only.",
+         Output the JSON object only.{locale_tail}",
         utterance = escape_for_prompt(utterance),
         title = escape_for_prompt(&parsed.title),
         when = when_desc,
         unparsed = escape_for_prompt(unparsed),
         today = today,
+        locale_tail = locale_tail,
     )
 }
 
@@ -683,12 +704,66 @@ mod tests {
             "remind me to call sarah on the 27th",
             &parsed,
             "Monday, 27 April 2026 (2026-04-27)",
+            "en",
         );
         assert!(prompt.contains("remind me to call sarah on the 27th"));
         assert!(prompt.contains("call sarah on the 27th"));
         assert!(prompt.contains("27th"));
         assert!(prompt.contains("STRICT JSON"));
         assert!(prompt.contains("Monday, 27 April 2026"));
+        // English locale → no language tail appended
+        assert!(!prompt.contains("speaking Italian"));
+    }
+
+    #[test]
+    fn compose_prompt_appends_italian_language_tail() {
+        let parsed = parse::Parsed {
+            title: "chiamare sara".to_string(),
+            when: parse::When::None,
+            list_hint: None,
+            speak_template: String::new(),
+            confidence: parse::Confidence::Partial,
+            unparsed: Some("27".to_string()),
+        };
+        let prompt = compose_prompt(
+            "ricordami di chiamare sara il 27",
+            &parsed,
+            "lunedì, 27 aprile 2026 (2026-04-27)",
+            "it",
+        );
+        // Italian-locale call should append the explicit "respond in
+        // Italian" directive, while leaving the structural enums
+        // (datetime, confidence, follow_up) untouched.
+        assert!(
+            prompt.contains("speaking Italian"),
+            "prompt must include the Italian language tail when locale=it"
+        );
+        assert!(
+            prompt.contains("`title` and `clarification` in Italian"),
+            "prompt must scope the language directive to the human-language fields"
+        );
+        // Structural backbone of the prompt is unchanged.
+        assert!(prompt.contains("STRICT JSON"));
+    }
+
+    #[test]
+    fn compose_prompt_no_tail_for_unknown_locale() {
+        let parsed = parse::Parsed {
+            title: "x".to_string(),
+            when: parse::When::None,
+            list_hint: None,
+            speak_template: String::new(),
+            confidence: parse::Confidence::High,
+            unparsed: None,
+        };
+        let prompt = compose_prompt("x", &parsed, "today", "ja");
+        // Locales we haven't explicitly mapped fall through to plain
+        // English prompt — the `ja` user gets no language hint at all
+        // rather than a wrong one.
+        assert!(!prompt.contains("speaking Italian"));
+        assert!(!prompt.contains("speaking Spanish"));
+        assert!(!prompt.contains("speaking French"));
+        assert!(!prompt.contains("speaking German"));
     }
 
     #[test]
@@ -709,6 +784,7 @@ mod tests {
             "remind me next friday at 3pm to call mum",
             &parsed,
             "Monday, 27 April 2026 (2026-04-27)",
+            "en",
         );
         // Two guard rails: instruction to use concrete resolved values,
         // AND a worked example so the model has a pattern to match.

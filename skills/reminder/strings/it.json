@@ -1,0 +1,72 @@
+{
+  "cancel.success": "OK, l'ho annullato.",
+  "cancel.not_found": "Non l'ho trovato da annullare — forse è già stato rimosso.",
+
+  "clarification.no_button.speak": "OK, non aggiungo quel promemoria.",
+  "clarification.card.title": "È giusto?",
+  "clarification.card.yes": "Sì",
+  "clarification.card.no": "No",
+
+  "query.empty.next": "Non hai promemoria in arrivo.",
+  "query.empty.today": "Non hai niente in programma per oggi.",
+  "query.empty.tomorrow": "Non hai niente in programma per domani.",
+  "query.next.template": "Il prossimo promemoria è di {title} {when}.",
+  "query.single.template": "Hai un promemoria {label}: {title} alle {clock}.",
+  "query.multi.preface": "Hai {count} promemoria {label}: ",
+  "query.multi.first_item": "{title} alle {clock}",
+  "query.multi.middle_item": ", {title} alle {clock}",
+  "query.multi.last_item": ", e {title} alle {clock}",
+  "query.card.title.today": "Promemoria di oggi",
+  "query.card.title.tomorrow": "Promemoria di domani",
+  "query.card.title.next": "Prossimo promemoria",
+
+  "label.today": "oggi",
+  "label.tomorrow": "domani",
+  "label.on_day_month": "il {day} {month}",
+  "label.day_month": "{day} {month}",
+
+  "success.untimed": "Ho aggiunto {title} alla tua lista {destination_name}.",
+  "success.timed": "Ho impostato {title} per {when_phrase}.",
+  "success.partial.untimed_preface": "Ho aggiunto {title} alla tua lista {destination_name}",
+  "success.partial.timed_preface": "Ho impostato per {when_phrase}",
+  "success.partial.aside_unparsed": ". Non ho capito cosa intendessi con \"{unparsed}\" — tocca Annulla sulla scheda se era importante.",
+  "success.partial.aside_no_unparsed": ". Tocca Annulla sulla scheda se non è quello che intendevi.",
+
+  "when_phrase.untimed": "la tua lista",
+
+  "error.no_tasks_app": "Non posso aggiungere attività perché non c'è nessuna app delle attività installata.",
+  "error.no_lists": "La tua app delle attività non ha ancora nessuna lista impostata.",
+  "error.tasks_save_failed": "Non sono riuscito a salvare l'attività. Verifica che l'app delle attività abbia i permessi.",
+  "error.calendar_no_time": "Quel promemoria non ha un orario, quindi non posso metterlo nel calendario.",
+  "error.calendar_no_permission": "Mi serve il permesso di scrittura sul calendario per salvarlo.",
+  "error.calendar_no_writable": "Non ho trovato calendari scrivibili.",
+  "error.calendar_save_failed": "Non sono riuscito ad aggiungerlo al calendario.",
+
+  "partial_card.subtitle.untimed": "nessun orario specifico",
+  "partial_card.body.unparsed": "Non ho capito \"{unparsed}\". Tocca Annulla se era importante.",
+  "partial_card.body.no_unparsed": "Tocca Annulla se non è quello che intendevi.",
+
+  "time.format.minute_zero": "{day_label} alle {clock}",
+  "time.format.minute_nonzero": "{day_label} alle {clock}",
+
+  "month.1": "gennaio",
+  "month.2": "febbraio",
+  "month.3": "marzo",
+  "month.4": "aprile",
+  "month.5": "maggio",
+  "month.6": "giugno",
+  "month.7": "luglio",
+  "month.8": "agosto",
+  "month.9": "settembre",
+  "month.10": "ottobre",
+  "month.11": "novembre",
+  "month.12": "dicembre",
+
+  "weekday.0": "lunedì",
+  "weekday.1": "martedì",
+  "weekday.2": "mercoledì",
+  "weekday.3": "giovedì",
+  "weekday.4": "venerdì",
+  "weekday.5": "sabato",
+  "weekday.6": "domenica"
+}

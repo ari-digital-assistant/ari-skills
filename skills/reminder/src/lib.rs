@@ -314,9 +314,10 @@ fn handle_cancel(cancel: InternalCancel) -> String {
         Mode::Calendar => ari::calendar_delete(cancel.id),
     };
     let speak = if deleted {
-        "OK, cancelled that."
+        ari::t("cancel.success", &[]).unwrap_or("OK, cancelled that.")
     } else {
-        "I couldn't find that to cancel — it might have already been removed."
+        ari::t("cancel.not_found", &[])
+            .unwrap_or("I couldn't find that to cancel — it might have already been removed.")
     };
     let mut out = String::from("{\"v\":1,\"speak\":");
     push_json_string(&mut out, speak);
@@ -343,7 +344,7 @@ fn handle_cancel(cancel: InternalCancel) -> String {
 fn build_consult_assistant_envelope(utterance: &str, parsed: &parse::Parsed) -> String {
     let now = ari::local_now_components();
     let today = format_today_for_prompt(&now);
-    let prompt = layer_c::compose_prompt(utterance, parsed, &today);
+    let prompt = layer_c::compose_prompt(utterance, parsed, &today, ari::get_locale());
     let mut out = String::from("{\"v\":1,\"consult_assistant\":{\"prompt\":");
     push_json_string(&mut out, &prompt);
     out.push_str(",\"continuation_context\":");
@@ -582,13 +583,26 @@ fn build_clarification_envelope(resp: layer_c::AssistantResponse) -> String {
     push_json_string(&mut out, &clarification);
     out.push_str(",\"cards\":[{\"id\":");
     push_json_string(&mut out, &card_id);
-    out.push_str(",\"title\":\"Is this right?\",\"body\":");
+    out.push_str(",\"title\":");
+    push_json_string(
+        &mut out,
+        ari::t("clarification.card.title", &[]).unwrap_or("Is this right?"),
+    );
+    out.push_str(",\"body\":");
     push_json_string(&mut out, &clarification);
     out.push_str(",\"accent\":\"DEFAULT\",\"actions\":[");
-    out.push_str("{\"id\":\"yes\",\"label\":\"Yes\",\"style\":\"PRIMARY\",\"utterance\":");
+    out.push_str("{\"id\":\"yes\",\"label\":");
+    push_json_string(&mut out, ari::t("clarification.card.yes", &[]).unwrap_or("Yes"));
+    out.push_str(",\"style\":\"PRIMARY\",\"utterance\":");
     push_json_string(&mut out, &confirm_utterance);
-    out.push_str("},{\"id\":\"no\",\"label\":\"No\",\"style\":\"DEFAULT\",");
-    out.push_str("\"speak\":\"OK, I won't add that reminder.\"}");
+    out.push_str("},{\"id\":\"no\",\"label\":");
+    push_json_string(&mut out, ari::t("clarification.card.no", &[]).unwrap_or("No"));
+    out.push_str(",\"style\":\"DEFAULT\",\"speak\":");
+    push_json_string(
+        &mut out,
+        ari::t("clarification.no_button.speak", &[]).unwrap_or("OK, I won't add that reminder."),
+    );
+    out.push_str("}");
     out.push_str("]}]}");
     out
 }
@@ -777,32 +791,72 @@ fn format_query_speak(
 ) -> String {
     if rows.is_empty() {
         return match window {
-            query::Window::Next => String::from("You don't have any upcoming reminders."),
-            query::Window::Today => String::from("You have nothing on your list for today."),
-            query::Window::Tomorrow => String::from("You have nothing on your list for tomorrow."),
+            query::Window::Next => ari::t("query.empty.next", &[])
+                .unwrap_or("You don't have any upcoming reminders.")
+                .to_string(),
+            query::Window::Today => ari::t("query.empty.today", &[])
+                .unwrap_or("You have nothing on your list for today.")
+                .to_string(),
+            query::Window::Tomorrow => ari::t("query.empty.tomorrow", &[])
+                .unwrap_or("You have nothing on your list for tomorrow.")
+                .to_string(),
         };
     }
     if matches!(window, query::Window::Next) {
         let r = &rows[0];
         let when = format_query_when(r.start_ms, r.all_day, tz_offset_ms_value);
-        return format!("Your next reminder is to {} {}.", r.title, when);
+        return ari::t(
+            "query.next.template",
+            &[("title", &r.title), ("when", &when)],
+        )
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| format!("Your next reminder is to {} {}.", r.title, when));
     }
-    let label = window.day_label();
+    // Localise the window label so the template substitution comes
+    // out in the user's language. Window::Next has no label — its
+    // template doesn't reference {label}.
+    let label = match window {
+        query::Window::Today => ari::t("label.today", &[]).unwrap_or("today"),
+        query::Window::Tomorrow => ari::t("label.tomorrow", &[]).unwrap_or("tomorrow"),
+        query::Window::Next => "",
+    };
     if rows.len() == 1 {
         let r = &rows[0];
-        let clock = query::format_clock_local(r.start_ms, tz_offset_ms_value, r.all_day);
-        return format!("You have one reminder {}: {} at {}.", label, r.title, clock);
+        let clock = query::format_clock_local(r.start_ms, tz_offset_ms_value, r.all_day, ari::get_locale());
+        return ari::t(
+            "query.single.template",
+            &[("label", label), ("title", &r.title), ("clock", &clock)],
+        )
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| format!("You have one reminder {}: {} at {}.", label, r.title, clock));
     }
-    let mut speak = format!("You have {} reminders {}: ", rows.len(), label);
+    let count_str = format!("{}", rows.len());
+    let mut speak = ari::t(
+        "query.multi.preface",
+        &[("count", &count_str), ("label", label)],
+    )
+    .map(|s| s.to_string())
+    .unwrap_or_else(|| format!("You have {} reminders {}: ", rows.len(), label));
     for (i, r) in rows.iter().enumerate() {
-        let clock = query::format_clock_local(r.start_ms, tz_offset_ms_value, r.all_day);
-        if i == 0 {
-            speak.push_str(&format!("{} at {}", r.title, clock));
+        let clock = query::format_clock_local(r.start_ms, tz_offset_ms_value, r.all_day, ari::get_locale());
+        let item_key = if i == 0 {
+            "query.multi.first_item"
         } else if i == rows.len() - 1 {
-            speak.push_str(&format!(", and {} at {}", r.title, clock));
+            "query.multi.last_item"
         } else {
-            speak.push_str(&format!(", {} at {}", r.title, clock));
-        }
+            "query.multi.middle_item"
+        };
+        let fallback = if i == 0 {
+            format!("{} at {}", r.title, clock)
+        } else if i == rows.len() - 1 {
+            format!(", and {} at {}", r.title, clock)
+        } else {
+            format!(", {} at {}", r.title, clock)
+        };
+        let rendered = ari::t(item_key, &[("title", &r.title), ("clock", &clock)])
+            .map(|s| s.to_string())
+            .unwrap_or(fallback);
+        speak.push_str(&rendered);
     }
     speak.push('.');
     speak
@@ -824,33 +878,96 @@ fn format_query_when(epoch_ms: i64, all_day: bool, tz_offset_ms_value: i64) -> S
     let today_days = civil_to_days(now.year, now.month, now.day);
 
     let day_label = if days == today_days {
-        String::from("today")
+        ari::t("label.today", &[]).unwrap_or("today").to_string()
     } else if days == today_days + 1 {
-        String::from("tomorrow")
+        ari::t("label.tomorrow", &[]).unwrap_or("tomorrow").to_string()
     } else {
-        let month_name = match month {
-            1 => "January",
-            2 => "February",
-            3 => "March",
-            4 => "April",
-            5 => "May",
-            6 => "June",
-            7 => "July",
-            8 => "August",
-            9 => "September",
-            10 => "October",
-            11 => "November",
-            12 => "December",
-            _ => "unknown",
-        };
-        format!("on {} {}", day, month_name)
+        let day_str = format!("{}", day);
+        let month_str = localised_month_name(month);
+        ari::t(
+            "label.on_day_month",
+            &[("day", &day_str), ("month", month_str)],
+        )
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| format!("on {} {}", day, month_str))
     };
     if all_day {
         day_label
     } else {
-        let clock = query::format_clock_local(epoch_ms, tz_offset_ms_value, false);
-        format!("{} at {}", day_label, clock)
+        let clock = query::format_clock_local(epoch_ms, tz_offset_ms_value, false, ari::get_locale());
+        // No locale-specific connector key here — most languages we
+        // support use a short connecting word ("at"/"alle"/"a las"/etc.)
+        // and the strings table covers it implicitly via the templates
+        // that wrap this fragment (success.timed, query.next.template).
+        // For the bare "next" branch we keep the English shape here.
+        format!("{} {}", day_label, clock)
     }
+}
+
+/// Per-locale month name for user-visible display. Reads `ari::t()` for
+/// the user's active locale; falls back to canonical English when a
+/// locale's strings table is missing the key.
+#[cfg(target_arch = "wasm32")]
+fn localised_month_name(month: u8) -> &'static str {
+    let key = match month {
+        1 => "month.1",
+        2 => "month.2",
+        3 => "month.3",
+        4 => "month.4",
+        5 => "month.5",
+        6 => "month.6",
+        7 => "month.7",
+        8 => "month.8",
+        9 => "month.9",
+        10 => "month.10",
+        11 => "month.11",
+        12 => "month.12",
+        _ => return "unknown",
+    };
+    let english_fallback = match month {
+        1 => "January",
+        2 => "February",
+        3 => "March",
+        4 => "April",
+        5 => "May",
+        6 => "June",
+        7 => "July",
+        8 => "August",
+        9 => "September",
+        10 => "October",
+        11 => "November",
+        12 => "December",
+        _ => "unknown",
+    };
+    ari::t(key, &[]).unwrap_or(english_fallback)
+}
+
+/// Per-locale weekday name (0=Monday … 6=Sunday) for user-visible
+/// display. Falls back to canonical English on missing keys.
+#[cfg(target_arch = "wasm32")]
+#[allow(dead_code)]
+fn localised_weekday_name(weekday: u8) -> &'static str {
+    let key = match weekday {
+        0 => "weekday.0",
+        1 => "weekday.1",
+        2 => "weekday.2",
+        3 => "weekday.3",
+        4 => "weekday.4",
+        5 => "weekday.5",
+        6 => "weekday.6",
+        _ => return "unknown",
+    };
+    let english_fallback = match weekday {
+        0 => "Monday",
+        1 => "Tuesday",
+        2 => "Wednesday",
+        3 => "Thursday",
+        4 => "Friday",
+        5 => "Saturday",
+        6 => "Sunday",
+        _ => "unknown",
+    };
+    ari::t(key, &[]).unwrap_or(english_fallback)
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -860,9 +977,11 @@ fn build_query_card(
     tz_offset_ms_value: i64,
 ) -> String {
     let title = match window {
-        query::Window::Today => "Reminders today",
-        query::Window::Tomorrow => "Reminders tomorrow",
-        query::Window::Next => "Next reminder",
+        query::Window::Today => ari::t("query.card.title.today", &[]).unwrap_or("Reminders today"),
+        query::Window::Tomorrow => {
+            ari::t("query.card.title.tomorrow", &[]).unwrap_or("Reminders tomorrow")
+        }
+        query::Window::Next => ari::t("query.card.title.next", &[]).unwrap_or("Next reminder"),
     };
     // Multi-line body: one line per reminder. Plain text — the card
     // renderer treats `body` as text, so newlines lay out naturally.
@@ -871,7 +990,7 @@ fn build_query_card(
         if i > 0 {
             body.push('\n');
         }
-        let clock = query::format_clock_local(r.start_ms, tz_offset_ms_value, r.all_day);
+        let clock = query::format_clock_local(r.start_ms, tz_offset_ms_value, r.all_day, ari::get_locale());
         body.push_str(&format!("• {} — {}", r.title, clock));
     }
 
@@ -1129,13 +1248,17 @@ enum Outcome {
 fn insert_into_tasks(parsed: &parse::Parsed, resolved: &Resolved) -> Outcome {
     if !ari::tasks_provider_installed() {
         return Outcome::Failure {
-            message: "I can't add tasks because no tasks app is installed.".to_string(),
+            message: ari::t("error.no_tasks_app", &[])
+                .unwrap_or("I can't add tasks because no tasks app is installed.")
+                .to_string(),
         };
     }
     let lists = ari::tasks_list_lists();
     if lists.is_empty() {
         return Outcome::Failure {
-            message: "Your tasks app doesn't have any lists set up yet.".to_string(),
+            message: ari::t("error.no_lists", &[])
+                .unwrap_or("Your tasks app doesn't have any lists set up yet.")
+                .to_string(),
         };
     }
 
@@ -1168,7 +1291,8 @@ fn insert_into_tasks(parsed: &parse::Parsed, resolved: &Resolved) -> Outcome {
             row_id: id,
         },
         None => Outcome::Failure {
-            message: "I couldn't save that task. Check the tasks app has permission."
+            message: ari::t("error.tasks_save_failed", &[])
+                .unwrap_or("I couldn't save that task. Check the tasks app has permission.")
                 .to_string(),
         },
     }
@@ -1180,20 +1304,25 @@ fn insert_into_calendar(parsed: &parse::Parsed, resolved: &Resolved) -> Outcome 
         Resolved::At { ms, .. } => *ms,
         Resolved::Untimed => {
             return Outcome::Failure {
-                message: "That reminder has no time, so I can't put it on the calendar."
+                message: ari::t("error.calendar_no_time", &[])
+                    .unwrap_or("That reminder has no time, so I can't put it on the calendar.")
                     .to_string(),
             };
         }
     };
     if !ari::calendar_has_write_permission() {
         return Outcome::Failure {
-            message: "I need calendar write access to save that.".to_string(),
+            message: ari::t("error.calendar_no_permission", &[])
+                .unwrap_or("I need calendar write access to save that.")
+                .to_string(),
         };
     }
     let cals = ari::calendar_list_calendars();
     if cals.is_empty() {
         return Outcome::Failure {
-            message: "I couldn't find any writable calendars.".to_string(),
+            message: ari::t("error.calendar_no_writable", &[])
+                .unwrap_or("I couldn't find any writable calendars.")
+                .to_string(),
         };
     }
     let target = resolve_list_target(
@@ -1221,7 +1350,9 @@ fn insert_into_calendar(parsed: &parse::Parsed, resolved: &Resolved) -> Outcome 
             row_id: id,
         },
         None => Outcome::Failure {
-            message: "I couldn't add that to the calendar.".to_string(),
+            message: ari::t("error.calendar_save_failed", &[])
+                .unwrap_or("I couldn't add that to the calendar.")
+                .to_string(),
         },
     }
 }
@@ -1310,30 +1441,66 @@ fn format_success_speech(
     destination_name: &str,
 ) -> String {
     let when_phrase = match resolved {
-        Resolved::Untimed => String::from("your list"),
+        Resolved::Untimed => ari::t("when_phrase.untimed", &[])
+            .unwrap_or("your list")
+            .to_string(),
         Resolved::At { ms, all_day } => format_when_phrase(*ms, *all_day),
     };
     if parsed.confidence == parse::Confidence::High {
         if matches!(resolved, Resolved::Untimed) {
-            format!("Added {} to your {} list.", parsed.title, destination_name)
+            ari::t(
+                "success.untimed",
+                &[
+                    ("title", &parsed.title),
+                    ("destination_name", destination_name),
+                ],
+            )
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| {
+                format!("Added {} to your {} list.", parsed.title, destination_name)
+            })
         } else {
-            format!("Set {} for {}.", parsed.title, when_phrase)
+            ari::t(
+                "success.timed",
+                &[("title", &parsed.title), ("when_phrase", &when_phrase)],
+            )
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| format!("Set {} for {}.", parsed.title, when_phrase))
         }
     } else {
         let preface = if matches!(resolved, Resolved::Untimed) {
-            format!(
-                "I've added {} to your {} list",
-                parsed.title, destination_name
+            ari::t(
+                "success.partial.untimed_preface",
+                &[
+                    ("title", &parsed.title),
+                    ("destination_name", destination_name),
+                ],
             )
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| {
+                format!(
+                    "I've added {} to your {} list",
+                    parsed.title, destination_name
+                )
+            })
         } else {
-            format!("I've set this for {}", when_phrase)
+            ari::t(
+                "success.partial.timed_preface",
+                &[("when_phrase", &when_phrase)],
+            )
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| format!("I've set this for {}", when_phrase))
         };
         let aside = match &parsed.unparsed {
-            Some(u) => format!(
-                ". I wasn't sure what \"{}\" meant — tap Cancel on the card if that was important.",
-                u
-            ),
-            None => String::from(". Tap Cancel on the card if that's not what you meant."),
+            Some(u) => ari::t("success.partial.aside_unparsed", &[("unparsed", u)])
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| format!(
+                    ". I wasn't sure what \"{}\" meant — tap Cancel on the card if that was important.",
+                    u
+                )),
+            None => ari::t("success.partial.aside_no_unparsed", &[])
+                .unwrap_or(". Tap Cancel on the card if that's not what you meant.")
+                .to_string(),
         };
         preface + &aside
     }
@@ -1355,42 +1522,50 @@ fn format_when_phrase(ms: i64, _all_day: bool) -> String {
 
     let today_days = civil_to_days(now.year, now.month, now.day);
     let day_label = if days == today_days {
-        String::from("today")
+        ari::t("label.today", &[]).unwrap_or("today").to_string()
     } else if days == today_days + 1 {
-        String::from("tomorrow")
+        ari::t("label.tomorrow", &[]).unwrap_or("tomorrow").to_string()
     } else {
-        let month_name = match month {
-            1 => "January",
-            2 => "February",
-            3 => "March",
-            4 => "April",
-            5 => "May",
-            6 => "June",
-            7 => "July",
-            8 => "August",
-            9 => "September",
-            10 => "October",
-            11 => "November",
-            12 => "December",
-            _ => "unknown",
-        };
-        format!("{} {}", day, month_name)
+        let day_str = format!("{}", day);
+        let month_str = localised_month_name(month);
+        ari::t(
+            "label.day_month",
+            &[("day", &day_str), ("month", month_str)],
+        )
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| format!("{} {}", day, month_str))
     };
 
-    let (h12, ampm) = if hour == 0 {
-        (12, "am")
-    } else if hour < 12 {
-        (hour, "am")
-    } else if hour == 12 {
-        (12, "pm")
+    // Locale-aware clock: 12-hour for English, 24-hour otherwise.
+    // Mirrors `query::format_clock_local` so the create-confirmation
+    // and the read-back query phrase the same way.
+    let locale = ari::get_locale();
+    let clock = if locale == "en" {
+        let (h12, ampm) = if hour == 0 {
+            (12, "am")
+        } else if hour < 12 {
+            (hour, "am")
+        } else if hour == 12 {
+            (12, "pm")
+        } else {
+            (hour - 12, "pm")
+        };
+        if minute == 0 {
+            format!("{}{}", h12, ampm)
+        } else {
+            format!("{}:{:02}{}", h12, minute, ampm)
+        }
     } else {
-        (hour - 12, "pm")
+        format!("{:02}:{:02}", hour, minute)
     };
-    if minute == 0 {
-        format!("{} at {}{}", day_label, h12, ampm)
+    let key = if minute == 0 {
+        "time.format.minute_zero"
     } else {
-        format!("{} at {}:{:02}{}", day_label, h12, minute, ampm)
-    }
+        "time.format.minute_nonzero"
+    };
+    ari::t(key, &[("day_label", &day_label), ("clock", &clock)])
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| format!("{} at {}", day_label, clock))
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -1402,16 +1577,24 @@ fn build_partial_card(
     destination_name: &str,
 ) -> String {
     let when_phrase = match resolved {
-        Resolved::Untimed => String::from("no specific time"),
+        Resolved::Untimed => ari::t("partial_card.subtitle.untimed", &[])
+            .unwrap_or("no specific time")
+            .to_string(),
         Resolved::At { ms, all_day } => format_when_phrase(*ms, *all_day),
     };
     let subtitle = format!("{} · {}", destination_name, when_phrase);
     let body = match &parsed.unparsed {
-        Some(u) => format!(
-            "I didn't understand \"{}\". Tap Cancel if that was important.",
-            u
-        ),
-        None => String::from("Tap Cancel if that's not what you meant."),
+        Some(u) => ari::t("partial_card.body.unparsed", &[("unparsed", u)])
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| {
+                format!(
+                    "I didn't understand \"{}\". Tap Cancel if that was important.",
+                    u
+                )
+            }),
+        None => ari::t("partial_card.body.no_unparsed", &[])
+            .unwrap_or("Tap Cancel if that's not what you meant.")
+            .to_string(),
     };
     let accent = match parsed.confidence {
         parse::Confidence::Low => "WARNING",
