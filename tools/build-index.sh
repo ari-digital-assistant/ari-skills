@@ -158,7 +158,8 @@ echo "$SKILL_JSON" | jq -c '.[]' | while read -r SKILL_ROW; do
       bundle: $bundle,
       signature: $signature,
       sha256: $sha256,
-      manifest: $manifest
+      manifest: $manifest,
+      localizations: (.localizations // {})
     }' \
     >>"$INDEX_TMP"
 done
