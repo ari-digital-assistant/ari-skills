@@ -314,7 +314,7 @@ rigid ones your keyword patterns catch.
 These will save your PR from review friction:
 
 1. **Be honest in the description.** "Flips a coin" is fine. "AI-powered randomness engine for decision-making" is not.
-2. **Source language only.** Don't auto-translate strings. Declare `languages: [en]` (or whatever you actually wrote it in) and stop. Translations belong in a translation platform, not in your PR.
+2. **Source language only.** Don't auto-translate strings. Declare `languages: [en]` (or whatever you actually wrote it in) and stop. Translations belong in a translation platform, not in your PR. When you're ready to add a second language, see **[i18n.md](i18n.md)** — Ari supports per-locale `SKILL.{locale}.md` files plus a `strings/{locale}.json` translation table that the SDK's `t()` / `format_*` helpers read from.
 3. **Don't squat namespaces.** Pick a `metadata.ari.id` reverse-DNS prefix you actually control or have a clear claim to.
 4. **Tight keywords beat clever regex.** A short keyword list with `specificity: high` will outperform an over-eager regex that fires on every other utterance.
 5. **Declare exactly the capabilities you need.** Asking for `http` when you don't use it will get flagged in review.

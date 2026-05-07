@@ -328,3 +328,11 @@ cargo run -p ari-cli -- \
   --storage-dir /tmp/skill-storage \
   "test input"
 ```
+
+## Internationalisation
+
+Five SDK helpers cover the i18n surface — `ari::get_locale`, `ari::t`,
+`ari::format_date`, `ari::format_number`, `ari::format_currency`. All
+ungated. See **[i18n.md](i18n.md)** for the contract, the
+`SKILL.{locale}.md` + `strings/{locale}.json` layout, and worked
+declarative + WASM examples.

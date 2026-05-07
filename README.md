@@ -15,6 +15,7 @@ The manifest format is [AgentSkills](https://agentskills.io)-compatible, with Ar
 
 - **[docs/skill-system.md](docs/skill-system.md)** — Technical overview of how the entire skill system works: the trait, scoring, the manifest format, capabilities, signing, registry workflow, engine integration. Read this if you want to understand the machinery.
 - **[docs/skill-authors.md](docs/skill-authors.md)** — Quick guide for skill developers, with a full walkthrough of building and submitting a declarative skill. Read this if you just want to write one.
+- **[docs/i18n.md](docs/i18n.md)** — How to add a non-English language to a skill: per-locale `SKILL.{locale}.md` files, `strings/{locale}.json` translation tables, and the SDK helpers (`t`, `get_locale`, `format_*`). Read this when you're ready to ship beyond English.
 
 ## Repo layout
 
