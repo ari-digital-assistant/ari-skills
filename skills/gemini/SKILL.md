@@ -8,12 +8,17 @@ description: >
 metadata:
   ari:
     id: dev.heyari.assistant.gemini
-    version: "0.2.0"
+    version: "0.3.0"
     type: assistant
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari
     engine: ">=0.1"
-    languages: [en]
+    # Google's Gemini family is reliably multilingual for the locales
+    # Ari ships against. The engine appends a per-request "Please reply
+    # in <Language>." hint to the system prompt for any non-English
+    # locale we don't ship a translated `system_prompt` for, so adding a
+    # language here costs nothing on the skill side.
+    languages: [en, it, es, fr, de]
     examples:
       - text: "ask gemini why the sky is blue"
       - text: "ask gemini what the capital of France is"

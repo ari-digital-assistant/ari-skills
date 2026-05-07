@@ -8,12 +8,17 @@ description: >
 metadata:
   ari:
     id: dev.heyari.assistant.chatgpt
-    version: "0.2.0"
+    version: "0.3.0"
     type: assistant
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari
     engine: ">=0.1"
-    languages: [en]
+    # GPT-5.4 family (and OpenAI's predecessors) are reliably multilingual
+    # for the locales Ari ships against. The engine appends a per-request
+    # "Please reply in <Language>." hint to the system prompt for any
+    # non-English locale we don't ship a translated `system_prompt` for,
+    # so adding a language here costs nothing on the skill side.
+    languages: [en, it, es, fr, de]
     examples:
       - text: "ask chatgpt why the sky is blue"
       - text: "ask chat gpt what the capital of France is"
