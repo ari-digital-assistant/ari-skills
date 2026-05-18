@@ -34,22 +34,24 @@ pub fn classify(input: &str) -> Option<Window> {
 
     // "Next reminder" wins outright when the phrase is present —
     // catches "what's my next reminder", "what is the next reminder",
-    // etc.
-    if normalised.contains("next reminder") {
+    // "qual è il prossimo promemoria", etc.
+    if normalised.contains("next reminder") || normalised.contains("prossimo promemoria") {
         return Some(Window::Next);
     }
 
-    // Token-test for "today" / "tomorrow" so utterances like "do I
-    // have any reminders today?" or "any reminders tomorrow" both
-    // resolve. Order matters — check "tomorrow" first so the
-    // substring "today" inside "tomorrow's" doesn't false-positive.
+    // Token-test for "today" / "tomorrow" (and Italian "oggi" /
+    // "domani") so utterances like "do I have any reminders today?",
+    // "any reminders tomorrow", "che promemoria ho oggi" or
+    // "quali promemoria ho domani" all resolve. Order matters — check
+    // tomorrow-equivalents first so the substring "today" inside
+    // "tomorrow's" can't false-positive.
     if !is_query_utterance(&normalised) {
         return None;
     }
-    if word_present(&normalised, "tomorrow") {
+    if word_present(&normalised, "tomorrow") || word_present(&normalised, "domani") {
         return Some(Window::Tomorrow);
     }
-    if word_present(&normalised, "today") {
+    if word_present(&normalised, "today") || word_present(&normalised, "oggi") {
         return Some(Window::Today);
     }
     // Defaulting "what reminders do I have" with no day specifier to
@@ -86,12 +88,24 @@ fn word_present(haystack: &str, needle: &str) -> bool {
 /// than setting one. The classifier returns `None` for anything that
 /// doesn't look like a question; the caller treats `None` as "this
 /// isn't a query, try the create path".
+///
+/// Italian shapes match the same way they do in `SKILL.it.md`'s
+/// routing regexes — `che promemoria ho [per ...]`, `quali promemoria`,
+/// `cosa ho [oggi|domani|in programma]`, `ho [qualche|dei] promemoria`.
+/// Each is a substring/prefix check that doesn't collide with create
+/// shapes (`ricordami di…`, `aggiungi … alla lista …`, `imposta un
+/// promemoria…`).
 fn is_query_utterance(s: &str) -> bool {
     s.contains("what")
         || s.starts_with("any reminders")
         || s.starts_with("do i have")
         || s.starts_with("have i got")
         || s.starts_with("got any")
+        || s.contains("che promemoria")
+        || s.contains("quali promemoria")
+        || s.contains("cosa ho")
+        || s.contains("ho qualche promemoria")
+        || s.contains("ho dei promemoria")
 }
 
 impl Window {
@@ -222,6 +236,70 @@ mod tests {
         assert!(classify("remind me to walk the dog at 5pm").is_none());
         assert!(classify("hello").is_none());
         assert!(classify("").is_none());
+    }
+
+    // --- Italian query shapes (Phase 12) ---
+    //
+    // Input arriving at the skill is post-normalise: lowercase, no
+    // punctuation, apostrophe-elisions split (`l'ora` → `l ora`). The
+    // Italian normaliser does NOT strip accents, so `è` survives. The
+    // classifier matches against accent-free anchor phrases
+    // (`prossimo promemoria`, `che promemoria`, `oggi`, `domani`)
+    // which appear in every realistic Italian query utterance.
+
+    #[test]
+    fn classify_today_italian() {
+        assert_eq!(classify("che promemoria ho per oggi"), Some(Window::Today));
+        assert_eq!(classify("che promemoria ho oggi"), Some(Window::Today));
+        assert_eq!(classify("cosa ho oggi"), Some(Window::Today));
+        assert_eq!(classify("ho qualche promemoria oggi"), Some(Window::Today));
+    }
+
+    #[test]
+    fn classify_tomorrow_italian() {
+        assert_eq!(classify("che promemoria ho domani"), Some(Window::Tomorrow));
+        assert_eq!(classify("quali promemoria ho domani"), Some(Window::Tomorrow));
+        assert_eq!(classify("cosa ho domani"), Some(Window::Tomorrow));
+        assert_eq!(classify("ho dei promemoria domani"), Some(Window::Tomorrow));
+    }
+
+    #[test]
+    fn classify_next_italian() {
+        // `qual è` survives normalisation with the accent; we don't
+        // require accent-aware matching because `prossimo promemoria`
+        // is a complete anchor on its own.
+        assert_eq!(classify("qual è il prossimo promemoria"), Some(Window::Next));
+        assert_eq!(classify("qual è il mio prossimo promemoria"), Some(Window::Next));
+        assert_eq!(classify("dimmi il prossimo promemoria"), Some(Window::Next));
+    }
+
+    #[test]
+    fn classify_default_today_when_no_day_specified_italian() {
+        // `che promemoria ho` with no day word defaults to Today,
+        // matching the English fall-through.
+        assert_eq!(classify("che promemoria ho"), Some(Window::Today));
+        assert_eq!(classify("quali promemoria ho"), Some(Window::Today));
+        assert_eq!(classify("cosa ho in programma"), Some(Window::Today));
+    }
+
+    #[test]
+    fn classify_cosa_ho_with_lead_word() {
+        // `che cosa ho oggi` (with a leading "che") should still
+        // resolve — the cosa-ho substring fires regardless of position.
+        // Matches SKILL.it.md's `\bcosa ho\b` word-boundary regex.
+        assert_eq!(classify("che cosa ho oggi"), Some(Window::Today));
+        assert_eq!(classify("che cosa ho domani"), Some(Window::Tomorrow));
+    }
+
+    #[test]
+    fn classify_rejects_italian_create_utterances() {
+        // Create utterances must NOT be misclassified as queries.
+        // `ricordami di…`, `aggiungi … alla lista …`, `imposta un
+        // promemoria…` are the canonical create shapes.
+        assert!(classify("ricordami di portare fuori il cane alle 17").is_none());
+        assert!(classify("aggiungi latte alla lista della spesa").is_none());
+        assert!(classify("imposta un promemoria di chiamare la mamma").is_none());
+        assert!(classify("ricordami tra 30 minuti di controllare il forno").is_none());
     }
 
     #[test]
