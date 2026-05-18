@@ -9,7 +9,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.reminder
-    version: "0.2.0"
+    version: "0.3.0"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
@@ -38,9 +38,17 @@ metadata:
           weight: 0.9
         # Read-only queries — Italian forms of "what reminders do I
         # have today/tomorrow", "what's my next reminder".
-        - regex: "\\bqual e (il|mio) prossimo promemoria\\b"
+        # `qual è` (e-grave) survives engine normalisation with the
+        # accent intact, so the regex needs `è` not `e` — the prior
+        # `qual e` form silently failed to fire against real input.
+        # `prossimo promemoria` is a strong enough anchor that any
+        # surrounding shape ("dimmi il prossimo promemoria") also
+        # routes correctly.
+        - regex: "\\bprossimo promemoria\\b"
           weight: 0.95
         - regex: "\\bche promemoria (ho|ho per)\\b"
+          weight: 0.9
+        - regex: "\\bquali promemoria\\b"
           weight: 0.9
         - regex: "\\bho (qualche|dei) promemoria\\b"
           weight: 0.9
