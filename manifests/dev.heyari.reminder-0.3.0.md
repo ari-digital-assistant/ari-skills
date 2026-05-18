@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.reminder
-    version: "0.2.0"
+    version: "0.3.0"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
