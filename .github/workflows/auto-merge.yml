@@ -1,0 +1,88 @@
+name: auto-merge
+
+# Opt-in auto-merge for skill PRs. Apply the `auto-merge` label to arm a PR;
+# once its `validate` check is green this squash-merges it, deletes the
+# branch, and dispatches sign-and-publish.
+#
+# Two triggers cover both orderings: arming the label while validate is still
+# running (workflow_run catches the green), or arming it after validate has
+# already passed (the labeled event re-checks the existing result).
+#
+# Why dispatch sign-and-publish by hand: the merge below runs as GITHUB_TOKEN,
+# and pushes made by GITHUB_TOKEN deliberately don't trigger other workflows —
+# so sign-and-publish's `push: main` trigger would never fire. workflow_dispatch
+# is the documented exception GITHUB_TOKEN *can* trigger, so we kick it off
+# explicitly. No branch protection is involved, so the bot's direct push to
+# main inside sign-and-publish keeps working.
+
+on:
+  workflow_run:
+    workflows: [validate]
+    types: [completed]
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+env:
+  AUTO_MERGE_LABEL: auto-merge
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge if armed and validate is green
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            if [[ "${{ github.event.label.name }}" != "$AUTO_MERGE_LABEL" ]]; then
+              echo "label '${{ github.event.label.name }}' is not '$AUTO_MERGE_LABEL' — nothing to do"
+              exit 0
+            fi
+            if [[ "${{ github.event.pull_request.head.repo.full_name }}" != "$GH_REPO" ]]; then
+              echo "PR head is a fork — refusing to auto-merge"
+              exit 0
+            fi
+            pr="${{ github.event.pull_request.number }}"
+            head_sha="${{ github.event.pull_request.head.sha }}"
+          else
+            if [[ "${{ github.event.workflow_run.conclusion }}" != "success" ]]; then
+              echo "validate concluded '${{ github.event.workflow_run.conclusion }}' — not merging"
+              exit 0
+            fi
+            head_sha="${{ github.event.workflow_run.head_sha }}"
+            pr=$(gh pr list --repo "$GH_REPO" --head "${{ github.event.workflow_run.head_branch }}" \
+              --state open --json number --jq '.[0].number // empty')
+            if [[ -z "$pr" ]]; then
+              echo "no open PR for branch '${{ github.event.workflow_run.head_branch }}'"
+              exit 0
+            fi
+          fi
+
+          armed=$(gh pr view "$pr" --repo "$GH_REPO" --json labels \
+            --jq "any(.labels[].name; . == \"$AUTO_MERGE_LABEL\")")
+          if [[ "$armed" != "true" ]]; then
+            echo "PR #$pr is not armed with '$AUTO_MERGE_LABEL' — skipping"
+            exit 0
+          fi
+
+          conclusion=$(gh api "repos/$GH_REPO/commits/$head_sha/check-runs" \
+            --jq '[.check_runs[] | select(.name == "validate" and .status == "completed")]
+                  | sort_by(.completed_at) | last | .conclusion // empty')
+          if [[ "$conclusion" != "success" ]]; then
+            echo "latest validate for $head_sha is '${conclusion:-none}' — not merging"
+            exit 0
+          fi
+
+          echo "PR #$pr is armed and validate is green — squash-merging"
+          gh pr merge "$pr" --repo "$GH_REPO" --squash --delete-branch
+
+          echo "dispatching sign-and-publish (GITHUB_TOKEN merge won't trigger it on its own)"
+          gh workflow run sign-and-publish.yml --repo "$GH_REPO" --ref main
