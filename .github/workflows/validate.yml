@@ -69,6 +69,12 @@ jobs:
           changed=$(git diff --name-only "$base_sha" "$head_sha" -- skills/ \
             | awk -F/ '/^skills\/[^\/]+\//{print $1 "/" $2}' \
             | sort -u)
+          # Drop dirs this PR deleted — validating a path that no longer
+          # exists in the checkout just errors the run. A pure deletion then
+          # falls through to the whole-registry check below.
+          changed=$(while IFS= read -r d; do
+            [[ -n "$d" && -d "$d" ]] && printf '%s\n' "$d"
+          done <<< "$changed")
           if [[ -z "$changed" ]]; then
             echo "no skill directories changed — validating the whole registry"
             changed="skills/"
