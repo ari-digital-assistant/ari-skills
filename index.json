@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-06-06T11:41:32Z",
+  "generated_at": "2026-06-06T11:47:46Z",
   "skills": [
     {
       "id": "dev.heyari.assistant.chatgpt",
@@ -20,7 +20,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz.sig",
-      "sha256": "2cd07a1438cda447c53665e0292b2eb2d84dd56f3ec2fc418a54bf2e4c7e9427",
+      "sha256": "9784bf1380bf540d3f96de4d0055ccee7a576c1d88b92a36ec534cc59c32225f",
       "manifest": "manifests/dev.heyari.assistant.chatgpt-0.3.0.md",
       "localizations": {}
     },
@@ -40,26 +40,8 @@
       ],
       "bundle": "bundles/dev.heyari.counter-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.counter-0.1.0.tar.gz.sig",
-      "sha256": "d04a9bffe6988e58dbbe3682567c3699b53f70c805783e058febef9182ca7f4b",
+      "sha256": "2666305a6b190b975bb16ef01674ffd63d89f2d663542799d08a41ed01676fc4",
       "manifest": "manifests/dev.heyari.counter-0.1.0.md",
-      "localizations": {}
-    },
-    {
-      "id": "dev.heyari.smoketest",
-      "version": "0.0.1",
-      "name": "smoke-test",
-      "description": "Throwaway skill used to smoke-test the auto-merge pipeline. Safe to delete. Use when the user says the nonsense phrase arismoketest.",
-      "license": "MIT",
-      "author": "Ari core team",
-      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
-      "capabilities": [],
-      "languages": [
-        "en"
-      ],
-      "bundle": "bundles/dev.heyari.smoketest-0.0.1.tar.gz",
-      "signature": "bundles/dev.heyari.smoketest-0.0.1.tar.gz.sig",
-      "sha256": "507019f63e182c67ada494f3f3fb44f9a92810f3c8126fb748154cfe6c75afdb",
-      "manifest": "manifests/dev.heyari.smoketest-0.0.1.md",
       "localizations": {}
     },
     {
@@ -76,7 +58,7 @@
       ],
       "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
-      "sha256": "ab7f617affc9c48133cfff8a94eeda032fdefaec0d1391fd689552db29aaa6e3",
+      "sha256": "9251fda751ae213c99cb4c274be7cd619eb43ee767f44b9b396b5331fec3445e",
       "manifest": "manifests/dev.heyari.wasmecho-0.1.0.md",
       "localizations": {}
     },
@@ -96,7 +78,7 @@
       ],
       "bundle": "bundles/dev.heyari.githubzen-0.1.1.tar.gz",
       "signature": "bundles/dev.heyari.githubzen-0.1.1.tar.gz.sig",
-      "sha256": "b86ef649e1c453932bfaa23a0ea2182bf2467c089a6a0f41a42470eece3bd515",
+      "sha256": "a5a0727926f313da08131db1b3e2e136baf7d86a873a244696b218c235968648",
       "manifest": "manifests/dev.heyari.githubzen-0.1.1.md",
       "localizations": {}
     },
@@ -116,7 +98,7 @@
       ],
       "bundle": "bundles/dev.heyari.timer-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.timer-0.1.0.tar.gz.sig",
-      "sha256": "c33f6485ddf928e545b12458a684dea90a9027ecc9cf8de600029d6e3dedd12f",
+      "sha256": "5a94845a407dbcbe1cd584862baea1d1a1c7f7b9e1194413d439ca87b8e59ae5",
       "manifest": "manifests/dev.heyari.timer-0.1.0.md",
       "localizations": {}
     },
@@ -138,7 +120,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz.sig",
-      "sha256": "5cfa986d0f433919e55d4c3054ed34d7ec824cf91ad21f19e2f36c17928310bb",
+      "sha256": "0e7689262475b5410e718a51b8391bbde4d9ef889d0928e830eacdbe98ff47a8",
       "manifest": "manifests/dev.heyari.assistant.claude-0.3.0.md",
       "localizations": {}
     },
@@ -156,7 +138,7 @@
       ],
       "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "da3d6af3752b0360384e46856657fdb7f0357abb3ce91339b526438964131b82",
+      "sha256": "0b57c0456e9dfc39af23d71ac6fe5ac47e1293d0508464f604d91151eb130b9f",
       "manifest": "manifests/dev.heyari.coinflip-0.1.0.md",
       "localizations": {}
     },
@@ -178,7 +160,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.gemini-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.gemini-0.3.0.tar.gz.sig",
-      "sha256": "d053818295824b87e87fd728ba4cf71d1a8d5375719fbfe6e0a46cd83d236d64",
+      "sha256": "3067cef8e0bbb302328b3e47040c6255ec0f6d55f3dfdd6d43ebfef820a621f3",
       "manifest": "manifests/dev.heyari.assistant.gemini-0.3.0.md",
       "localizations": {}
     },
@@ -200,7 +182,7 @@
       ],
       "bundle": "bundles/dev.heyari.reminder-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.reminder-0.3.0.tar.gz.sig",
-      "sha256": "0c33faeb58a124864f7c48580c358e35f8753436b496e1de43f524210a88e518",
+      "sha256": "12d81a788f497f03d96642af725a72960f8990db02bcd70fddadf350ea81b8a8",
       "manifest": "manifests/dev.heyari.reminder-0.3.0.md",
       "localizations": {
         "it": {
