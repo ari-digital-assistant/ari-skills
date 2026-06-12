@@ -18,7 +18,7 @@ metadata:
     # in <Language>." hint to the system prompt for any non-English
     # locale we don't ship a translated `system_prompt` for, so adding a
     # language here costs nothing on the skill side.
-    languages: [en, it, es, fr, de]
+    languages: [en, it]
     examples:
       - text: "ask claude why the sky is blue"
       - text: "ask claude what the capital of France is"

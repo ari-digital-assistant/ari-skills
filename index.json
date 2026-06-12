@@ -1,67 +1,7 @@
 {
   "index_version": 1,
-  "generated_at": "2026-06-06T11:47:46Z",
+  "generated_at": "2026-06-12T12:05:11Z",
   "skills": [
-    {
-      "id": "dev.heyari.assistant.chatgpt",
-      "version": "0.3.0",
-      "name": "chatgpt",
-      "description": "Use OpenAI's ChatGPT to answer general questions. Requires an API key from platform.openai.com. Your questions are sent to OpenAI's servers.\n",
-      "license": "MIT",
-      "author": "Ari Project",
-      "homepage": "https://github.com/ari-digital-assistant/ari",
-      "capabilities": [],
-      "languages": [
-        "en",
-        "it",
-        "es",
-        "fr",
-        "de"
-      ],
-      "bundle": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz",
-      "signature": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz.sig",
-      "sha256": "9784bf1380bf540d3f96de4d0055ccee7a576c1d88b92a36ec534cc59c32225f",
-      "manifest": "manifests/dev.heyari.assistant.chatgpt-0.3.0.md",
-      "localizations": {}
-    },
-    {
-      "id": "dev.heyari.counter",
-      "version": "0.1.0",
-      "name": "counter",
-      "description": "Counts how many times you've asked it to count, persisting across calls. Single-digit ASCII counter that wraps from 9 back to 1. Reference WASM skill for the storage_kv host imports.",
-      "license": "MIT",
-      "author": "Ari core team",
-      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
-      "capabilities": [
-        "storage_kv"
-      ],
-      "languages": [
-        "en"
-      ],
-      "bundle": "bundles/dev.heyari.counter-0.1.0.tar.gz",
-      "signature": "bundles/dev.heyari.counter-0.1.0.tar.gz.sig",
-      "sha256": "2666305a6b190b975bb16ef01674ffd63d89f2d663542799d08a41ed01676fc4",
-      "manifest": "manifests/dev.heyari.counter-0.1.0.md",
-      "localizations": {}
-    },
-    {
-      "id": "dev.heyari.wasmecho",
-      "version": "0.1.0",
-      "name": "wasm-echo",
-      "description": "Tiny WASM smoke-test skill. Returns a fixed greeting from inside its sandboxed module. Use only for testing the WASM loader.",
-      "license": "MIT",
-      "author": "Ari core team",
-      "homepage": null,
-      "capabilities": [],
-      "languages": [
-        "en"
-      ],
-      "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
-      "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
-      "sha256": "9251fda751ae213c99cb4c274be7cd619eb43ee767f44b9b396b5331fec3445e",
-      "manifest": "manifests/dev.heyari.wasmecho-0.1.0.md",
-      "localizations": {}
-    },
     {
       "id": "dev.heyari.githubzen",
       "version": "0.1.1",
@@ -74,73 +14,19 @@
         "http"
       ],
       "languages": [
-        "en"
+        "en",
+        "it"
       ],
       "bundle": "bundles/dev.heyari.githubzen-0.1.1.tar.gz",
       "signature": "bundles/dev.heyari.githubzen-0.1.1.tar.gz.sig",
-      "sha256": "a5a0727926f313da08131db1b3e2e136baf7d86a873a244696b218c235968648",
+      "sha256": "c78577d246ebc2c7828cf13eb563ee8fe6fa3a504774aba4cc8eb44063f1269d",
       "manifest": "manifests/dev.heyari.githubzen-0.1.1.md",
-      "localizations": {}
-    },
-    {
-      "id": "dev.heyari.timer",
-      "version": "0.1.0",
-      "name": "timer",
-      "description": "Sets, queries, and cancels named timers. Supports natural phrasing like \"set a pasta timer for 8 minutes\" or \"set a 4 minute pasta timer\". Handles multiple simultaneous timers.",
-      "license": "MIT",
-      "author": "Ari core team",
-      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
-      "capabilities": [
-        "storage_kv"
-      ],
-      "languages": [
-        "en"
-      ],
-      "bundle": "bundles/dev.heyari.timer-0.1.0.tar.gz",
-      "signature": "bundles/dev.heyari.timer-0.1.0.tar.gz.sig",
-      "sha256": "5a94845a407dbcbe1cd584862baea1d1a1c7f7b9e1194413d439ca87b8e59ae5",
-      "manifest": "manifests/dev.heyari.timer-0.1.0.md",
-      "localizations": {}
-    },
-    {
-      "id": "dev.heyari.assistant.claude",
-      "version": "0.3.0",
-      "name": "claude",
-      "description": "Use Anthropic's Claude to answer general questions. Requires an API key from console.anthropic.com. Your questions are sent to Anthropic's servers.\n",
-      "license": "MIT",
-      "author": "Ari Project",
-      "homepage": "https://github.com/ari-digital-assistant/ari",
-      "capabilities": [],
-      "languages": [
-        "en",
-        "it",
-        "es",
-        "fr",
-        "de"
-      ],
-      "bundle": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz",
-      "signature": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz.sig",
-      "sha256": "0e7689262475b5410e718a51b8391bbde4d9ef889d0928e830eacdbe98ff47a8",
-      "manifest": "manifests/dev.heyari.assistant.claude-0.3.0.md",
-      "localizations": {}
-    },
-    {
-      "id": "dev.heyari.coinflip",
-      "version": "0.1.0",
-      "name": "coin-flip",
-      "description": "Flips a virtual coin and returns heads or tails. Use when the user asks to flip a coin, toss a coin, or make a random binary choice.",
-      "license": "MIT",
-      "author": "Ari core team",
-      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
-      "capabilities": [],
-      "languages": [
-        "en"
-      ],
-      "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
-      "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "0b57c0456e9dfc39af23d71ac6fe5ac47e1293d0508464f604d91151eb130b9f",
-      "manifest": "manifests/dev.heyari.coinflip-0.1.0.md",
-      "localizations": {}
+      "localizations": {
+        "it": {
+          "name": "github-zen",
+          "description": "Recupera una frase di saggezza zen dall'API di GitHub. Usato per testare l'import host http_fetch end-to-end. Richiede accesso a internet."
+        }
+      }
     },
     {
       "id": "dev.heyari.assistant.gemini",
@@ -153,16 +39,66 @@
       "capabilities": [],
       "languages": [
         "en",
-        "it",
-        "es",
-        "fr",
-        "de"
+        "it"
       ],
       "bundle": "bundles/dev.heyari.assistant.gemini-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.gemini-0.3.0.tar.gz.sig",
-      "sha256": "3067cef8e0bbb302328b3e47040c6255ec0f6d55f3dfdd6d43ebfef820a621f3",
+      "sha256": "c42d5b0f029f3bb78c70da65020b7b383f8838103552907edaa0f829af8879ac",
       "manifest": "manifests/dev.heyari.assistant.gemini-0.3.0.md",
-      "localizations": {}
+      "localizations": {
+        "it": {
+          "name": "gemini",
+          "description": "Usa Gemini di Google per rispondere a domande generali. Richiede una chiave API da aistudio.google.com. Le tue domande vengono inviate ai server di Google.\n"
+        }
+      }
+    },
+    {
+      "id": "dev.heyari.assistant.chatgpt",
+      "version": "0.3.0",
+      "name": "chatgpt",
+      "description": "Use OpenAI's ChatGPT to answer general questions. Requires an API key from platform.openai.com. Your questions are sent to OpenAI's servers.\n",
+      "license": "MIT",
+      "author": "Ari Project",
+      "homepage": "https://github.com/ari-digital-assistant/ari",
+      "capabilities": [],
+      "languages": [
+        "en",
+        "it"
+      ],
+      "bundle": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz",
+      "signature": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz.sig",
+      "sha256": "09b29e21f6cb157022512abde823b1f4d4f84c84f4718a4e9f416cec0426ec67",
+      "manifest": "manifests/dev.heyari.assistant.chatgpt-0.3.0.md",
+      "localizations": {
+        "it": {
+          "name": "chatgpt",
+          "description": "Usa ChatGPT di OpenAI per rispondere a domande generali. Richiede una chiave API da platform.openai.com. Le tue domande vengono inviate ai server di OpenAI.\n"
+        }
+      }
+    },
+    {
+      "id": "dev.heyari.coinflip",
+      "version": "0.1.0",
+      "name": "coin-flip",
+      "description": "Flips a virtual coin and returns heads or tails. Use when the user asks to flip a coin, toss a coin, or make a random binary choice.",
+      "license": "MIT",
+      "author": "Ari core team",
+      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
+      "capabilities": [],
+      "languages": [
+        "en",
+        "it"
+      ],
+      "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
+      "sha256": "2599d554b0e1b8227a0a2c6f767da197afdf7e1c8e9ae78dd99f7d31c1a8944a",
+      "manifest": "manifests/dev.heyari.coinflip-0.1.0.md",
+      "localizations": {
+        "it": {
+          "name": "coin-flip",
+          "description": "Lancia una moneta virtuale e restituisce testa o croce. Usalo quando l'utente chiede di lanciare una moneta, tirare una moneta o fare una scelta binaria casuale."
+        }
+      }
     },
     {
       "id": "dev.heyari.reminder",
@@ -182,12 +118,112 @@
       ],
       "bundle": "bundles/dev.heyari.reminder-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.reminder-0.3.0.tar.gz.sig",
-      "sha256": "12d81a788f497f03d96642af725a72960f8990db02bcd70fddadf350ea81b8a8",
+      "sha256": "df5ad97637abf650cd42d49fc77714a5ddb5bd38eb9bc21e69a0cbd7e5b28ede",
       "manifest": "manifests/dev.heyari.reminder-0.3.0.md",
       "localizations": {
         "it": {
           "name": "reminder",
           "description": "Imposta promemoria con orario e voci di lista senza orario. Indirizza all'app delle attività dell'utente (predefinita), al calendario, o a entrambi, con liste personalizzate vocalmente come \"aggiungi latte alla lista della spesa\"."
+        }
+      }
+    },
+    {
+      "id": "dev.heyari.counter",
+      "version": "0.1.0",
+      "name": "counter",
+      "description": "Counts how many times you've asked it to count, persisting across calls. Single-digit ASCII counter that wraps from 9 back to 1. Reference WASM skill for the storage_kv host imports.",
+      "license": "MIT",
+      "author": "Ari core team",
+      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
+      "capabilities": [
+        "storage_kv"
+      ],
+      "languages": [
+        "en",
+        "it"
+      ],
+      "bundle": "bundles/dev.heyari.counter-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.counter-0.1.0.tar.gz.sig",
+      "sha256": "dc4dabe2f40de2a909e6f134937bd85c998d664a76efac39a47b5a0b9f8f42e8",
+      "manifest": "manifests/dev.heyari.counter-0.1.0.md",
+      "localizations": {
+        "it": {
+          "name": "counter",
+          "description": "Conta quante volte gli hai chiesto di contare, mantenendo il valore tra una chiamata e l'altra. Contatore ASCII a una cifra che torna da 9 a 1. Skill WASM di riferimento per gli import host storage_kv."
+        }
+      }
+    },
+    {
+      "id": "dev.heyari.wasmecho",
+      "version": "0.1.0",
+      "name": "wasm-echo",
+      "description": "Tiny WASM smoke-test skill. Returns a fixed greeting from inside its sandboxed module. Use only for testing the WASM loader.",
+      "license": "MIT",
+      "author": "Ari core team",
+      "homepage": null,
+      "capabilities": [],
+      "languages": [
+        "en",
+        "it"
+      ],
+      "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
+      "sha256": "2a15f2b5f97002e9e24e5c9a10df3e572f74f83aac8732b4720c77e5312a14cc",
+      "manifest": "manifests/dev.heyari.wasmecho-0.1.0.md",
+      "localizations": {
+        "it": {
+          "name": "wasm-echo",
+          "description": "Minuscola skill WASM di test. Restituisce un saluto fisso dall'interno del suo modulo sandboxed. Usare solo per testare il loader WASM."
+        }
+      }
+    },
+    {
+      "id": "dev.heyari.timer",
+      "version": "0.1.0",
+      "name": "timer",
+      "description": "Sets, queries, and cancels named timers. Supports natural phrasing like \"set a pasta timer for 8 minutes\" or \"set a 4 minute pasta timer\". Handles multiple simultaneous timers.",
+      "license": "MIT",
+      "author": "Ari core team",
+      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
+      "capabilities": [
+        "storage_kv"
+      ],
+      "languages": [
+        "en",
+        "it"
+      ],
+      "bundle": "bundles/dev.heyari.timer-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.timer-0.1.0.tar.gz.sig",
+      "sha256": "51d9fc272d8cf3698ecb2fd0f5868bbe0664e2a0e6989f113b57133a49a4f519",
+      "manifest": "manifests/dev.heyari.timer-0.1.0.md",
+      "localizations": {
+        "it": {
+          "name": "timer",
+          "description": "Imposta, interroga e annulla timer con nome. Supporta frasi naturali come \"imposta un timer per la pasta di 8 minuti\". Gestisce più timer contemporaneamente."
+        }
+      }
+    },
+    {
+      "id": "dev.heyari.assistant.claude",
+      "version": "0.3.0",
+      "name": "claude",
+      "description": "Use Anthropic's Claude to answer general questions. Requires an API key from console.anthropic.com. Your questions are sent to Anthropic's servers.\n",
+      "license": "MIT",
+      "author": "Ari Project",
+      "homepage": "https://github.com/ari-digital-assistant/ari",
+      "capabilities": [],
+      "languages": [
+        "en",
+        "it"
+      ],
+      "bundle": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz",
+      "signature": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz.sig",
+      "sha256": "48ab234a95189e3e04a8cee8a9b7f233a7cc54a880828d8f788d08f39eef7018",
+      "manifest": "manifests/dev.heyari.assistant.claude-0.3.0.md",
+      "localizations": {
+        "it": {
+          "name": "claude",
+          "description": "Usa Claude di Anthropic per rispondere a domande generali. Richiede una chiave API da console.anthropic.com. Le tue domande vengono inviate ai server di Anthropic.\n"
         }
       }
     }

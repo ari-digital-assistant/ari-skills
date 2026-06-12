@@ -10,7 +10,7 @@ metadata:
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.1"
     capabilities: [http]
-    languages: [en]
+    languages: [en, it]
     specificity: high
     matching:
       patterns:
