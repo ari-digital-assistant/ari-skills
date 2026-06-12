@@ -21,7 +21,7 @@ metadata:
         - keywords: [testa, croce]
           weight: 0.9
     declarative:
-      response_pick: ["Heads.", "Tails."]
+      response_pick: ["coinflip.heads", "coinflip.tails"]
 ---
 
 # Coin Flip (Italiano)
