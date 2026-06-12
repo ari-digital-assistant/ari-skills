@@ -23,11 +23,13 @@ metadata:
           weight: 0.95
         - regex: "\\btimer .* (di|per) \\d+ (second|minut|or)"
           weight: 0.9
-        - regex: "\\bquanto manca\\b"
+        - regex: "\\bquanto (tempo )?manca\\b"
           weight: 0.85
         - regex: "\\b(annulla|cancella) .*timer\\b"
           weight: 0.9
         - regex: "\\b(elenca|mostra) .*timer\\b"
+          weight: 0.85
+        - regex: "\\bquali .*timer\\b"
           weight: 0.85
       custom_score: false
     examples:
