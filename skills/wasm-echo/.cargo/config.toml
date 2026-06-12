@@ -1,0 +1,7 @@
+# Reduce the wasm linear-memory stack to 64 KiB (1 page).
+# The default Rust stack is 1 MiB (16 pages), which pushes the module's
+# memory minimum to 17 pages — exceeding the 1 MiB memory_limit_mb declared
+# in SKILL.en.md / SKILL.it.md. A 64 KiB stack is ample for a smoke-test
+# skill that does nothing recursive.
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "link-arg=-zstack-size=65536"]

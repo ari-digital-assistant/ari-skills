@@ -29,9 +29,11 @@ metadata:
 # WASM Echo
 
 Reference skill that exists purely to prove the WASM loader works end to end.
-The module is a hand-written WAT fragment compiled to WebAssembly. It exports
-the ABI v1 surface (`memory`, `ari_alloc`, `score`, `execute`) and returns
-the literal string "wasm hello" from inside its linear memory.
+A minimal Rust SDK module (`src/lib.rs`, built via `build.sh`) exporting the
+ABI v1 surface (`memory`, `ari_alloc`, `score`, `execute`). It returns the
+`greeting` string resolved per-locale from `strings/{locale}.json` via
+`ari::t()` — the canonical example of WASM-skill output localization
+("wasm hello" in English, "ciao da wasm" in Italian).
 
 ## Example utterance
 

@@ -22,4 +22,4 @@ metadata:
 
 # WASM Echo (Italiano)
 
-Skill di riferimento che esiste unicamente per verificare che il loader WASM funzioni end-to-end. Il modulo è un frammento WAT scritto a mano compilato in WebAssembly. Restituisce la stringa letterale "wasm hello" dalla propria memoria lineare.
+Skill di riferimento che esiste unicamente per verificare che il loader WASM funzioni end-to-end. Un modulo Rust SDK minimale (`src/lib.rs`, compilato con `build.sh`) che esporta la superficie ABI v1 (`memory`, `ari_alloc`, `score`, `execute`). Restituisce la stringa `greeting` risolta per lingua da `strings/{locale}.json` tramite `ari::t()` — l'esempio canonico di localizzazione dell'output di una skill WASM ("wasm hello" in inglese, "ciao da wasm" in italiano).
