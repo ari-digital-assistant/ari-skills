@@ -18,6 +18,24 @@ use state::{State, Timer};
 #[cfg(target_arch = "wasm32")]
 use state::STATE_KEY;
 
+// ---------------------------------------------------------------------------
+// Thin i18n shim — on wasm32 we go through the host's strings table;
+// on native (unit tests) we always return None so every call site falls
+// back to the English literal it already carries.
+// ---------------------------------------------------------------------------
+
+#[cfg(target_arch = "wasm32")]
+#[inline]
+fn t(key: &str, args: &[(&str, &str)]) -> Option<&'static str> {
+    ari::t(key, args)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[inline]
+fn t(_key: &str, _args: &[(&str, &str)]) -> Option<&'static str> {
+    None
+}
+
 #[cfg(target_arch = "wasm32")]
 #[no_mangle]
 pub extern "C" fn score(_ptr: i32, _len: i32) -> f32 {
@@ -85,7 +103,11 @@ fn dispatch(input: &str, now_ms: i64, state: &mut State) -> String {
         Intent::CancelAll => handle_cancel_all(state, envelope),
         Intent::List => handle_list(now_ms, state, envelope),
         Intent::Unintelligible => envelope
-            .speak("Sorry, I couldn't work out what timer you meant.")
+            .speak(
+                t("error.unintelligible", &[])
+                    .unwrap_or("Sorry, I couldn't work out what timer you meant.")
+                    .to_string(),
+            )
             .to_json(),
     }
 }
@@ -98,7 +120,11 @@ fn handle_create(
 ) -> String {
     if segments.is_empty() {
         return envelope
-            .speak("I need a duration like '5 minutes' to set a timer.")
+            .speak(
+                t("error.no_duration", &[])
+                    .unwrap_or("I need a duration like '5 minutes' to set a timer.")
+                    .to_string(),
+            )
             .to_json();
     }
 
@@ -116,17 +142,25 @@ fn handle_create(
             .card(build_card(&id, &name, end_ts_ms, now_ms))
             .notification(build_notification(&id, &name, end_ts_ms));
         state.timers.push(timer);
-        created_phrases.push(format!(
-            "{} timer for {}",
-            name.as_deref().unwrap_or("a"),
-            describe_duration(duration_ms),
-        ));
+        let dur = describe_duration(duration_ms);
+        let phrase = match &name {
+            Some(n) => t("create.phrase_named", &[("name", n), ("time", &dur)])
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| format!("{} timer for {}", n, dur)),
+            None => t("create.phrase_anonymous", &[("time", &dur)])
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| format!("a timer for {}", dur)),
+        };
+        created_phrases.push(phrase);
     }
 
-    let speak = match created_phrases.len() {
-        1 => format!("Set {}.", capitalise(&created_phrases[0])),
-        _ => format!("Set {}.", join_with_and(&created_phrases)),
+    let raw_phrase = match created_phrases.len() {
+        1 => capitalise(&created_phrases[0]),
+        _ => join_with_and(&created_phrases),
     };
+    let speak = t("create.success", &[("phrase", &raw_phrase)])
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| format!("Set {}.", raw_phrase));
     envelope.speak(speak).to_json()
 }
 
@@ -137,30 +171,49 @@ fn handle_query(
     envelope: p::Envelope,
 ) -> String {
     if state.timers.is_empty() {
-        return envelope.speak("No timers running.").to_json();
+        return envelope
+            .speak(
+                t("query.none", &[])
+                    .unwrap_or("No timers running.")
+                    .to_string(),
+            )
+            .to_json();
     }
 
     let speak = match name {
         Some(n) => match state.find_by_name(&n) {
-            Some(t) => {
-                let remaining = (t.end_ts_ms - now_ms).max(0) as u64;
-                format!(
-                    "{} timer has {} left.",
-                    capitalise(&n),
-                    describe_duration(remaining)
-                )
+            Some(ti) => {
+                let remaining = (ti.end_ts_ms - now_ms).max(0) as u64;
+                let dur = describe_duration(remaining);
+                // Named query: "{Name} timer has {time} left."
+                // We build the full name prefix and pass it as `name`.
+                let title = t("query.named_title", &[("name", &capitalise(&n))])
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| format!("{} timer", capitalise(&n)));
+                t("query.remaining", &[("name", &title), ("time", &dur)])
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| format!("{} has {} left.", title, dur))
             }
-            None => format!("I couldn't find a timer called {}.", n),
+            None => t("query.not_found", &[("name", &n)])
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| format!("I couldn't find a timer called {}.", n)),
         },
         None => {
             if state.timers.len() == 1 {
-                let t = &state.timers[0];
-                let remaining = (t.end_ts_ms - now_ms).max(0) as u64;
-                let prefix = match &t.name {
-                    Some(n) => format!("{} timer", capitalise(n)),
-                    None => "Your timer".to_string(),
+                let ti = &state.timers[0];
+                let remaining = (ti.end_ts_ms - now_ms).max(0) as u64;
+                let dur = describe_duration(remaining);
+                let prefix = match &ti.name {
+                    Some(n) => t("query.named_title", &[("name", &capitalise(n))])
+                        .map(|s| s.to_string())
+                        .unwrap_or_else(|| format!("{} timer", capitalise(n))),
+                    None => t("query.anonymous_prefix", &[])
+                        .unwrap_or("Your timer")
+                        .to_string(),
                 };
-                format!("{} has {} left.", prefix, describe_duration(remaining))
+                t("query.remaining", &[("name", &prefix), ("time", &dur)])
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| format!("{} has {} left.", prefix, dur))
             } else {
                 list_sentence(now_ms, state)
             }
@@ -178,20 +231,30 @@ fn handle_cancel(
         Some(n) => match state.remove_by_name(&n) {
             Some(id) => {
                 envelope = dismiss_all_for(envelope, &id);
-                format!("Cancelled the {} timer.", n)
+                t("cancel.named_success", &[("name", &n)])
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| format!("Cancelled the {} timer.", n))
             }
-            None => format!("No {} timer to cancel.", n),
+            None => t("cancel.named_not_found", &[("name", &n)])
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| format!("No {} timer to cancel.", n)),
         },
         None => {
             if state.timers.len() == 1 {
                 let id = state.timers.remove(0).id;
                 envelope = dismiss_all_for(envelope, &id);
-                "Cancelled your timer.".to_string()
+                t("cancel.anonymous_success", &[])
+                    .unwrap_or("Cancelled your timer.")
+                    .to_string()
             } else if let Some(id) = state.remove_only_anonymous() {
                 envelope = dismiss_all_for(envelope, &id);
-                "Cancelled the anonymous timer.".to_string()
+                t("cancel.the_anonymous", &[])
+                    .unwrap_or("Cancelled the anonymous timer.")
+                    .to_string()
             } else {
-                "You have several timers. Which one should I cancel?".to_string()
+                t("cancel.ambiguous", &[])
+                    .unwrap_or("You have several timers. Which one should I cancel?")
+                    .to_string()
             }
         }
     };
@@ -200,16 +263,29 @@ fn handle_cancel(
 
 fn handle_cancel_all(state: &mut State, mut envelope: p::Envelope) -> String {
     if state.timers.is_empty() {
-        return envelope.speak("No timers to cancel.").to_json();
+        return envelope
+            .speak(
+                t("cancel.none", &[])
+                    .unwrap_or("No timers to cancel.")
+                    .to_string(),
+            )
+            .to_json();
     }
     let n = state.timers.len();
-    let ids: Vec<String> = state.timers.iter().map(|t| t.id.clone()).collect();
+    let ids: Vec<String> = state.timers.iter().map(|ti| ti.id.clone()).collect();
     state.timers.clear();
     for id in &ids {
         envelope = dismiss_all_for(envelope, id);
     }
-    let phrase = if n == 1 { "1 timer" } else { "every timer" };
-    envelope.speak(format!("Cancelled {}.", phrase)).to_json()
+    let summary = if n == 1 {
+        t("cancel.all.one", &[]).unwrap_or("1 timer").to_string()
+    } else {
+        t("cancel.all.many", &[]).unwrap_or("every timer").to_string()
+    };
+    let speak = t("cancel.all_success", &[("summary", &summary)])
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| format!("Cancelled {}.", summary));
+    envelope.speak(speak).to_json()
 }
 
 fn handle_list(now_ms: i64, state: &State, envelope: p::Envelope) -> String {
@@ -224,19 +300,26 @@ fn dismiss_all_for(envelope: p::Envelope, timer_id: &str) -> p::Envelope {
 }
 
 fn build_card(timer_id: &str, name: &Option<String>, end_ts_ms: i64, started_ts_ms: i64) -> p::Card {
-    let title = name
-        .as_deref()
-        .map(|n| format!("{} timer", capitalise(n)))
-        .unwrap_or_else(|| "Timer".to_string());
+    let title = match name.as_deref() {
+        Some(n) => t("query.named_title", &[("name", &capitalise(n))])
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| format!("{} timer", capitalise(n))),
+        None => t("card.anonymous_title", &[])
+            .unwrap_or("Timer")
+            .to_string(),
+    };
     p::Card::new(card_id_for(timer_id))
         .title(title)
         .icon(p::Asset::new("timer_icon.png"))
         .countdown_to(end_ts_ms)
         .started_at(started_ts_ms)
         .action(
-            p::Action::new("cancel", "Cancel")
-                .utterance(cancel_utterance(name))
-                .destructive(),
+            p::Action::new(
+                "cancel",
+                t("action.cancel_label", &[]).unwrap_or("Cancel"),
+            )
+            .utterance(cancel_utterance(name))
+            .destructive(),
         )
         .on_complete(
             p::OnComplete::new()
@@ -251,13 +334,21 @@ fn build_card(timer_id: &str, name: &Option<String>, end_ts_ms: i64, started_ts_
 }
 
 fn build_alert(timer_id: &str, name: &Option<String>) -> p::Alert {
-    let title = name
-        .as_deref()
-        .map(|n| format!("{} timer done", capitalise(n)))
-        .unwrap_or_else(|| "Timer done".to_string());
+    let title = match name.as_deref() {
+        Some(n) => t("alert.named_done", &[("name", &capitalise(n))])
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| format!("{} timer done", capitalise(n))),
+        None => t("alert.anonymous_done", &[])
+            .unwrap_or("Timer done")
+            .to_string(),
+    };
     let speech = name
         .as_deref()
-        .map(|n| format!("{} timer", capitalise(n)));
+        .map(|n| {
+            t("query.named_title", &[("name", &capitalise(n))])
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| format!("{} timer", capitalise(n)))
+        });
     let mut alert = p::Alert::new(alert_id_for(timer_id))
         .title(title)
         .urgency(p::Urgency::Critical)
@@ -266,7 +357,13 @@ fn build_alert(timer_id: &str, name: &Option<String>) -> p::Alert {
         .max_cycles(12)
         .full_takeover(true)
         .icon(p::Asset::new("timer_icon.png"))
-        .action(p::Action::new("stop_alert", "Stop").primary());
+        .action(
+            p::Action::new(
+                "stop_alert",
+                t("action.stop_label", &[]).unwrap_or("Stop"),
+            )
+            .primary(),
+        );
     if let Some(s) = speech {
         alert = alert.speech_loop(s);
     }
@@ -274,25 +371,41 @@ fn build_alert(timer_id: &str, name: &Option<String>) -> p::Alert {
 }
 
 fn build_notification(timer_id: &str, name: &Option<String>, end_ts_ms: i64) -> p::Notification {
-    let title = name
-        .as_deref()
-        .map(|n| format!("{} timer", capitalise(n)))
-        .unwrap_or_else(|| "Timer".to_string());
+    let title = match name.as_deref() {
+        Some(n) => t("query.named_title", &[("name", &capitalise(n))])
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| format!("{} timer", capitalise(n))),
+        None => t("card.anonymous_title", &[])
+            .unwrap_or("Timer")
+            .to_string(),
+    };
     p::Notification::new(notif_id_for(timer_id))
         .title(title)
-        .body("Running…")
+        .body(
+            t("notification.running", &[])
+                .unwrap_or("Running…")
+                .to_string(),
+        )
         .importance(p::Importance::Default)
         .sticky(true)
         .countdown_to(end_ts_ms)
         .action(
-            p::Action::new("cancel", "Cancel").utterance(cancel_utterance(name)),
+            p::Action::new(
+                "cancel",
+                t("action.cancel_label", &[]).unwrap_or("Cancel"),
+            )
+            .utterance(cancel_utterance(name)),
         )
 }
 
 fn cancel_utterance(name: &Option<String>) -> String {
     match name {
-        Some(n) => format!("cancel my {} timer", n),
-        None => "cancel my timer".to_string(),
+        Some(n) => t("action.cancel_named_utterance", &[("name", n)])
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| format!("cancel my {} timer", n)),
+        None => t("action.cancel_anonymous_utterance", &[])
+            .unwrap_or("cancel my timer")
+            .to_string(),
     }
 }
 
@@ -310,20 +423,30 @@ fn alert_id_for(timer_id: &str) -> String {
 
 fn list_sentence(now_ms: i64, state: &State) -> String {
     if state.timers.is_empty() {
-        return "No timers running.".to_string();
+        return t("query.none", &[])
+            .unwrap_or("No timers running.")
+            .to_string();
     }
     let phrases: Vec<String> = state
         .timers
         .iter()
-        .map(|t| {
-            let remaining = (t.end_ts_ms - now_ms).max(0) as u64;
-            match &t.name {
-                Some(n) => format!("{} ({} left)", n, describe_duration(remaining)),
-                None => format!("an anonymous timer ({} left)", describe_duration(remaining)),
+        .map(|ti| {
+            let remaining = (ti.end_ts_ms - now_ms).max(0) as u64;
+            let dur = describe_duration(remaining);
+            match &ti.name {
+                Some(n) => t("list.named_entry", &[("name", n), ("time", &dur)])
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| format!("{} ({} left)", n, dur)),
+                None => t("list.anonymous_entry", &[("time", &dur)])
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| format!("an anonymous timer ({} left)", dur)),
             }
         })
         .collect();
-    format!("You have {}.", join_with_and(&phrases))
+    let items = join_with_and(&phrases);
+    t("list.sentence", &[("items", &items)])
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| format!("You have {}.", items))
 }
 
 /// "3 minutes", "1 minute 30 seconds", "2 hours 15 minutes".
@@ -336,19 +459,43 @@ fn describe_duration(ms: u64) -> String {
 
     let mut parts: Vec<String> = Vec::new();
     if hours > 0 {
-        parts.push(format!("{} {}", hours, plural("hour", hours)));
+        parts.push(unit(
+            hours,
+            "duration.hour_singular",
+            "duration.hour_plural",
+            "hour",
+            "hours",
+        ));
     }
     if minutes > 0 {
-        parts.push(format!("{} {}", minutes, plural("minute", minutes)));
+        parts.push(unit(
+            minutes,
+            "duration.minute_singular",
+            "duration.minute_plural",
+            "minute",
+            "minutes",
+        ));
     }
     if seconds > 0 || parts.is_empty() {
-        parts.push(format!("{} {}", seconds, plural("second", seconds)));
+        parts.push(unit(
+            seconds,
+            "duration.second_singular",
+            "duration.second_plural",
+            "second",
+            "seconds",
+        ));
     }
     parts.join(" ")
 }
 
-fn plural(stem: &str, n: u64) -> String {
-    if n == 1 { stem.to_string() } else { format!("{stem}s") }
+/// Format a count with its localised singular or plural unit word.
+fn unit(n: u64, sing_key: &str, plur_key: &str, sing_fb: &str, plur_fb: &str) -> String {
+    let word = if n == 1 {
+        t(sing_key, &[]).unwrap_or(sing_fb)
+    } else {
+        t(plur_key, &[]).unwrap_or(plur_fb)
+    };
+    format!("{} {}", n, word)
 }
 
 fn capitalise(s: &str) -> String {
@@ -364,13 +511,14 @@ fn capitalise(s: &str) -> String {
 }
 
 fn join_with_and(items: &[String]) -> String {
+    let joiner = t("list.join", &[]).unwrap_or(" and ");
     match items.len() {
         0 => String::new(),
         1 => items[0].clone(),
-        2 => format!("{} and {}", items[0], items[1]),
+        2 => format!("{}{}{}", items[0], joiner, items[1]),
         _ => {
             let head = items[..items.len() - 1].join(", ");
-            format!("{}, and {}", head, items.last().unwrap())
+            format!("{},{}{}", head, joiner, items.last().unwrap())
         }
     }
 }
