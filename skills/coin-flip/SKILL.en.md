@@ -35,7 +35,7 @@ metadata:
       - text: "let chance decide"
       - text: "help me decide with a coin flip"
     declarative:
-      response_pick: ["Heads.", "Tails."]
+      response_pick: ["coinflip.heads", "coinflip.tails"]
 ---
 
 # Coin Flip
