@@ -2,9 +2,7 @@
 name: claude
 license: MIT
 description: >
-  Use Anthropic's Claude to answer general questions.
-  Requires an API key from console.anthropic.com.
-  Your questions are sent to Anthropic's servers.
+  Usa Claude di Anthropic per rispondere a domande generali. Richiede una chiave API da console.anthropic.com. Le tue domande vengono inviate ai server di Anthropic.
 metadata:
   ari:
     id: dev.heyari.assistant.claude
@@ -13,12 +11,7 @@ metadata:
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari
     engine: ">=0.1"
-    # Anthropic's Claude family is reliably multilingual for the locales
-    # Ari ships against. The engine appends a per-request "Please reply
-    # in <Language>." hint to the system prompt for any non-English
-    # locale we don't ship a translated `system_prompt` for, so adding a
-    # language here costs nothing on the skill side.
-    languages: [en, it, es, fr, de]
+    languages: [en, it]
     examples:
       - text: "ask claude why the sky is blue"
       - text: "ask claude what the capital of France is"
@@ -67,7 +60,10 @@ metadata:
           Answer the user's question in one short sentence.
         response_path: "content[0].text"
 ---
-Uses Anthropic's Claude API to answer general knowledge questions.
 
-You need an API key — get one at https://console.anthropic.com/settings/keys.
-Queries are sent to Anthropic's servers; see their privacy policy for details.
+# Claude (Italiano)
+
+Usa l'API Claude di Anthropic per rispondere a domande di cultura generale.
+
+Hai bisogno di una chiave API — ottienila su https://console.anthropic.com/settings/keys.
+Le domande vengono inviate ai server di Anthropic; consulta la loro informativa sulla privacy per i dettagli.

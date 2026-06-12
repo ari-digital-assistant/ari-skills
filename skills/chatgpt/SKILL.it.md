@@ -2,9 +2,7 @@
 name: chatgpt
 license: MIT
 description: >
-  Use OpenAI's ChatGPT to answer general questions.
-  Requires an API key from platform.openai.com.
-  Your questions are sent to OpenAI's servers.
+  Usa ChatGPT di OpenAI per rispondere a domande generali. Richiede una chiave API da platform.openai.com. Le tue domande vengono inviate ai server di OpenAI.
 metadata:
   ari:
     id: dev.heyari.assistant.chatgpt
@@ -13,12 +11,7 @@ metadata:
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari
     engine: ">=0.1"
-    # GPT-5.4 family (and OpenAI's predecessors) are reliably multilingual
-    # for the locales Ari ships against. The engine appends a per-request
-    # "Please reply in <Language>." hint to the system prompt for any
-    # non-English locale we don't ship a translated `system_prompt` for,
-    # so adding a language here costs nothing on the skill side.
-    languages: [en, it, es, fr, de]
+    languages: [en, it]
     examples:
       - text: "ask chatgpt why the sky is blue"
       - text: "ask chat gpt what the capital of France is"
@@ -63,7 +56,10 @@ metadata:
           Answer the user's question in one short sentence.
         response_path: "choices[0].message.content"
 ---
-Uses OpenAI's ChatGPT API to answer general knowledge questions.
 
-You need an API key — get one at https://platform.openai.com/api-keys.
-Queries are sent to OpenAI's servers; see their privacy policy for details.
+# ChatGPT (Italiano)
+
+Usa l'API ChatGPT di OpenAI per rispondere a domande di cultura generale.
+
+Hai bisogno di una chiave API — ottienila su https://platform.openai.com/api-keys.
+Le domande vengono inviate ai server di OpenAI; consulta la loro informativa sulla privacy per i dettagli.
