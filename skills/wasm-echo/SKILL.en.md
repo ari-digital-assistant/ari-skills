@@ -9,7 +9,7 @@ metadata:
     author: Ari core team
     engine: ">=0.1"
     capabilities: []
-    languages: [en]
+    languages: [en, it]
     specificity: high
     matching:
       patterns:
