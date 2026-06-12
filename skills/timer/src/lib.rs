@@ -26,7 +26,7 @@ use state::STATE_KEY;
 
 #[cfg(target_arch = "wasm32")]
 #[inline]
-fn t<'a>(key: &str, args: &[(&str, &str)]) -> Option<&'static str> {
+fn t(key: &str, args: &[(&str, &str)]) -> Option<&'static str> {
     ari::t(key, args)
 }
 
@@ -142,11 +142,16 @@ fn handle_create(
             .card(build_card(&id, &name, end_ts_ms, now_ms))
             .notification(build_notification(&id, &name, end_ts_ms));
         state.timers.push(timer);
-        created_phrases.push(format!(
-            "{} timer for {}",
-            name.as_deref().unwrap_or("a"),
-            describe_duration(duration_ms),
-        ));
+        let dur = describe_duration(duration_ms);
+        let phrase = match &name {
+            Some(n) => t("create.phrase_named", &[("name", n), ("time", &dur)])
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| format!("{} timer for {}", n, dur)),
+            None => t("create.phrase_anonymous", &[("time", &dur)])
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| format!("a timer for {}", dur)),
+        };
+        created_phrases.push(phrase);
     }
 
     let raw_phrase = match created_phrases.len() {
@@ -355,7 +360,7 @@ fn build_alert(timer_id: &str, name: &Option<String>) -> p::Alert {
         .action(
             p::Action::new(
                 "stop_alert",
-                t("action.cancel_label", &[]).unwrap_or("Stop"),
+                t("action.stop_label", &[]).unwrap_or("Stop"),
             )
             .primary(),
         );

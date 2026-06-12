@@ -21,6 +21,7 @@
   "alert.named_done": "{name} timer done",
   "notification.running": "Running…",
   "action.cancel_label": "Cancel",
+  "action.stop_label": "Stop",
   "action.cancel_named_utterance": "cancel my {name} timer",
   "action.cancel_anonymous_utterance": "cancel my timer",
   "list.named_entry": "{name} ({time} left)",
@@ -32,5 +33,7 @@
   "duration.minute_plural": "minutes",
   "duration.second_singular": "second",
   "duration.second_plural": "seconds",
-  "list.join": " and "
+  "list.join": " and ",
+  "create.phrase_named": "{name} timer for {time}",
+  "create.phrase_anonymous": "a timer for {time}"
 }
