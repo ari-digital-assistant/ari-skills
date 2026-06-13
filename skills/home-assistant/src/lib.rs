@@ -67,7 +67,7 @@ fn forward_flow(base_url: &str, token: &str, input: &str, language: &str, privat
     if let Some(kind) = logic::http_error_kind(resp.status, private) {
         return logic::error_envelope(&render_error(kind));
     }
-    match resp.body.and_then(logic::parse_conversation_response) {
+    match resp.body.as_deref().and_then(logic::parse_conversation_response) {
         Some(result) => {
             let title = t_or("card.done", &[], "Done");
             logic::build_conversation_envelope(&result, &title)
@@ -89,7 +89,7 @@ fn person_flow(base_url: &str, token: &str, name: &str, private: bool) -> String
     if let Some(kind) = logic::http_error_kind(resp.status, private) {
         return logic::error_envelope(&render_error(kind));
     }
-    let people = resp.body.map(logic::parse_people).unwrap_or_default();
+    let people = resp.body.as_deref().map(logic::parse_people).unwrap_or_default();
     match logic::match_person(&people, name) {
         Some(p) => logic::build_person_envelope(
             p,
