@@ -77,15 +77,37 @@ fn base(base_url: &str) -> &str {
     base_url.trim_end_matches('/')
 }
 
-pub fn build_conversation_request(base_url: &str, token: &str, text: &str, language: &str) -> HaRequest {
-    // Order-sensitive body: callers assert the exact string `{"text":...,"language":...}`.
-    // serde_json sorts object keys without the `preserve_order` feature, so build
-    // the body by hand. `serde_json::Value::String` gives us correct escaping/quoting.
-    let body = alloc::format!(
-        "{{\"text\":{},\"language\":{}}}",
+pub fn build_conversation_request(
+    base_url: &str,
+    token: &str,
+    text: &str,
+    language: &str,
+    agent_id: Option<&str>,
+) -> HaRequest {
+    // Order-sensitive body: callers assert the exact string `{"text":...,"language":...}`
+    // (plus an optional trailing `"agent_id":...`). serde_json sorts object keys without
+    // the `preserve_order` feature, so build the body by hand. `serde_json::Value::String`
+    // gives correct escaping/quoting.
+    let mut body = alloc::format!(
+        "{{\"text\":{},\"language\":{}",
         serde_json::Value::String(text.to_string()),
         serde_json::Value::String(language.to_string()),
     );
+    // Optional: pin a specific HA conversation agent entity (e.g.
+    // `conversation.openai_conversation`). When blank/absent, HA's
+    // `/api/conversation/process` uses its built-in default (local) agent —
+    // NOT the UI's preferred agent — so this is the only way to reach an LLM
+    // agent like ChatGPT.
+    if let Some(id) = agent_id {
+        let id = id.trim();
+        if !id.is_empty() {
+            body.push_str(&alloc::format!(
+                ",\"agent_id\":{}",
+                serde_json::Value::String(id.to_string())
+            ));
+        }
+    }
+    body.push('}');
     HaRequest {
         method: "POST",
         url: alloc::format!("{}/api/conversation/process", base(base_url)),
@@ -100,7 +122,7 @@ mod request_tests {
 
     #[test]
     fn conversation_request_shapes_url_and_body() {
-        let r = build_conversation_request("http://hass.local:8123", "tok123", "turn on lights", "en");
+        let r = build_conversation_request("http://hass.local:8123", "tok123", "turn on lights", "en", None);
         assert_eq!(r.method, "POST");
         assert_eq!(r.url, "http://hass.local:8123/api/conversation/process");
         assert_eq!(r.auth_header(), ("Authorization".to_string(), "Bearer tok123".to_string()));
@@ -109,15 +131,27 @@ mod request_tests {
 
     #[test]
     fn conversation_request_trims_trailing_slash_on_base_url() {
-        let r = build_conversation_request("http://hass.local:8123/", "t", "hi", "it");
+        let r = build_conversation_request("http://hass.local:8123/", "t", "hi", "it", None);
         assert_eq!(r.url, "http://hass.local:8123/api/conversation/process");
         assert_eq!(r.body, r#"{"text":"hi","language":"it"}"#);
     }
 
     #[test]
     fn conversation_request_escapes_body_text() {
-        let r = build_conversation_request("http://h:8123", "t", "say \"hi\"\nbye", "en");
+        let r = build_conversation_request("http://h:8123", "t", "say \"hi\"\nbye", "en", None);
         assert_eq!(r.body, r#"{"text":"say \"hi\"\nbye","language":"en"}"#);
+    }
+
+    #[test]
+    fn conversation_request_includes_agent_id_when_set() {
+        let r = build_conversation_request("http://h:8123", "t", "hi", "en", Some("conversation.chatgpt"));
+        assert_eq!(r.body, r#"{"text":"hi","language":"en","agent_id":"conversation.chatgpt"}"#);
+    }
+
+    #[test]
+    fn conversation_request_omits_blank_agent_id() {
+        let r = build_conversation_request("http://h:8123", "t", "hi", "en", Some("   "));
+        assert_eq!(r.body, r#"{"text":"hi","language":"en"}"#);
     }
 }
 
