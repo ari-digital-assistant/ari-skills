@@ -203,3 +203,68 @@ mod parse_tests {
         assert!(parse_conversation_response("not json").is_none());
     }
 }
+
+/// Build the action envelope for a forwarded command. `card_title` is the
+/// localized title the host passes in (e.g. "Done"). On no-match we tag the
+/// envelope with `_ari_no_match` so the engine fallback tier can fall through
+/// to the assistant; no card is shown.
+pub fn build_conversation_envelope(result: &ConversationResult, card_title: &str) -> String {
+    let speak = result.speech.clone().unwrap_or_default();
+    let mut env = serde_json::json!({ "v": 1, "speak": speak });
+    if result.no_match {
+        env["_ari_no_match"] = serde_json::Value::Bool(true);
+        return env.to_string();
+    }
+    if !result.success_names.is_empty() {
+        let subtitle = result.success_names.join(", ");
+        env["cards"] = serde_json::json!([{
+            "id": "ha_result",
+            "title": card_title,
+            "subtitle": subtitle,
+            "accent": "success"
+        }]);
+    }
+    env.to_string()
+}
+
+/// A minimal speak-only envelope. Never carries `_ari_no_match` (these are
+/// genuine, user-facing messages, not fall-through signals).
+#[allow(dead_code)]
+pub fn error_envelope(speak: &str) -> String {
+    serde_json::json!({ "v": 1, "speak": speak }).to_string()
+}
+
+#[cfg(test)]
+mod envelope_tests {
+    use super::*;
+
+    #[test]
+    fn speaks_and_cards_on_success() {
+        let r = ConversationResult {
+            speech: Some("Turned on the kitchen light".into()),
+            success_names: vec!["Kitchen Light".into()],
+            continue_conversation: false,
+            no_match: false,
+        };
+        let v: serde_json::Value = serde_json::from_str(&build_conversation_envelope(&r, "Done")).unwrap();
+        assert_eq!(v["v"], 1);
+        assert_eq!(v["speak"], "Turned on the kitchen light");
+        assert_eq!(v["cards"][0]["title"], "Done");
+        assert_eq!(v["cards"][0]["subtitle"], "Kitchen Light");
+        assert!(v.get("_ari_no_match").is_none());
+    }
+
+    #[test]
+    fn no_match_tags_envelope_and_uses_fallback_speech() {
+        let r = ConversationResult {
+            speech: Some("Sorry".into()),
+            success_names: vec![],
+            continue_conversation: false,
+            no_match: true,
+        };
+        let v: serde_json::Value = serde_json::from_str(&build_conversation_envelope(&r, "Done")).unwrap();
+        assert_eq!(v["_ari_no_match"], true);
+        assert_eq!(v["speak"], "Sorry");
+        assert!(v.get("cards").is_none());
+    }
+}
