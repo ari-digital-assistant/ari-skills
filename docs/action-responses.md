@@ -177,7 +177,8 @@ Skills can ship raw files (audio, images) under `assets/` in their bundle. Primi
 
 ```
 skills/<your-skill>/
-  SKILL.md
+  SKILL.en.md          # canonical manifest (localized: SKILL.{locale}.md)
+  strings/             # optional — i18n templates (see i18n.md)
   skill.wasm
   assets/
     timer.mp3

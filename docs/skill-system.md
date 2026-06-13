@@ -45,7 +45,7 @@ WASM skills can opt in to custom scoring by setting `metadata.ari.matching.custo
 
 ## Manifest format
 
-Ari skills use [AgentSkills](https://agentskills.io/specification.md) `SKILL.md` files as their manifest envelope. AgentSkills is a format originally designed for LLM-based coding agents — Ari can't *execute* SKILL.md prose because there's no LLM in the engine, but the format is well-specified, widely adopted across the agent ecosystem, and explicitly invites client-specific extension via the `metadata` field. Ari's deterministic config lives entirely under `metadata.ari.*`.
+Ari skills use [AgentSkills](https://agentskills.io/specification.md)-format files as their manifest envelope, named per-locale: `SKILL.en.md` is the canonical English manifest, with optional `SKILL.{locale}.md` variants (e.g. `SKILL.it.md`) — see [i18n.md](i18n.md). A legacy bare `SKILL.md` is still accepted and treated as English. AgentSkills is a format originally designed for LLM-based coding agents — Ari can't *execute* the manifest prose because there's no LLM in the engine, but the format is well-specified, widely adopted across the agent ecosystem, and explicitly invites client-specific extension via the `metadata` field. Ari's deterministic config lives entirely under `metadata.ari.*`.
 
 Why bother? Three reasons:
 
@@ -155,7 +155,7 @@ Install flow:
 3. Verifies sha256 against `index.json`
 4. Verifies Ed25519 signature against the baked-in pubkey
 5. Extracts to `<frontend filesDir>/skills/<id>/`
-6. Parses `SKILL.md`, validates `metadata.ari`, runs capability check
+6. Parses `SKILL.en.md` (or legacy `SKILL.md`) and any `SKILL.{locale}.md` variants, validates `metadata.ari`, runs capability check
 7. Registers the adapter with `SkillLoader`
 
 Any failure at any step aborts cleanly without touching engine state.
@@ -180,7 +180,11 @@ ari-skills/
 │   └── validate              # local validator
 ├── skills/
 │   └── <slug>/
-│       ├── SKILL.md
+│       ├── SKILL.en.md       # canonical English manifest (legacy: SKILL.md)
+│       ├── SKILL.it.md       # optional — localized manifest (SKILL.{locale}.md)
+│       ├── strings/           # optional — i18n templates (see i18n.md)
+│       │   ├── en.json
+│       │   └── it.json
 │       ├── skill.wasm        # if WASM
 │       ├── assets/            # optional — bundled images, audio, etc.
 │       │   ├── timer_icon.png
@@ -207,7 +211,7 @@ The new crate is `ari-engine/crates/ari-skill-loader`:
 ```
 ari-skill-loader/
 ├── lib.rs            # SkillLoader: install, uninstall, list, scan disk
-├── manifest.rs       # serde structs for SKILL.md frontmatter
+├── manifest.rs       # serde structs for SKILL.{locale}.md frontmatter
 ├── declarative.rs    # declarative adapter → impl Skill
 ├── wasm.rs           # wasmtime adapter → impl Skill
 ├── host_api.rs       # WASM host imports
