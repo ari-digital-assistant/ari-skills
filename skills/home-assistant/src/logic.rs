@@ -112,3 +112,94 @@ mod request_tests {
         assert_eq!(r.body, r#"{"text":"hi","language":"it"}"#);
     }
 }
+
+use alloc::vec::Vec;
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+struct ConvEnvelope {
+    #[serde(default)]
+    continue_conversation: bool,
+    response: ConvResponse,
+}
+#[derive(Deserialize)]
+struct ConvResponse {
+    #[serde(default)]
+    response_type: String,
+    #[serde(default)]
+    data: ConvData,
+    #[serde(default)]
+    speech: ConvSpeech,
+}
+#[derive(Deserialize, Default)]
+struct ConvData {
+    #[serde(default)]
+    code: Option<String>,
+    #[serde(default)]
+    success: Vec<ConvTarget>,
+}
+#[derive(Deserialize)]
+struct ConvTarget {
+    #[serde(default)]
+    name: String,
+}
+#[derive(Deserialize, Default)]
+struct ConvSpeech {
+    #[serde(default)]
+    plain: ConvPlain,
+}
+#[derive(Deserialize, Default)]
+struct ConvPlain {
+    #[serde(default)]
+    speech: Option<String>,
+}
+
+/// Distilled, host-agnostic view of a conversation/process reply.
+pub struct ConversationResult {
+    pub speech: Option<String>,
+    pub success_names: Vec<String>,
+    pub continue_conversation: bool,
+    pub no_match: bool,
+}
+
+pub fn parse_conversation_response(json: &str) -> Option<ConversationResult> {
+    let env: ConvEnvelope = serde_json::from_str(json).ok()?;
+    let no_match = env.response.response_type == "error"
+        && env.response.data.code.as_deref() == Some("no_intent_match");
+    Some(ConversationResult {
+        speech: env.response.speech.plain.speech,
+        success_names: env.response.data.success.into_iter().map(|t| t.name).collect(),
+        continue_conversation: env.continue_conversation,
+        no_match,
+    })
+}
+
+#[cfg(test)]
+mod parse_tests {
+    use super::*;
+
+    const ACTION_DONE: &str = r#"{"continue_conversation":false,"conversation_id":"01J","response":{"response_type":"action_done","language":"en","data":{"targets":[{"type":"area","name":"Kitchen","id":"kitchen"}],"success":[{"type":"entity","name":"Kitchen Light","id":"light.kitchen"}],"failed":[]},"speech":{"plain":{"speech":"Turned on the kitchen light"}}}}"#;
+
+    const NO_MATCH: &str = r#"{"continue_conversation":false,"conversation_id":"01K","response":{"response_type":"error","language":"en","data":{"code":"no_intent_match"},"speech":{"plain":{"speech":"Sorry, I couldn't understand that"}}}}"#;
+
+    #[test]
+    fn parses_action_done() {
+        let r = parse_conversation_response(ACTION_DONE).unwrap();
+        assert_eq!(r.speech.as_deref(), Some("Turned on the kitchen light"));
+        assert_eq!(r.success_names, vec!["Kitchen Light".to_string()]);
+        assert_eq!(r.continue_conversation, false);
+        assert_eq!(r.no_match, false);
+    }
+
+    #[test]
+    fn detects_no_intent_match() {
+        let r = parse_conversation_response(NO_MATCH).unwrap();
+        assert_eq!(r.no_match, true);
+        assert_eq!(r.speech.as_deref(), Some("Sorry, I couldn't understand that"));
+    }
+
+    #[test]
+    fn malformed_json_is_error() {
+        assert!(parse_conversation_response("not json").is_none());
+    }
+}
