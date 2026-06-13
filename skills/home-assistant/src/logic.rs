@@ -382,3 +382,59 @@ mod person_tests {
         assert_eq!(v["cards"][0]["subtitle"], "Work");
     }
 }
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum ErrorKind {
+    Unreachable,
+    UnreachableLan,
+    Unauthorized,
+}
+
+/// Map an HTTP `status` (0 == transport failure) to an error kind, or `None`
+/// when the response is usable (2xx). `private_base` adds the home-network
+/// hint to transport failures.
+pub fn http_error_kind(status: u16, private_base: bool) -> Option<ErrorKind> {
+    match status {
+        200..=299 => None,
+        0 => Some(if private_base { ErrorKind::UnreachableLan } else { ErrorKind::Unreachable }),
+        401 | 403 => Some(ErrorKind::Unauthorized),
+        _ => Some(ErrorKind::Unreachable),
+    }
+}
+
+pub fn is_private_base_url(base_url: &str) -> bool {
+    match url::Url::parse(base_url) {
+        Ok(u) => match u.host() {
+            Some(url::Host::Domain(d)) => {
+                let d = d.to_ascii_lowercase();
+                d == "localhost" || d.ends_with(".local") || d.ends_with(".lan")
+            }
+            Some(url::Host::Ipv4(ip)) => ip.is_private() || ip.is_loopback(),
+            Some(url::Host::Ipv6(ip)) => ip.is_loopback(),
+            None => false,
+        },
+        Err(_) => false,
+    }
+}
+
+#[cfg(test)]
+mod error_tests {
+    use super::*;
+
+    #[test]
+    fn maps_statuses_to_kinds() {
+        assert_eq!(http_error_kind(0, true), Some(ErrorKind::UnreachableLan));
+        assert_eq!(http_error_kind(0, false), Some(ErrorKind::Unreachable));
+        assert_eq!(http_error_kind(401, false), Some(ErrorKind::Unauthorized));
+        assert_eq!(http_error_kind(403, false), Some(ErrorKind::Unauthorized));
+        assert_eq!(http_error_kind(200, false), None);
+        assert_eq!(http_error_kind(500, false), Some(ErrorKind::Unreachable));
+    }
+
+    #[test]
+    fn detects_private_base_url() {
+        assert!(is_private_base_url("http://homeassistant.local:8123"));
+        assert!(is_private_base_url("http://192.168.1.5:8123"));
+        assert!(!is_private_base_url("https://abcd.ui.nabu.casa"));
+    }
+}
