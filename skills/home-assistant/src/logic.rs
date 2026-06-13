@@ -56,3 +56,59 @@ mod classify_tests {
         assert_eq!(classify("where is the nearest pizza"), Intent::Forward);
     }
 }
+
+/// A ready-to-send HTTP request: method, absolute URL, bearer token, JSON body.
+pub struct HaRequest {
+    pub method: &'static str,
+    pub url: String,
+    pub token: String,
+    pub body: String,
+}
+
+impl HaRequest {
+    pub fn auth_header(&self) -> (String, String) {
+        ("Authorization".to_string(), alloc::format!("Bearer {}", self.token))
+    }
+}
+
+fn base(base_url: &str) -> &str {
+    base_url.trim_end_matches('/')
+}
+
+pub fn build_conversation_request(base_url: &str, token: &str, text: &str, language: &str) -> HaRequest {
+    // Order-sensitive body: callers assert the exact string `{"text":...,"language":...}`.
+    // serde_json sorts object keys without the `preserve_order` feature, so build
+    // the body by hand. `serde_json::Value::String` gives us correct escaping/quoting.
+    let body = alloc::format!(
+        "{{\"text\":{},\"language\":{}}}",
+        serde_json::Value::String(text.to_string()),
+        serde_json::Value::String(language.to_string()),
+    );
+    HaRequest {
+        method: "POST",
+        url: alloc::format!("{}/api/conversation/process", base(base_url)),
+        token: token.to_string(),
+        body,
+    }
+}
+
+#[cfg(test)]
+mod request_tests {
+    use super::*;
+
+    #[test]
+    fn conversation_request_shapes_url_and_body() {
+        let r = build_conversation_request("http://hass.local:8123", "tok123", "turn on lights", "en");
+        assert_eq!(r.method, "POST");
+        assert_eq!(r.url, "http://hass.local:8123/api/conversation/process");
+        assert_eq!(r.auth_header(), ("Authorization".to_string(), "Bearer tok123".to_string()));
+        assert_eq!(r.body, r#"{"text":"turn on lights","language":"en"}"#);
+    }
+
+    #[test]
+    fn conversation_request_trims_trailing_slash_on_base_url() {
+        let r = build_conversation_request("http://hass.local:8123/", "t", "hi", "it");
+        assert_eq!(r.url, "http://hass.local:8123/api/conversation/process");
+        assert_eq!(r.body, r#"{"text":"hi","language":"it"}"#);
+    }
+}
