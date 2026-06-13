@@ -14,7 +14,7 @@
 # What it does:
 #   1. Runs skill build.sh if present (WASM skills).
 #   2. Runs ./tools/validate on the skill (same check CI runs).
-#   3. Pushes SKILL.md, skill.wasm (if present), and assets/ into the app's
+#   3. Pushes SKILL.*.md, skill.wasm (if present), strings/ (if present), and assets/ into the app's
 #      private skills dir on the device via `run-as`. No root required; the
 #      app must be a debuggable (debug) build for `run-as` to work.
 #   4. Force-stops the app and relaunches so the engine re-scans on startup.
@@ -72,8 +72,11 @@ if [[ ! -d "$SKILL_DIR" ]]; then
   exit 1
 fi
 
-if [[ ! -f "$SKILL_DIR/SKILL.md" ]]; then
-  echo "sideload-android: no SKILL.md in $SKILL_DIR" >&2
+# Accept the skill if EITHER the legacy bare SKILL.md OR the canonical
+# localized SKILL.en.md exists — mirrors the engine/validator dual-check
+# after the SKILL.md -> SKILL.{locale}.md migration.
+if [[ ! -f "$SKILL_DIR/SKILL.md" && ! -f "$SKILL_DIR/SKILL.en.md" ]]; then
+  echo "sideload-android: no SKILL.en.md (or legacy SKILL.md) in $SKILL_DIR" >&2
   exit 1
 fi
 
@@ -132,10 +135,21 @@ DEST_REL="files/skills/$SLUG"
 
 echo "==> staging    $STAGING"
 adb_cmd shell "rm -rf $STAGING && mkdir -p $STAGING"
-adb_cmd push "$SKILL_DIR/SKILL.md" "$STAGING/SKILL.md" >/dev/null
+
+# Push every manifest present — the localized SKILL.en.md / SKILL.it.md set
+# and/or a legacy bare SKILL.md. The device needs at least the canonical
+# SKILL.en.md (or SKILL.md) for the engine to load the skill.
+for manifest in "$SKILL_DIR"/SKILL*.md; do
+  [[ -f "$manifest" ]] || continue
+  adb_cmd push "$manifest" "$STAGING/$(basename "$manifest")" >/dev/null
+done
 
 if [[ -f "$SKILL_DIR/skill.wasm" ]]; then
   adb_cmd push "$SKILL_DIR/skill.wasm" "$STAGING/skill.wasm" >/dev/null
+fi
+
+if [[ -d "$SKILL_DIR/strings" ]]; then
+  adb_cmd push "$SKILL_DIR/strings" "$STAGING/strings" >/dev/null
 fi
 
 if [[ -d "$SKILL_DIR/assets" ]]; then
@@ -146,9 +160,13 @@ echo "==> install    $PACKAGE:$DEST_REL"
 # Clear the existing dir so stale files (old wasm, removed assets) don't
 # linger. `run-as` scopes everything to the app's UID.
 adb_cmd shell "run-as $PACKAGE sh -c 'rm -rf $DEST_REL && mkdir -p $DEST_REL'"
-adb_cmd shell "run-as $PACKAGE sh -c 'cp $STAGING/SKILL.md $DEST_REL/'"
+# Copy every staged manifest (SKILL.en.md, SKILL.it.md, legacy SKILL.md, ...).
+adb_cmd shell "run-as $PACKAGE sh -c 'cp $STAGING/SKILL*.md $DEST_REL/'"
 if [[ -f "$SKILL_DIR/skill.wasm" ]]; then
   adb_cmd shell "run-as $PACKAGE sh -c 'cp $STAGING/skill.wasm $DEST_REL/'"
+fi
+if [[ -d "$SKILL_DIR/strings" ]]; then
+  adb_cmd shell "run-as $PACKAGE sh -c 'cp -r $STAGING/strings $DEST_REL/'"
 fi
 if [[ -d "$SKILL_DIR/assets" ]]; then
   adb_cmd shell "run-as $PACKAGE sh -c 'cp -r $STAGING/assets $DEST_REL/'"
