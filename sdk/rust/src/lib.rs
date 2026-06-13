@@ -568,16 +568,22 @@ mod i18n_tests {
 
 #[cfg(feature = "http")]
 mod http_impl {
+    #[cfg(not(feature = "std"))]
+    use alloc::string::String;
+
     #[link(wasm_import_module = "ari")]
     extern "C" {
         #[link_name = "http_fetch"]
         fn host_http_fetch(url_ptr: i32, url_len: i32) -> i64;
+
+        #[link_name = "http_request"]
+        fn host_http_request(req_ptr: i32, req_len: i32) -> i64;
     }
 
-    pub struct HttpResponse<'a> {
+    pub struct HttpResponse {
         pub status: u16,
-        pub body: Option<&'a str>,
-        pub error: Option<&'a str>,
+        pub body: Option<String>,
+        pub error: Option<String>,
     }
 
     /// Perform an HTTP GET. The host enforces scheme restrictions (default:
@@ -585,9 +591,61 @@ mod http_impl {
     ///
     /// Returns an `HttpResponse` with the status code and body. On network
     /// errors, `status` is 0 and `error` contains the message.
-    pub fn http_fetch(url: &str) -> HttpResponse<'static> {
+    pub fn http_fetch(url: &str) -> HttpResponse {
         let bytes = url.as_bytes();
         let packed = unsafe { host_http_fetch(bytes.as_ptr() as i32, bytes.len() as i32) };
+        let json = unsafe { super::unpack(packed) };
+        match json {
+            Some(s) => parse_http_response(s),
+            None => HttpResponse { status: 0, body: None, error: None },
+        }
+    }
+
+    /// Build the JSON request descriptor the host's `http_request` import
+    /// decodes. Pure and dependency-free so it can be unit-tested natively.
+    /// Header and body values are JSON-escaped; `None` body serialises as
+    /// `null`. Header order is preserved (caller-defined).
+    pub fn build_request_json(
+        method: &str,
+        url: &str,
+        headers: &[(&str, &str)],
+        body: Option<&str>,
+    ) -> String {
+        let mut s = String::with_capacity(64 + url.len());
+        s.push_str("{\"method\":");
+        super::json_escape_into(&mut s, method);
+        s.push_str(",\"url\":");
+        super::json_escape_into(&mut s, url);
+        s.push_str(",\"headers\":{");
+        for (i, (k, v)) in headers.iter().enumerate() {
+            if i > 0 {
+                s.push(',');
+            }
+            super::json_escape_into(&mut s, k);
+            s.push(':');
+            super::json_escape_into(&mut s, v);
+        }
+        s.push_str("},\"body\":");
+        match body {
+            Some(b) => super::json_escape_into(&mut s, b),
+            None => s.push_str("null"),
+        }
+        s.push('}');
+        s
+    }
+
+    /// Perform an arbitrary HTTP request (method + headers + optional body).
+    /// The host enforces the same scheme/host and body-size policy as
+    /// `http_fetch`. Returns status + body, or status 0 + error on failure.
+    pub fn http_request(
+        method: &str,
+        url: &str,
+        headers: &[(&str, &str)],
+        body: Option<&str>,
+    ) -> HttpResponse {
+        let req = build_request_json(method, url, headers, body);
+        let bytes = req.as_bytes();
+        let packed = unsafe { host_http_request(bytes.as_ptr() as i32, bytes.len() as i32) };
         let json = unsafe { super::unpack(packed) };
         match json {
             Some(s) => parse_http_response(s),
@@ -598,11 +656,93 @@ mod http_impl {
     // The host writes JSON: {"status":200,"body":"..."} or
     // {"status":0,"body":null,"error":"..."}
     // Hand-rolled because we're no_std with zero deps.
-    fn parse_http_response(json: &str) -> HttpResponse<'_> {
+    //
+    // The host JSON-escapes `body` and `error` (a body containing newlines or
+    // quotes arrives as literal `\n`, `\"`, `\\`). We must JSON-UNESCAPE these
+    // back to their real bytes before handing them to the skill, otherwise a
+    // multi-line text body or a JSON-string body is mangled.
+    pub(crate) fn parse_http_response(json: &str) -> HttpResponse {
         let status = parse_status(json);
-        let body = extract_json_string(json, "\"body\":");
-        let error = extract_json_string(json, "\"error\":");
+        let body = extract_raw_json_string(json, "\"body\":").map(json_unescape);
+        let error = extract_raw_json_string(json, "\"error\":").map(json_unescape);
         HttpResponse { status, body, error }
+    }
+
+    /// JSON-unescape the inner span of a JSON string (the bytes BETWEEN the
+    /// surrounding quotes, escapes still intact) into an owned `String`.
+    /// Lenient: unknown `\x` yields `x`; a lone/invalid `\u` surrogate yields
+    /// U+FFFD rather than panicking.
+    fn json_unescape(inner: &str) -> String {
+        let mut out = String::with_capacity(inner.len());
+        let mut chars = inner.chars().peekable();
+        while let Some(c) = chars.next() {
+            if c != '\\' {
+                out.push(c);
+                continue;
+            }
+            match chars.next() {
+                Some('"') => out.push('"'),
+                Some('\\') => out.push('\\'),
+                Some('/') => out.push('/'),
+                Some('n') => out.push('\n'),
+                Some('t') => out.push('\t'),
+                Some('r') => out.push('\r'),
+                Some('b') => out.push('\u{0008}'),
+                Some('f') => out.push('\u{000C}'),
+                Some('u') => {
+                    match read_hex4(&mut chars) {
+                        Some(hi) if (0xD800..=0xDBFF).contains(&hi) => {
+                            // High surrogate: needs a following \uXXXX low surrogate.
+                            let mut combined = None;
+                            if chars.peek() == Some(&'\\') {
+                                // Tentatively consume the backslash + 'u'.
+                                let mut lookahead = chars.clone();
+                                lookahead.next(); // '\\'
+                                if lookahead.next() == Some('u') {
+                                    if let Some(lo) = read_hex4(&mut lookahead) {
+                                        if (0xDC00..=0xDFFF).contains(&lo) {
+                                            let cp = 0x10000
+                                                + (((hi - 0xD800) as u32) << 10)
+                                                + (lo - 0xDC00) as u32;
+                                            if let Some(ch) = char::from_u32(cp) {
+                                                combined = Some(ch);
+                                                chars = lookahead;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            match combined {
+                                Some(ch) => out.push(ch),
+                                None => out.push('\u{FFFD}'),
+                            }
+                        }
+                        Some(cp) => {
+                            // Low surrogate alone, or a BMP scalar value.
+                            match char::from_u32(cp as u32) {
+                                Some(ch) => out.push(ch),
+                                None => out.push('\u{FFFD}'),
+                            }
+                        }
+                        None => out.push('\u{FFFD}'),
+                    }
+                }
+                Some(other) => out.push(other),
+                None => {}
+            }
+        }
+        out
+    }
+
+    /// Read exactly 4 hex digits from the iterator, returning the u16 value.
+    /// Returns `None` if fewer than 4 hex digits are available.
+    fn read_hex4(chars: &mut core::iter::Peekable<core::str::Chars<'_>>) -> Option<u16> {
+        let mut v: u16 = 0;
+        for _ in 0..4 {
+            let d = chars.next()?.to_digit(16)?;
+            v = (v << 4) | d as u16;
+        }
+        Some(v)
     }
 
     fn parse_status(json: &str) -> u16 {
@@ -616,7 +756,7 @@ mod http_impl {
         0
     }
 
-    fn extract_json_string<'a>(json: &'a str, key: &str) -> Option<&'a str> {
+    fn extract_raw_json_string<'a>(json: &'a str, key: &str) -> Option<&'a str> {
         let pos = json.find(key)?;
         let rest = &json[pos + key.len()..];
         let trimmed = rest.trim_start();
@@ -663,7 +803,7 @@ mod http_impl {
 }
 
 #[cfg(feature = "http")]
-pub use http_impl::{http_fetch, HttpResponse};
+pub use http_impl::{build_request_json, http_fetch, http_request, HttpResponse};
 
 // ---------------------------------------------------------------------------
 // Storage (feature = "storage")
@@ -1080,5 +1220,113 @@ mod tests {
         let len = 42_i64;
         let packed = tag | ptr | len;
         assert_eq!(decode_packed(packed), (0x01, 4096, 42));
+    }
+}
+
+#[cfg(all(test, feature = "http"))]
+mod http_request_tests {
+    use super::http_impl::build_request_json;
+
+    #[test]
+    fn builds_post_with_headers_and_body() {
+        let json = build_request_json(
+            "POST",
+            "http://homeassistant.local:8123/api/conversation/process",
+            &[("Authorization", "Bearer abc"), ("Content-Type", "application/json")],
+            Some(r#"{"text":"turn on lights"}"#),
+        );
+        assert_eq!(
+            json,
+            r#"{"method":"POST","url":"http://homeassistant.local:8123/api/conversation/process","headers":{"Authorization":"Bearer abc","Content-Type":"application/json"},"body":"{\"text\":\"turn on lights\"}"}"#
+        );
+    }
+
+    #[test]
+    fn builds_get_without_body() {
+        let json = build_request_json("GET", "https://x/y", &[], None);
+        assert_eq!(json, r#"{"method":"GET","url":"https://x/y","headers":{},"body":null}"#);
+    }
+}
+
+#[cfg(all(test, feature = "http"))]
+mod http_response_tests {
+    use super::http_impl::parse_http_response;
+
+    #[test]
+    fn unescapes_multiline_body() {
+        // host-style wrapper with an escaped multi-line body
+        let wire = r#"{"status":200,"body":"a|b|Work\nc|d|home\n"}"#;
+        let r = parse_http_response(wire);
+        assert_eq!(r.status, 200);
+        // REAL newlines, not literal backslash-n
+        assert_eq!(r.body.as_deref(), Some("a|b|Work\nc|d|home\n"));
+        assert_eq!(r.error, None);
+    }
+
+    #[test]
+    fn unescapes_escaped_json_body() {
+        // the conversation case: a JSON document as the body string. The host
+        // JSON-escapes it once, so inner quotes arrive as \" and a newline
+        // inside a value arrives as \n. After unescaping we get the real JSON
+        // document with a real newline, which serde can then parse.
+        let wire = r#"{"status":200,"body":"{\"k\":\"v\nx\"}"}"#;
+        let r = parse_http_response(wire);
+        assert_eq!(r.body.as_deref(), Some("{\"k\":\"v\nx\"}"));
+    }
+
+    #[test]
+    fn double_backslash_then_n_is_literal_backslash_n() {
+        // JSON \\n means: escaped backslash, then a literal 'n' — NOT a newline.
+        let wire = r#"{"status":200,"body":"v\\nx"}"#;
+        let r = parse_http_response(wire);
+        assert_eq!(r.body.as_deref(), Some("v\\nx"));
+    }
+
+    #[test]
+    fn passes_through_unicode_body() {
+        let wire = r#"{"status":200,"body":"café"}"#;
+        assert_eq!(parse_http_response(wire).body.as_deref(), Some("café"));
+    }
+
+    #[test]
+    fn decodes_u_escape_bmp() {
+        // é -> é
+        let wire = r#"{"status":200,"body":"café"}"#;
+        assert_eq!(parse_http_response(wire).body.as_deref(), Some("café"));
+    }
+
+    #[test]
+    fn decodes_surrogate_pair() {
+        // U+1F600 GRINNING FACE encoded as a UTF-16 surrogate pair
+        let wire = r#"{"status":200,"body":"hi 😀"}"#;
+        assert_eq!(parse_http_response(wire).body.as_deref(), Some("hi \u{1F600}"));
+    }
+
+    #[test]
+    fn lone_high_surrogate_becomes_replacement() {
+        let wire = r#"{"status":200,"body":"x\uD83Dy"}"#;
+        assert_eq!(parse_http_response(wire).body.as_deref(), Some("x\u{FFFD}y"));
+    }
+
+    #[test]
+    fn lone_low_surrogate_becomes_replacement() {
+        let wire = r#"{"status":200,"body":"x\uDE00y"}"#;
+        assert_eq!(parse_http_response(wire).body.as_deref(), Some("x\u{FFFD}y"));
+    }
+
+    #[test]
+    fn unknown_escape_is_lenient() {
+        // \q is not a valid JSON escape; emit the bare char.
+        let wire = r#"{"status":200,"body":"a\qb"}"#;
+        assert_eq!(parse_http_response(wire).body.as_deref(), Some("aqb"));
+    }
+
+    #[test]
+    fn error_field_unescapes_and_status_zero() {
+        let wire = r#"{"status":0,"body":null,"error":"oops\n"}"#;
+        let r = parse_http_response(wire);
+        assert_eq!(r.status, 0);
+        assert_eq!(r.body, None);
+        assert_eq!(r.error.as_deref(), Some("oops\n"));
     }
 }

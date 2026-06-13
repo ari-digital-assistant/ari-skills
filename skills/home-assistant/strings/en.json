@@ -1,0 +1,14 @@
+{
+  "not_configured": "Home Assistant isn't set up yet. Add your server URL and access token in the skill settings.",
+  "unreachable": "I couldn't reach Home Assistant.",
+  "unreachable_lan_hint": "I couldn't reach Home Assistant — are you on your home network?",
+  "unauthorized": "Home Assistant rejected the access token. It's worth regenerating it in your profile.",
+  "no_match": "I couldn't find that in Home Assistant.",
+  "person_unknown": "I don't know who {name} is.",
+  "person_home": "{name} is home.",
+  "person_away": "{name} is away.",
+  "person_at": "{name} is at {place}.",
+  "card.person.home": "Home",
+  "card.person.away": "Away",
+  "card.done": "Done"
+}
