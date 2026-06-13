@@ -28,7 +28,7 @@ cp -r templates/rust my-cool-skill
 
 # Edit the skill
 cd my-cool-skill
-# 1. Update SKILL.md — set id, name, description, keywords
+# 1. Update SKILL.en.md — set id, name, description, keywords
 # 2. Edit src/lib.rs — implement your score/execute logic
 # 3. Update Cargo.toml — rename the package, enable features if needed
 
@@ -55,7 +55,7 @@ cp -r templates/assemblyscript my-cool-skill
 
 # Edit the skill
 cd my-cool-skill
-# 1. Update SKILL.md — set id, name, description, keywords
+# 1. Update SKILL.en.md — set id, name, description, keywords
 # 2. Edit assembly/index.ts — implement your score/execute logic
 
 # Build
@@ -290,7 +290,7 @@ Capability-gated:
 
 ## Capabilities
 
-Declare capabilities in your `SKILL.md`:
+Declare capabilities in your `SKILL.en.md`:
 ```yaml
     capabilities: [http, storage_kv]
 ```
@@ -305,11 +305,11 @@ Available capabilities: `http`, `storage_kv`, `notifications`, `launch_app`, `cl
 
 2. **`env::abort` import (AssemblyScript).** Compile with `--use abort=` to prevent this. Without it, the WASM module imports `env::abort` which the host doesn't provide.
 
-3. **Memory limit too low.** Rust cdylib skills with std need ~1.1 MiB initial memory. Set `memory_limit_mb: 4` in SKILL.md. The hand-written WAT skills use 1 MiB, but compiled Rust skills are larger.
+3. **Memory limit too low.** Rust cdylib skills with std need ~1.1 MiB initial memory. Set `memory_limit_mb: 4` in SKILL.en.md. The hand-written WAT skills use 1 MiB, but compiled Rust skills are larger.
 
-4. **Feature not enabled (Rust).** If you call `http_fetch` without `features = ["http"]`, you'll get a compile error. If you enable the feature but don't declare `capabilities: [http]` in SKILL.md, the host will reject the skill.
+4. **Feature not enabled (Rust).** If you call `http_fetch` without `features = ["http"]`, you'll get a compile error. If you enable the feature but don't declare `capabilities: [http]` in SKILL.en.md, the host will reject the skill.
 
-5. **Directory name must match `name` in SKILL.md.** The skill directory name and the `name:` field in the YAML frontmatter must be identical. This is an AgentSkills rule.
+5. **Directory name must match `name` in SKILL.en.md.** The skill directory name and the `name:` field in the YAML frontmatter must be identical. This is an AgentSkills rule.
 
 6. **Unused host imports are stripped by LTO (Rust).** If you enable a feature but don't call the function, LTO strips the import — the capability check still passes because the module never imports it. This is correct behaviour.
 

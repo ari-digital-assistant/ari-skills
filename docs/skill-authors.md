@@ -4,7 +4,7 @@ A short, practical guide. For the full architecture, see [skill-system.md](skill
 
 ## What you need to know first
 
-- A skill is a folder containing a `SKILL.md` file. Optionally a WASM module, an icon, and reference docs.
+- A skill is a folder containing a `SKILL.en.md` manifest (localized variants are `SKILL.{locale}.md`, e.g. `SKILL.it.md`). Optionally a `strings/` dir for i18n, a WASM module, an icon, and reference docs. See [i18n.md](i18n.md) for the multi-language layout.
 - Skills come in two flavours you can author: **declarative** (just a manifest, no code) and **WASM** (a sandboxed module). Most skills should be declarative.
 - The format is [AgentSkills](https://agentskills.io)-compatible. Ari-specific config lives under `metadata.ari.*` in the YAML frontmatter.
 - You contribute by opening a pull request against [ari-digital-assistant/ari-skills](https://github.com/ari-digital-assistant/ari-skills). Maintainers review, CI signs, the registry publishes.
@@ -31,9 +31,9 @@ The directory name must match the AgentSkills `name` field — lowercase letters
 mkdir -p skills/coin-flip
 ```
 
-### 3. Write `SKILL.md`
+### 3. Write `SKILL.en.md`
 
-Create `skills/coin-flip/SKILL.md`:
+Create `skills/coin-flip/SKILL.en.md` (the canonical English manifest — localized variants are `SKILL.{locale}.md`, e.g. `SKILL.it.md`; see [i18n.md](i18n.md)):
 
 ```markdown
 ---
@@ -121,11 +121,11 @@ Everything CLI testing can't tell you — whether TTS says the right thing, whet
 ./tools/sideload-android skills/coin-flip
 ```
 
-Under the hood: rebuild (if `build.sh` exists) → validate → push via `adb` + `run-as` → force-stop and relaunch the app so the engine re-scans on startup. A few seconds per iteration.
+Under the hood: rebuild (if `build.sh` exists) → validate → push via `adb` + `run-as` → force-stop and relaunch the app so the engine re-scans on startup. It pushes every manifest present (`SKILL.en.md`, any `SKILL.{locale}.md`, and a legacy bare `SKILL.md`), the `strings/` translation tables, `skill.wasm` if present, and `assets/`. A few seconds per iteration.
 
 The edit-sideload-test loop is worth using for:
 
-- **Development** — iterate on code, WASM builds, SKILL.md content. Faster than any install flow.
+- **Development** — iterate on code, WASM builds, `SKILL.{locale}.md` content and `strings/` translations. Faster than any install flow.
 - **Debugging behaviour** — confirm the skill is actually being picked up, watch `adb logcat` for engine load messages, reproduce issues that only show up with the real STT/TTS path. For WASM skills, anything your skill emits via `ari::log(...)` in the SDK surfaces under the `AriSkill` tag with the skill id prepended — `adb logcat -s AriSkill` shows every skill, grep by skill id to narrow down.
 - **Tuning your description and examples** — the `description` and `examples` fields in `metadata.ari` are what FunctionGemma routes on. Sideload the skill and try the paraphrases you wrote in `examples` as actual utterances. If they don't route to your skill, iterate on the description or the keyword patterns until they do. Doing this *before* the PR means CI's smoke test isn't the first time your routing gets exercised.
 
@@ -221,14 +221,14 @@ Reach for WASM only if your skill needs to:
 - Maintain state across invocations (`storage_kv`)
 - Compute something the declarative templates can't express
 
-A WASM skill declares its capabilities and ships a `skill.wasm` module alongside `SKILL.md`. The host exposes a tiny API: `log`, `http_fetch`, `storage_get`, `storage_set`, `get_capability`. That's it. If you need more, file an issue first — the surface is intentionally small.
+A WASM skill declares its capabilities and ships a `skill.wasm` module alongside `SKILL.en.md`. The host exposes a tiny API: `log`, `http_fetch`, `storage_get`, `storage_set`, `get_capability`. That's it. If you need more, file an issue first — the surface is intentionally small.
 
 Two SDKs are available:
 
 - **Rust** — `sdk/rust/` and template at `templates/rust/`
 - **AssemblyScript** — `sdk/assemblyscript/` and template at `templates/assemblyscript/`
 
-Copy a template, edit SKILL.md + the source file, run `build.sh`, and you're done. Full docs: [wasm-sdk.md](wasm-sdk.md).
+Copy a template, edit `SKILL.en.md` + the source file, run `build.sh`, and you're done. Full docs: [wasm-sdk.md](wasm-sdk.md).
 
 ## How your skill gets matched (the two layers)
 
