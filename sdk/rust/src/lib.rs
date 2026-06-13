@@ -568,10 +568,16 @@ mod i18n_tests {
 
 #[cfg(feature = "http")]
 mod http_impl {
+    #[cfg(not(feature = "std"))]
+    use alloc::string::String;
+
     #[link(wasm_import_module = "ari")]
     extern "C" {
         #[link_name = "http_fetch"]
         fn host_http_fetch(url_ptr: i32, url_len: i32) -> i64;
+
+        #[link_name = "http_request"]
+        fn host_http_request(req_ptr: i32, req_len: i32) -> i64;
     }
 
     pub struct HttpResponse<'a> {
@@ -588,6 +594,58 @@ mod http_impl {
     pub fn http_fetch(url: &str) -> HttpResponse<'static> {
         let bytes = url.as_bytes();
         let packed = unsafe { host_http_fetch(bytes.as_ptr() as i32, bytes.len() as i32) };
+        let json = unsafe { super::unpack(packed) };
+        match json {
+            Some(s) => parse_http_response(s),
+            None => HttpResponse { status: 0, body: None, error: None },
+        }
+    }
+
+    /// Build the JSON request descriptor the host's `http_request` import
+    /// decodes. Pure and dependency-free so it can be unit-tested natively.
+    /// Header and body values are JSON-escaped; `None` body serialises as
+    /// `null`. Header order is preserved (caller-defined).
+    pub fn build_request_json(
+        method: &str,
+        url: &str,
+        headers: &[(&str, &str)],
+        body: Option<&str>,
+    ) -> String {
+        let mut s = String::with_capacity(64 + url.len());
+        s.push_str("{\"method\":");
+        super::json_escape_into(&mut s, method);
+        s.push_str(",\"url\":");
+        super::json_escape_into(&mut s, url);
+        s.push_str(",\"headers\":{");
+        for (i, (k, v)) in headers.iter().enumerate() {
+            if i > 0 {
+                s.push(',');
+            }
+            super::json_escape_into(&mut s, k);
+            s.push(':');
+            super::json_escape_into(&mut s, v);
+        }
+        s.push_str("},\"body\":");
+        match body {
+            Some(b) => super::json_escape_into(&mut s, b),
+            None => s.push_str("null"),
+        }
+        s.push('}');
+        s
+    }
+
+    /// Perform an arbitrary HTTP request (method + headers + optional body).
+    /// The host enforces the same scheme/host and body-size policy as
+    /// `http_fetch`. Returns status + body, or status 0 + error on failure.
+    pub fn http_request(
+        method: &str,
+        url: &str,
+        headers: &[(&str, &str)],
+        body: Option<&str>,
+    ) -> HttpResponse<'static> {
+        let req = build_request_json(method, url, headers, body);
+        let bytes = req.as_bytes();
+        let packed = unsafe { host_http_request(bytes.as_ptr() as i32, bytes.len() as i32) };
         let json = unsafe { super::unpack(packed) };
         match json {
             Some(s) => parse_http_response(s),
@@ -663,7 +721,7 @@ mod http_impl {
 }
 
 #[cfg(feature = "http")]
-pub use http_impl::{http_fetch, HttpResponse};
+pub use http_impl::{build_request_json, http_fetch, http_request, HttpResponse};
 
 // ---------------------------------------------------------------------------
 // Storage (feature = "storage")
@@ -1080,5 +1138,30 @@ mod tests {
         let len = 42_i64;
         let packed = tag | ptr | len;
         assert_eq!(decode_packed(packed), (0x01, 4096, 42));
+    }
+}
+
+#[cfg(all(test, feature = "http"))]
+mod http_request_tests {
+    use super::http_impl::build_request_json;
+
+    #[test]
+    fn builds_post_with_headers_and_body() {
+        let json = build_request_json(
+            "POST",
+            "http://homeassistant.local:8123/api/conversation/process",
+            &[("Authorization", "Bearer abc"), ("Content-Type", "application/json")],
+            Some(r#"{"text":"turn on lights"}"#),
+        );
+        assert_eq!(
+            json,
+            r#"{"method":"POST","url":"http://homeassistant.local:8123/api/conversation/process","headers":{"Authorization":"Bearer abc","Content-Type":"application/json"},"body":"{\"text\":\"turn on lights\"}"}"#
+        );
+    }
+
+    #[test]
+    fn builds_get_without_body() {
+        let json = build_request_json("GET", "https://x/y", &[], None);
+        assert_eq!(json, r#"{"method":"GET","url":"https://x/y","headers":{},"body":null}"#);
     }
 }
