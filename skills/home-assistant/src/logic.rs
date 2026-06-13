@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 // Pure, host-independent logic. Functions are added in later tasks.
 
 use alloc::string::{String, ToString};
@@ -54,6 +55,7 @@ mod classify_tests {
     #[test]
     fn where_is_a_thing_is_not_person_location() {
         assert_eq!(classify("where is the nearest pizza"), Intent::Forward);
+        assert_eq!(classify("where is my phone"), Intent::Forward);
     }
 }
 
@@ -110,6 +112,12 @@ mod request_tests {
         let r = build_conversation_request("http://hass.local:8123/", "t", "hi", "it");
         assert_eq!(r.url, "http://hass.local:8123/api/conversation/process");
         assert_eq!(r.body, r#"{"text":"hi","language":"it"}"#);
+    }
+
+    #[test]
+    fn conversation_request_escapes_body_text() {
+        let r = build_conversation_request("http://h:8123", "t", "say \"hi\"\nbye", "en");
+        assert_eq!(r.body, r#"{"text":"say \"hi\"\nbye","language":"en"}"#);
     }
 }
 
@@ -229,7 +237,6 @@ pub fn build_conversation_envelope(result: &ConversationResult, card_title: &str
 
 /// A minimal speak-only envelope. Never carries `_ari_no_match` (these are
 /// genuine, user-facing messages, not fall-through signals).
-#[allow(dead_code)]
 pub fn error_envelope(speak: &str) -> String {
     serde_json::json!({ "v": 1, "speak": speak }).to_string()
 }
@@ -304,6 +311,9 @@ pub fn parse_people(raw: &str) -> Vec<Person> {
         .collect()
 }
 
+/// Exact (case-insensitive) name match is preferred; otherwise the FIRST
+/// substring match in HA's person-iteration order wins (a known v1 limitation
+/// for ambiguous short names).
 pub fn match_person<'a>(people: &'a [Person], spoken: &str) -> Option<&'a Person> {
     let want = spoken.trim().to_ascii_lowercase();
     people
@@ -328,7 +338,9 @@ pub fn build_person_envelope(
     let st = person.state.as_str();
     let (speak, subtitle) = match st {
         "home" => (home_tmpl.replace("{name}", &person.name), home_label.to_string()),
-        "not_home" | "away" => (away_tmpl.replace("{name}", &person.name), away_label.to_string()),
+        "not_home" | "away" | "unknown" | "unavailable" => {
+            (away_tmpl.replace("{name}", &person.name), away_label.to_string())
+        }
         zone => (
             at_tmpl.replace("{name}", &person.name).replace("{place}", zone),
             zone.to_string(),
@@ -380,6 +392,25 @@ mod person_tests {
         )).unwrap();
         assert_eq!(v["speak"], "Keith is at Work.");
         assert_eq!(v["cards"][0]["subtitle"], "Work");
+    }
+
+    #[test]
+    fn person_envelope_not_home_is_away() {
+        let p = Person { name: "Keith".into(), state: "not_home".into() };
+        let v: serde_json::Value = serde_json::from_str(&build_person_envelope(
+            &p, "{name} is at {place}.", "{name} is home.", "{name} is away.", "Keith", "Home", "Away",
+        )).unwrap();
+        assert_eq!(v["speak"], "Keith is away.");
+        assert_eq!(v["cards"][0]["subtitle"], "Away");
+    }
+
+    #[test]
+    fn person_envelope_unknown_is_away() {
+        let p = Person { name: "Keith".into(), state: "unknown".into() };
+        let v: serde_json::Value = serde_json::from_str(&build_person_envelope(
+            &p, "{name} is at {place}.", "{name} is home.", "{name} is away.", "Keith", "Home", "Away",
+        )).unwrap();
+        assert_eq!(v["speak"], "Keith is away.");
     }
 }
 
