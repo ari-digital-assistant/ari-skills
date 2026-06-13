@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-06-12T13:41:40Z",
+  "generated_at": "2026-06-13T08:44:22Z",
   "skills": [
     {
       "id": "dev.heyari.githubzen",
@@ -19,7 +19,7 @@
       ],
       "bundle": "bundles/dev.heyari.githubzen-0.1.1.tar.gz",
       "signature": "bundles/dev.heyari.githubzen-0.1.1.tar.gz.sig",
-      "sha256": "d70a7bbfe165cd5d7d35e7fc24b6b82f4f53898fe16e12ae2bec468dcdc6a684",
+      "sha256": "cc737e897dcbdf3f3de1176046b773e1cae22b426b56a33cda67c81fe0aeda40",
       "manifest": "manifests/dev.heyari.githubzen-0.1.1.md",
       "localizations": {
         "it": {
@@ -43,7 +43,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.gemini-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.gemini-0.3.0.tar.gz.sig",
-      "sha256": "3f3ae7a782511921aee1da964719986aaba830f06e9ac7f511c96a9b52205ac4",
+      "sha256": "090d6110a397d2f6d4e6d5228423747bb28c45e394e0b68503c58bbe36eca475",
       "manifest": "manifests/dev.heyari.assistant.gemini-0.3.0.md",
       "localizations": {
         "it": {
@@ -67,7 +67,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz.sig",
-      "sha256": "cc49eb7042772703a006e378fb8e9992866f26e8b9d2cd86001750669efd8338",
+      "sha256": "a788d329eca3e5e59452674acf0b4323fbde54e3dd536d78dd2f64df5ccca805",
       "manifest": "manifests/dev.heyari.assistant.chatgpt-0.3.0.md",
       "localizations": {
         "it": {
@@ -91,7 +91,7 @@
       ],
       "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "4beb90f2114220f74938908d0b29882f971d3ff5870566ce220b56640d8466a5",
+      "sha256": "67e2e018db90bb2ca7cf78aed3a505c875f9110ac1bebab8e9d8453438405bc2",
       "manifest": "manifests/dev.heyari.coinflip-0.1.0.md",
       "localizations": {
         "it": {
@@ -118,7 +118,7 @@
       ],
       "bundle": "bundles/dev.heyari.reminder-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.reminder-0.3.0.tar.gz.sig",
-      "sha256": "f9186becc325542546b214edacaeb60c68f83dbd749f58bcb9bf71ebe2df5844",
+      "sha256": "3480ee0babaa1001163453b3afb74cac16cbdc60ec9d02fb8aeaa19f7f330ba3",
       "manifest": "manifests/dev.heyari.reminder-0.3.0.md",
       "localizations": {
         "it": {
@@ -144,7 +144,7 @@
       ],
       "bundle": "bundles/dev.heyari.counter-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.counter-0.1.0.tar.gz.sig",
-      "sha256": "d6ad28ceef5f1be48bcb682b7d53e06f53bf3edc391c5d02ce2074ec229fc0ff",
+      "sha256": "3c058a745e30fc0797ff2464ece1764db1caebbb2cf4d7763ac3c1dde00fb650",
       "manifest": "manifests/dev.heyari.counter-0.1.0.md",
       "localizations": {
         "it": {
@@ -168,7 +168,7 @@
       ],
       "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
-      "sha256": "829b6f2c98128ed4622f7d07301a570db2b9ed96ae23a998c9e19c84e7d42faf",
+      "sha256": "d80526658221c92a3e9c9d2e35a40f662d4569bb92cc4b9e86f5e8cd197c412e",
       "manifest": "manifests/dev.heyari.wasmecho-0.1.0.md",
       "localizations": {
         "it": {
@@ -194,7 +194,7 @@
       ],
       "bundle": "bundles/dev.heyari.timer-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.timer-0.1.0.tar.gz.sig",
-      "sha256": "4c2e5a06650943ecf798a3a439e33f51045f1e494e3d20d074618e0e4b94b26f",
+      "sha256": "7d8123afce5eef834dda4eab57dac09b22d1dbec4e6e08407d7dab96b5837836",
       "manifest": "manifests/dev.heyari.timer-0.1.0.md",
       "localizations": {
         "it": {
@@ -218,7 +218,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz.sig",
-      "sha256": "28545b6c8df700e2fe572ef83495d86ab0f169ec549059a41526f475898bcbce",
+      "sha256": "4828cd98f56cc5e9774ea74dbb7a6c8a753eaad559eef442a9144ad7daf6302c",
       "manifest": "manifests/dev.heyari.assistant.claude-0.3.0.md",
       "localizations": {
         "it": {
