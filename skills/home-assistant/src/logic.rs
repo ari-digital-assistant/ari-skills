@@ -268,3 +268,117 @@ mod envelope_tests {
         assert!(v.get("cards").is_none());
     }
 }
+
+pub struct Person {
+    pub name: String,
+    pub state: String,
+}
+
+/// HA Jinja template that prints one `entity_id|friendly_name|state` line per
+/// person entity. Newlines separate rows.
+const PERSON_TEMPLATE: &str =
+    "{% for p in states.person %}{{ p.entity_id }}|{{ p.attributes.friendly_name }}|{{ p.state }}\n{% endfor %}";
+
+pub fn build_person_template_request(base_url: &str, token: &str) -> HaRequest {
+    let body = serde_json::json!({ "template": PERSON_TEMPLATE }).to_string();
+    HaRequest {
+        method: "POST",
+        url: alloc::format!("{}/api/template", base(base_url)),
+        token: token.to_string(),
+        body,
+    }
+}
+
+pub fn parse_people(raw: &str) -> Vec<Person> {
+    raw.lines()
+        .filter_map(|line| {
+            let mut it = line.splitn(3, '|');
+            let _entity = it.next()?;
+            let name = it.next()?.trim();
+            let state = it.next()?.trim();
+            if name.is_empty() {
+                return None;
+            }
+            Some(Person { name: name.to_string(), state: state.to_string() })
+        })
+        .collect()
+}
+
+pub fn match_person<'a>(people: &'a [Person], spoken: &str) -> Option<&'a Person> {
+    let want = spoken.trim().to_ascii_lowercase();
+    people
+        .iter()
+        .find(|p| p.name.to_ascii_lowercase() == want)
+        .or_else(|| people.iter().find(|p| p.name.to_ascii_lowercase().contains(&want)))
+}
+
+/// Build the localized person-location envelope. `at_tmpl`/`home_tmpl`/
+/// `away_tmpl` are localized strings with `{name}`/`{place}` slots supplied by
+/// the host via `ari::t`. `home_label`/`away_label` localize the card subtitle.
+#[allow(clippy::too_many_arguments)]
+pub fn build_person_envelope(
+    person: &Person,
+    at_tmpl: &str,
+    home_tmpl: &str,
+    away_tmpl: &str,
+    name_for_card: &str,
+    home_label: &str,
+    away_label: &str,
+) -> String {
+    let st = person.state.as_str();
+    let (speak, subtitle) = match st {
+        "home" => (home_tmpl.replace("{name}", &person.name), home_label.to_string()),
+        "not_home" | "away" => (away_tmpl.replace("{name}", &person.name), away_label.to_string()),
+        zone => (
+            at_tmpl.replace("{name}", &person.name).replace("{place}", zone),
+            zone.to_string(),
+        ),
+    };
+    serde_json::json!({
+        "v": 1,
+        "speak": speak,
+        "cards": [{ "id": "ha_person", "title": name_for_card, "subtitle": subtitle, "accent": "default" }]
+    })
+    .to_string()
+}
+
+#[cfg(test)]
+mod person_tests {
+    use super::*;
+
+    #[test]
+    fn person_template_request_targets_template_endpoint() {
+        let r = build_person_template_request("http://hass.local:8123/", "tok");
+        assert_eq!(r.method, "POST");
+        assert_eq!(r.url, "http://hass.local:8123/api/template");
+        assert!(r.body.contains("states.person"));
+    }
+
+    #[test]
+    fn parses_person_lines() {
+        let raw = "person.keith|Keith|Work\nperson.sarah|Sarah Jane|home\n";
+        let people = parse_people(raw);
+        assert_eq!(people.len(), 2);
+        assert_eq!(people[0].name, "Keith");
+        assert_eq!(people[0].state, "Work");
+        assert_eq!(people[1].name, "Sarah Jane");
+    }
+
+    #[test]
+    fn matches_person_case_insensitively() {
+        let people = parse_people("person.keith|Keith|Work\nperson.sarah|Sarah Jane|home\n");
+        assert_eq!(match_person(&people, "keith").unwrap().state, "Work");
+        assert_eq!(match_person(&people, "sarah jane").unwrap().state, "home");
+        assert!(match_person(&people, "bob").is_none());
+    }
+
+    #[test]
+    fn person_envelope_home_away_zone() {
+        let p = Person { name: "Keith".into(), state: "Work".into() };
+        let v: serde_json::Value = serde_json::from_str(&build_person_envelope(
+            &p, "{name} is at {place}.", "{name} is home.", "{name} is away.", "Keith", "Home", "Away",
+        )).unwrap();
+        assert_eq!(v["speak"], "Keith is at Work.");
+        assert_eq!(v["cards"][0]["subtitle"], "Work");
+    }
+}
