@@ -47,16 +47,21 @@ fn dispatch_wasm(input: &str) -> String {
         .filter(|s| !s.trim().is_empty())
         .unwrap_or_else(|| ari::get_locale().to_string());
     let private = logic::is_private_base_url(&base_url);
+    // Optional: a specific HA conversation agent entity (e.g.
+    // `conversation.openai_conversation`). Blank → HA's built-in default agent.
+    let agent_id = ari::setting_get("agent_id")
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty());
 
     match logic::classify(input) {
         logic::Intent::PersonLocation { name } => person_flow(&base_url, &token, &name, private),
-        logic::Intent::Forward => forward_flow(&base_url, &token, input, &language, private),
+        logic::Intent::Forward => forward_flow(&base_url, &token, input, &language, agent_id, private),
     }
 }
 
 #[cfg(target_arch = "wasm32")]
-fn forward_flow(base_url: &str, token: &str, input: &str, language: &str, private: bool) -> String {
-    let req = logic::build_conversation_request(base_url, token, input, language);
+fn forward_flow(base_url: &str, token: &str, input: &str, language: &str, agent_id: Option<&str>, private: bool) -> String {
+    let req = logic::build_conversation_request(base_url, token, input, language, agent_id);
     let (auth_k, auth_v) = req.auth_header();
     let resp = ari::http_request(
         req.method,

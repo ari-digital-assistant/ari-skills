@@ -52,6 +52,10 @@ metadata:
         label: "Voice command language (blank = app language)"
         type: text
         required: false
+      - key: agent_id
+        label: "Conversation agent entity (blank = HA default/local)"
+        type: text
+        required: false
     wasm:
       module: skill.wasm
       memory_limit_mb: 2
