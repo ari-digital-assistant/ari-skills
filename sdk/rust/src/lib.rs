@@ -1186,6 +1186,157 @@ mod clock_impl {
 pub use clock_impl::{local_now_components, local_timezone_id, LocalTimeComponents};
 
 // ---------------------------------------------------------------------------
+// Interactive settings (feature = "settings")
+//
+// A skill that declares a `settings_query` export is called by the host at
+// settings-time with `{field, values}` JSON and must answer with
+// `{ok, error?, options?, message?}` JSON. These helpers are PURE (no wasm
+// ABI, no host imports) so skill authors get typed parse/build instead of
+// hand-rolling that JSON — and so they're native-unit-testable.
+// ---------------------------------------------------------------------------
+
+#[cfg(feature = "settings")]
+pub mod settings {
+    #[cfg(not(feature = "std"))]
+    use alloc::{string::{String, ToString}, vec::Vec, format};
+    use serde::Deserialize;
+
+    /// Parsed `{field, values}` input handed to the skill's `settings_query`.
+    /// `field` is the settings field the host is asking about (e.g. the
+    /// dropdown being populated); `values` carries the current value of every
+    /// other field in the form so the query can use them (a base URL + token
+    /// to go fetch the option list, say).
+    #[derive(Deserialize)]
+    pub struct SettingsQueryInput {
+        pub field: String,
+        #[serde(default)]
+        pub values: alloc_map::Map,
+    }
+
+    impl SettingsQueryInput {
+        /// The current value of sibling field `key`, or `None` if it isn't
+        /// present in the form.
+        pub fn value(&self, key: &str) -> Option<&str> {
+            self.values.get(key)
+        }
+    }
+
+    /// Parse the host's `{field, values}` payload. Returns `None` if the JSON
+    /// is malformed or missing the `field` key.
+    pub fn parse_query_input(json: &str) -> Option<SettingsQueryInput> {
+        serde_json::from_str(json).ok()
+    }
+
+    /// One dropdown option: the stored `value` and the human-facing `label`.
+    pub struct SelectOpt {
+        pub value: String,
+        pub label: String,
+    }
+
+    /// Builder for the `{ok,error?,options?,message?}` result the host decodes.
+    /// Construct via [`SettingsResult::options`], [`SettingsResult::validated`],
+    /// or [`SettingsResult::error`], then call [`to_json`](Self::to_json).
+    pub struct SettingsResult {
+        ok: bool,
+        error: Option<String>,
+        options: Vec<SelectOpt>,
+        message: Option<String>,
+    }
+
+    impl SettingsResult {
+        /// Success carrying a list of dropdown options to render.
+        pub fn options(opts: Vec<SelectOpt>) -> Self {
+            SettingsResult { ok: true, error: None, options: opts, message: None }
+        }
+
+        /// Success carrying a short confirmation message (e.g. "Connected").
+        pub fn validated(message: &str) -> Self {
+            SettingsResult {
+                ok: true,
+                error: None,
+                options: Vec::new(),
+                message: Some(message.to_string()),
+            }
+        }
+
+        /// Failure carrying an error message for the user.
+        pub fn error(message: &str) -> Self {
+            SettingsResult {
+                ok: false,
+                error: Some(message.to_string()),
+                options: Vec::new(),
+                message: None,
+            }
+        }
+
+        /// Serialise to the wire JSON the host expects. `error`/`message` are
+        /// only emitted when set; `options` only when non-empty.
+        pub fn to_json(&self) -> String {
+            let mut s = String::from("{\"ok\":");
+            s.push_str(if self.ok { "true" } else { "false" });
+            if let Some(e) = &self.error {
+                s.push_str(",\"error\":");
+                s.push_str(&json_str(e));
+            }
+            if let Some(m) = &self.message {
+                s.push_str(",\"message\":");
+                s.push_str(&json_str(m));
+            }
+            if !self.options.is_empty() {
+                s.push_str(",\"options\":[");
+                for (i, o) in self.options.iter().enumerate() {
+                    if i > 0 {
+                        s.push(',');
+                    }
+                    s.push_str(&format!(
+                        "{{\"value\":{},\"label\":{}}}",
+                        json_str(&o.value),
+                        json_str(&o.label)
+                    ));
+                }
+                s.push(']');
+            }
+            s.push('}');
+            s
+        }
+    }
+
+    /// JSON-encode `s` as a quoted, escaped string literal. Reuses
+    /// `serde_json::Value` (available under `alloc`) so the escaping matches
+    /// the rest of the SDK's serde-emitted JSON exactly.
+    fn json_str(s: &str) -> String {
+        serde_json::Value::String(s.to_string()).to_string()
+    }
+
+    /// Minimal string->string map deserialized from a JSON object, no_std-safe.
+    /// Backs [`SettingsQueryInput::values`]; preserves nothing fancy, just
+    /// enough to look sibling-field values up by key.
+    pub mod alloc_map {
+        #[cfg(not(feature = "std"))]
+        use alloc::{string::String, vec::Vec, collections::BTreeMap};
+        #[cfg(feature = "std")]
+        use std::collections::BTreeMap;
+        use serde::Deserialize;
+
+        #[derive(Default)]
+        pub struct Map(Vec<(String, String)>);
+
+        impl Map {
+            pub fn get(&self, k: &str) -> Option<&str> {
+                self.0.iter().find(|(kk, _)| kk == k).map(|(_, v)| v.as_str())
+            }
+        }
+
+        impl<'de> Deserialize<'de> for Map {
+            fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+                let m: BTreeMap<String, String> = Deserialize::deserialize(d)?;
+                Ok(Map(m.into_iter().collect()))
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Unit tests (host-side only — these cover pure pack/decode logic, not the
 // wasm32 ABI, so they run under the std default feature).
 // ---------------------------------------------------------------------------
@@ -1220,6 +1371,42 @@ mod tests {
         let len = 42_i64;
         let packed = tag | ptr | len;
         assert_eq!(decode_packed(packed), (0x01, 4096, 42));
+    }
+}
+
+#[cfg(all(test, feature = "settings"))]
+mod settings_tests {
+    use super::settings::{parse_query_input, SettingsResult, SelectOpt};
+
+    #[test]
+    fn parses_field_and_values() {
+        let q = parse_query_input(r#"{"field":"agent_id","values":{"base_url":"http://h","token":"t"}}"#).unwrap();
+        assert_eq!(q.field, "agent_id");
+        assert_eq!(q.value("base_url"), Some("http://h"));
+        assert_eq!(q.value("token"), Some("t"));
+        assert_eq!(q.value("missing"), None);
+    }
+
+    #[test]
+    fn builds_options_result() {
+        let json = SettingsResult::options(vec![
+            SelectOpt { value: "conversation.x".into(), label: "X".into() },
+        ]).to_json();
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(v["ok"], true);
+        assert_eq!(v["options"][0]["value"], "conversation.x");
+        assert_eq!(v["options"][0]["label"], "X");
+        assert!(v.get("error").is_none() || v["error"].is_null());
+    }
+
+    #[test]
+    fn builds_error_and_validated_results() {
+        let e: serde_json::Value = serde_json::from_str(&SettingsResult::error("bad token").to_json()).unwrap();
+        assert_eq!(e["ok"], false);
+        assert_eq!(e["error"], "bad token");
+        let ok: serde_json::Value = serde_json::from_str(&SettingsResult::validated("Connected").to_json()).unwrap();
+        assert_eq!(ok["ok"], true);
+        assert_eq!(ok["message"], "Connected");
     }
 }
 

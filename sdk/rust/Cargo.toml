@@ -9,10 +9,16 @@ license = "MIT"
 crate-type = ["rlib"]
 
 [features]
-default = ["std", "presentation"]
+default = ["std", "presentation", "settings"]
 std = []
 http = []
 storage = []
+# Settings-query helpers (settings::{parse_query_input, SettingsResult, …}):
+# typed parser for the `{field, values}` input the host hands a skill's
+# `settings_query` export, plus a builder for the `{ok,error?,options?,message?}`
+# result. Pulls in serde + serde_json (with `alloc`) for the input deserialise.
+# Pure/native-testable; not wasm-gated.
+settings = ["dep:serde", "dep:serde_json"]
 # Task provider (tasks_*): list lists, insert, delete. Requires the
 # `tasks` capability in the skill's SKILL.md. Pulls in serde_json
 # because the ABI marshals complex types as JSON.
