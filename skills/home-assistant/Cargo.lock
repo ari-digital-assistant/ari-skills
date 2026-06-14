@@ -15,6 +15,10 @@ dependencies = [
 [[package]]
 name = "ari-skill-sdk"
 version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "displaydoc"

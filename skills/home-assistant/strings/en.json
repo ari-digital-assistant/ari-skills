@@ -10,5 +10,6 @@
   "person_at": "{name} is at {place}.",
   "card.person.home": "Home",
   "card.person.away": "Away",
-  "card.done": "Done"
+  "card.done": "Done",
+  "connected": "Connected to Home Assistant."
 }

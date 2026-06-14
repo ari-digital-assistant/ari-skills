@@ -448,6 +448,82 @@ mod person_tests {
     }
 }
 
+/// Build a `GET /api/states` request used at settings-time to enumerate
+/// available `conversation.*` agents for the agent-picker dropdown.
+pub fn build_states_request(base_url: &str, token: &str) -> HaRequest {
+    HaRequest {
+        method: "GET",
+        url: alloc::format!("{}/api/states", base(base_url)),
+        token: token.to_string(),
+        body: String::new(),
+    }
+}
+
+/// Parse `/api/states` JSON into `(entity_id, friendly_name)` pairs for every
+/// `conversation.*` entity. Falls back to the entity_id when no (or empty)
+/// friendly_name is present. Malformed JSON yields an empty list.
+pub fn parse_conversation_agents(body: &str) -> Vec<(String, String)> {
+    #[derive(Deserialize, Default)]
+    struct Attrs {
+        #[serde(default)]
+        friendly_name: Option<String>,
+    }
+    #[derive(Deserialize)]
+    struct State {
+        entity_id: String,
+        #[serde(default)]
+        attributes: Attrs,
+    }
+    let states: Vec<State> = match serde_json::from_str(body) {
+        Ok(s) => s,
+        Err(_) => return Vec::new(),
+    };
+    states
+        .into_iter()
+        .filter(|s| s.entity_id.starts_with("conversation."))
+        .map(|s| {
+            let label = s
+                .attributes
+                .friendly_name
+                .filter(|f| !f.is_empty())
+                .unwrap_or_else(|| s.entity_id.clone());
+            (s.entity_id, label)
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod agents_tests {
+    use super::*;
+
+    #[test]
+    fn states_request_targets_states_endpoint() {
+        let r = build_states_request("http://h:8123/", "tok");
+        assert_eq!(r.method, "GET");
+        assert_eq!(r.url, "http://h:8123/api/states");
+    }
+
+    #[test]
+    fn parses_conversation_agents_from_states() {
+        let body = r#"[
+          {"entity_id":"light.kitchen","state":"on","attributes":{"friendly_name":"Kitchen"}},
+          {"entity_id":"conversation.home_assistant","state":"unknown","attributes":{"friendly_name":"Home Assistant"}},
+          {"entity_id":"conversation.chatgpt","state":"unknown","attributes":{"friendly_name":"ChatGPT"}}
+        ]"#;
+        let agents = parse_conversation_agents(body);
+        assert_eq!(agents.len(), 2);
+        assert_eq!(agents[0], ("conversation.home_assistant".to_string(), "Home Assistant".to_string()));
+        assert_eq!(agents[1], ("conversation.chatgpt".to_string(), "ChatGPT".to_string()));
+    }
+
+    #[test]
+    fn agent_without_friendly_name_falls_back_to_entity_id() {
+        let body = r#"[{"entity_id":"conversation.x","state":"unknown","attributes":{}}]"#;
+        let agents = parse_conversation_agents(body);
+        assert_eq!(agents[0], ("conversation.x".to_string(), "conversation.x".to_string()));
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum ErrorKind {
     Unreachable,
