@@ -144,6 +144,29 @@ if let Some(value) = ari::storage_get("my_key") {
 ari::storage_set("my_key", "my_value");
 ```
 
+#### Interactive settings (`features = ["settings"]`)
+
+Helpers for the optional `settings_query` export — populating a `dynamic_select`
+dropdown or answering a `validate` field from inside the WASM sandbox. Pure
+(no WASM ABI, no host imports), so they're natively unit-testable.
+
+```rust
+use ari::settings::{parse_query_input, SelectOpt, SettingsResult};
+
+// Parse the host's {field, values} payload.
+let q = parse_query_input(input).unwrap();        // -> SettingsQueryInput
+let field = q.field.as_str();                     // which field is being queried
+let url = q.value("base_url");                     // Option<&str> — a depends_on sibling
+
+// Build the {ok, error?, options?, message?} reply, then .to_json().
+SettingsResult::options(vec![SelectOpt { value: "x".into(), label: "X".into() }]).to_json();
+SettingsResult::validated("Connected").to_json();  // green ✓
+SettingsResult::error("bad token").to_json();      // red ✗
+```
+
+Full author guide, including the manifest field declarations and a worked
+example: [skill-authors.md](skill-authors.md#server-backed-settings).
+
 #### Skill entry points
 
 Your crate must export two functions:
@@ -163,7 +186,7 @@ pub extern "C" fn execute(ptr: i32, len: i32) -> i64 {
 }
 ```
 
-The SDK automatically exports `memory` and `ari_alloc` — you don't need to handle those.
+The SDK automatically exports `memory` and `ari_alloc` — you don't need to handle those. A skill with server-backed settings exports a third function, `settings_query` (see the optional-exports table above and the [interactive settings](#interactive-settings-features--settings) helpers).
 
 ### AssemblyScript (`ari-skill-sdk-as`)
 
@@ -241,6 +264,12 @@ For authors who want to understand what the SDK does under the hood.
 | `ari_alloc` | `(size: i32) -> i32` | Host calls this to allocate space for input strings and import responses |
 | `score` | `(ptr: i32, len: i32) -> f32` | Return relevance score in [0.0, 1.0] for the UTF-8 input at (ptr, len) |
 | `execute` | `(ptr: i32, len: i32) -> i64` | Process input at (ptr, len), return the tagged response value described below |
+
+Optional exports:
+
+| Export | Signature | Purpose |
+|--------|-----------|---------|
+| `settings_query` | `(ptr: i32, len: i32) -> i64` | Drive a `dynamic_select` dropdown or a `validate` field at settings-time. Input is `{field, values}` JSON, output is `{ok, error?, options?, message?}` JSON — same ABI as `execute`. Reuses the `http`/`t` imports; needs the SDK `settings` feature. Full guide: [skill-authors.md](skill-authors.md#server-backed-settings) |
 
 ### Tagged `execute` return value
 

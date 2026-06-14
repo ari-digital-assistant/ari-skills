@@ -212,6 +212,156 @@ ari::respond_action(&json)
 
 Full reference (every field, every primitive, every reserved id, asset bundling rules, lock-screen takeover semantics): **[action-responses.md](action-responses.md)**.
 
+## Server-backed settings
+
+Some settings can't be a plain text box. If your skill talks to a user's own server, the useful thing to ask for isn't an opaque entity id pasted by hand — it's a dropdown of the *actual* options that server reports, or a tick that confirms the URL and token you've been given actually work. That's what this is: a WASM skill can drive its own settings UI at settings-time, fetching live data over the network to populate a dropdown or validate a credential, instead of making the user copy ids out of a web console and pray.
+
+There are two pieces, and they compose.
+
+### `dynamic_select` — a dropdown the skill fills in
+
+A normal `select` field declares its `options:` statically in the manifest. A `dynamic_select` field declares **no** `options:` — your skill fetches them at settings-time and hands them back. The user sees a dropdown; the persisted value is the chosen option's `value` (the `label` is display-only). From `execute()` you read it back with `ari::setting_get("<key>")` exactly like any other setting.
+
+### `validate: true` — an inline ✓/✗ on any field
+
+Add `validate: true` to *any* field (a `secret` token, a `text` URL, anything) and the UI shows an inline check result next to it: a green ✓ with a short confirmation message, or a red ✗ with an error. Your skill decides which by checking the value and answering. Use it on the credential field so the user knows their token works *before* they leave the settings screen, not the first time a voice command fails.
+
+### `depends_on: [..]` — what the query needs, and when it fires
+
+Both behaviours need to know which sibling fields to read. Declare them with `depends_on: [<key>, ...]` — the keys of the other fields in the same settings form your query needs (the server URL and the token, typically). The host auto-fires the query (debounced) once **all** the listed dependencies have a non-empty committed value, and re-fires it whenever any of them changes. Empty or absent dependencies → it never auto-fires; the field just shows a "fill the other fields first" placeholder. A field with no `depends_on` is never auto-queried.
+
+### The committed-values caveat (read this twice)
+
+The query sees its dependencies' **committed** values, not live keystrokes. On Android a `text`/`secret` field commits on focus-loss — when the user tabs away or taps another field. So the dropdown populates and the ✓/✗ appears once the user moves *off* the URL and token fields, not character-by-character as they type. This is deliberate v1 behaviour: it's one fetch when the inputs settle, not one per keystroke. Tell users (in your skill's setup prose) to fill the fields and move on; the rest fills itself in.
+
+### The `settings_query` export
+
+To drive any of this, export one more function alongside `score`/`execute`:
+
+```text
+settings_query(ptr: i32, len: i32) -> i64
+```
+
+Same ABI as `execute` — read the input with `ari::input(ptr, len)`, return with `ari::respond_action(&json)`.
+
+**Input** is JSON identifying which field is being queried and the committed values of that field's `depends_on` siblings:
+
+```json
+{ "field": "agent_id", "values": { "base_url": "http://homeassistant.local:8123", "token": "ey…" } }
+```
+
+**Output** is JSON the host decodes:
+
+```json
+{ "ok": true, "options": [ { "value": "conversation.x", "label": "OpenAI Agent" } ] }
+```
+
+| Key | When |
+|---|---|
+| `ok` | Always. `true` if the query succeeded, `false` if it failed |
+| `error` | On failure — a user-facing message rendered next to the ✗ |
+| `options` | For a `dynamic_select` — the dropdown options (`{value, label}` pairs) |
+| `message` | For a `validate` success — a short confirmation rendered next to the ✓ ("Connected") |
+
+No new host imports are involved. The query runs inside your normal WASM sandbox and reuses what you already have: `ari::http_request` (so the skill must declare the `http` capability) for the fetch, and `ari::t(...)` for localized option labels and messages.
+
+### What you get for free
+
+Declare the fields and write the export — the frontend gives you the whole interaction:
+
+- **debounced auto-fetch** when the dependencies are committed and non-empty, re-fetching when they change;
+- a **Checking…** spinner while `settings_query` runs;
+- the **populated dropdown** (`dynamic_select`) or the **✓ Connected** / **✗ error** result (`validate`);
+- a **Retry** button on failure;
+- a **"fill the fields first" placeholder** when the dependencies are still empty.
+
+None of that UI lives in your skill. You answer `{field, values}` with `{ok, options/message/error}`; the frontend renders the rest.
+
+### Worked example: the Home Assistant agent dropdown
+
+The Home Assistant skill lets the user pick which HA *conversation agent* to route commands to. The list of agents lives on their server, so it's a `dynamic_select`. The token field validates itself at the same time.
+
+The manifest declares the fields (`skills/home-assistant/SKILL.en.md`):
+
+```yaml
+    settings:
+      - key: base_url
+        label: "Home Assistant URL"
+        type: text
+        required: true
+      - key: token
+        label: "Long-lived access token"
+        type: secret
+        required: true
+        validate: true
+        depends_on: [base_url, token]
+      - key: agent_id
+        label: "Conversation agent entity (blank = HA default/local)"
+        type: dynamic_select
+        required: false
+        depends_on: [base_url, token]
+```
+
+Both the `token` (validated) and the `agent_id` (dynamic dropdown) depend on `base_url` and `token` — so as soon as the user has entered a URL and a token and moved off them, the host fires `settings_query` for each. One round-trip checks the credential and shows ✓; another fetches the agent list and fills the dropdown.
+
+The export parses the input, requires both `base_url` and `token`, hits HA's `/api/states` endpoint once, maps transport/auth failures to a friendly error, and then branches on `field`: for `agent_id` it returns the parsed agents as options; for anything else (the validated token field) it returns a "Connected" message. This is the real structure from `skills/home-assistant/src/lib.rs`:
+
+```rust
+#[no_mangle]
+pub extern "C" fn settings_query(ptr: i32, len: i32) -> i64 {
+    let input = unsafe { ari::input(ptr, len) };
+    let result = handle_settings_query(input);
+    ari::respond_action(&result)
+}
+
+fn handle_settings_query(input: &str) -> String {
+    use ari::settings::{parse_query_input, SelectOpt, SettingsResult};
+
+    let q = match parse_query_input(input) {
+        Some(q) => q,
+        None => return SettingsResult::error("bad query input").to_json(),
+    };
+
+    // Both deps are required before we can talk to the server.
+    let base_url = match q.value("base_url").filter(|s| !s.trim().is_empty()) {
+        Some(s) => s,
+        None => return SettingsResult::error("Home Assistant isn't set up yet.").to_json(),
+    };
+    let token = match q.value("token").filter(|s| !s.trim().is_empty()) {
+        Some(s) => s,
+        None => return SettingsResult::error("Home Assistant isn't set up yet.").to_json(),
+    };
+
+    // One GET /api/states — reuses the same http_request import execute() uses.
+    let resp = ari::http_request("GET", &states_url(base_url), &[("Authorization", &bearer(token))], None);
+    if let Some(err) = http_error(resp.status) {
+        return SettingsResult::error(err).to_json();
+    }
+
+    match q.field.as_str() {
+        // dynamic_select → return the dropdown options
+        "agent_id" => {
+            let opts: Vec<SelectOpt> = parse_conversation_agents(resp.body.as_deref().unwrap_or(""))
+                .into_iter()
+                .map(|(value, label)| SelectOpt { value, label })
+                .collect();
+            SettingsResult::options(opts).to_json()
+        }
+        // validate: true → a green-tick confirmation message
+        _ => SettingsResult::validated("Connected to Home Assistant.").to_json(),
+    }
+}
+```
+
+The `ari::settings` helpers do the JSON for you: `parse_query_input(&str) -> Option<SettingsQueryInput>` gives you `.field` and `.value("<dep_key>") -> Option<&str>`; `SettingsResult::{options(Vec<SelectOpt>), validated(&str), error(&str)}` builds the reply and `.to_json()` serialises it. They're pure (no WASM ABI), so you can unit-test your query logic natively. They live behind the SDK's `settings` Cargo feature — enable it on the dependency:
+
+```toml
+[dependencies]
+ari-skill-sdk = { path = "../../sdk/rust", features = ["http", "settings"] }
+```
+
+(The real skill localizes its strings through `ari::t(...)` and maps a richer set of HTTP errors — see `skills/home-assistant/src/lib.rs` for the full thing. The skeleton above is trimmed to the shape, not the polish.)
+
 ## When you actually need WASM
 
 Reach for WASM only if your skill needs to:

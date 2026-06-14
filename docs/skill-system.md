@@ -123,8 +123,27 @@ Ari extensions under `metadata.ari`:
 | `specificity` | Yes | `low` / `medium` / `high` — feeds the ranking rounds |
 | `matching.patterns` | Yes | List of `{keywords|regex, weight}` entries |
 | `matching.custom_score` | No | WASM only. Default `false` |
+| `settings` | No | List of user-configurable setting fields (see below) |
 | `declarative` | XOR `wasm` | Declarative response config |
 | `wasm` | XOR `declarative` | `{module, memory_limit_mb}` |
+
+Each entry in `metadata.ari.settings` declares one user-configurable field with `key`, `label`, `type`, and `required`. Field types:
+
+| `type` | Notes |
+|---|---|
+| `text` | Free-text input |
+| `secret` | Free-text input, masked in the UI (tokens, passwords) |
+| `select` | Dropdown with statically-declared `options:` |
+| `dynamic_select` | Dropdown whose options the skill fetches at settings-time — declares **no** static `options:`; needs a `settings_query` export. WASM only |
+
+Two field properties drive the interactive (server-backed) settings flow:
+
+| Property | Notes |
+|---|---|
+| `validate: true` | On any field. The skill's `settings_query` checks the value and the UI shows an inline ✓/✗ |
+| `depends_on: [<key>, ...]` | Sibling field keys whose committed values the query needs. The host auto-fires `settings_query` (debounced) once all are non-empty, and re-fires on change |
+
+`dynamic_select` and `validate` both require a `settings_query` WASM export and reuse the `http`/`t` host imports — full author guide in [skill-authors.md](skill-authors.md#server-backed-settings).
 
 ## Capabilities
 
