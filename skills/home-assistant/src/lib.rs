@@ -24,6 +24,74 @@ pub extern "C" fn execute(ptr: i32, len: i32) -> i64 {
 }
 
 #[cfg(target_arch = "wasm32")]
+#[no_mangle]
+pub extern "C" fn settings_query(ptr: i32, len: i32) -> i64 {
+    let input = unsafe { ari::input(ptr, len) };
+    let result = handle_settings_query(input);
+    ari::respond_action(&result)
+}
+
+#[cfg(target_arch = "wasm32")]
+fn handle_settings_query(input: &str) -> String {
+    use ari::settings::{parse_query_input, SelectOpt, SettingsResult};
+    use alloc::vec::Vec;
+
+    let q = match parse_query_input(input) {
+        Some(q) => q,
+        None => return SettingsResult::error("bad query input").to_json(),
+    };
+    let base_url = match q.value("base_url").filter(|s| !s.trim().is_empty()) {
+        Some(s) => s,
+        None => {
+            return SettingsResult::error(&t_or(
+                "not_configured",
+                &[],
+                "Home Assistant isn't set up yet.",
+            ))
+            .to_json()
+        }
+    };
+    let token = match q.value("token").filter(|s| !s.trim().is_empty()) {
+        Some(s) => s,
+        None => {
+            return SettingsResult::error(&t_or(
+                "not_configured",
+                &[],
+                "Home Assistant isn't set up yet.",
+            ))
+            .to_json()
+        }
+    };
+    let private = logic::is_private_base_url(base_url);
+    let req = logic::build_states_request(base_url, token);
+    let (auth_k, auth_v) = req.auth_header();
+    let resp = ari::http_request(req.method, &req.url, &[(&auth_k, &auth_v)], None);
+    if let Some(kind) = logic::http_error_kind(resp.status, private) {
+        return SettingsResult::error(&render_error(kind)).to_json();
+    }
+    match q.field.as_str() {
+        "agent_id" => {
+            let agents = resp
+                .body
+                .as_deref()
+                .map(logic::parse_conversation_agents)
+                .unwrap_or_default();
+            let opts: Vec<SelectOpt> = agents
+                .into_iter()
+                .map(|(value, label)| SelectOpt { value, label })
+                .collect();
+            SettingsResult::options(opts).to_json()
+        }
+        _ => SettingsResult::validated(&t_or(
+            "connected",
+            &[],
+            "Connected to Home Assistant.",
+        ))
+        .to_json(),
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
 use alloc::string::{String, ToString};
 
 #[cfg(target_arch = "wasm32")]

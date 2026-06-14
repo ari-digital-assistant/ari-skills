@@ -48,14 +48,17 @@ metadata:
         label: "Long-lived access token"
         type: secret
         required: true
+        validate: true
+        depends_on: [base_url, token]
       - key: language
         label: "Voice command language (blank = app language)"
         type: text
         required: false
       - key: agent_id
         label: "Conversation agent entity (blank = HA default/local)"
-        type: text
+        type: dynamic_select
         required: false
+        depends_on: [base_url, token]
     wasm:
       module: skill.wasm
       memory_limit_mb: 2
