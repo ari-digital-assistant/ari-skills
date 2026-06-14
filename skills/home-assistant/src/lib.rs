@@ -63,9 +63,14 @@ fn handle_settings_query(input: &str) -> String {
         }
     };
     let private = logic::is_private_base_url(base_url);
-    let req = logic::build_states_request(base_url, token);
+    let req = logic::build_agents_template_request(base_url, token);
     let (auth_k, auth_v) = req.auth_header();
-    let resp = ari::http_request(req.method, &req.url, &[(&auth_k, &auth_v)], None);
+    let resp = ari::http_request(
+        req.method,
+        &req.url,
+        &[(&auth_k, &auth_v), ("Content-Type", "application/json")],
+        Some(&req.body),
+    );
     if let Some(kind) = logic::http_error_kind(resp.status, private) {
         return SettingsResult::error(&render_error(kind)).to_json();
     }

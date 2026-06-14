@@ -448,46 +448,42 @@ mod person_tests {
     }
 }
 
-/// Build a `GET /api/states` request used at settings-time to enumerate
+/// HA Jinja template that prints one `entity_id|friendly_name` line per
+/// `conversation.*` entity. Newlines separate rows. Used instead of
+/// `GET /api/states` (which returns *every* entity in the instance) so the
+/// settings-time agent fetch stays a small response — a full `/api/states`
+/// dump can run to megabytes and exhaust the WASM fuel budget when the SDK
+/// unescapes the body in-guest.
+const CONVERSATION_AGENTS_TEMPLATE: &str =
+    "{% for c in states.conversation %}{{ c.entity_id }}|{{ c.attributes.friendly_name }}\n{% endfor %}";
+
+/// Build a `POST /api/template` request used at settings-time to enumerate
 /// available `conversation.*` agents for the agent-picker dropdown.
-pub fn build_states_request(base_url: &str, token: &str) -> HaRequest {
+pub fn build_agents_template_request(base_url: &str, token: &str) -> HaRequest {
+    let body = serde_json::json!({ "template": CONVERSATION_AGENTS_TEMPLATE }).to_string();
     HaRequest {
-        method: "GET",
-        url: alloc::format!("{}/api/states", base(base_url)),
+        method: "POST",
+        url: alloc::format!("{}/api/template", base(base_url)),
         token: token.to_string(),
-        body: String::new(),
+        body,
     }
 }
 
-/// Parse `/api/states` JSON into `(entity_id, friendly_name)` pairs for every
-/// `conversation.*` entity. Falls back to the entity_id when no (or empty)
-/// friendly_name is present. Malformed JSON yields an empty list.
-pub fn parse_conversation_agents(body: &str) -> Vec<(String, String)> {
-    #[derive(Deserialize, Default)]
-    struct Attrs {
-        #[serde(default)]
-        friendly_name: Option<String>,
-    }
-    #[derive(Deserialize)]
-    struct State {
-        entity_id: String,
-        #[serde(default)]
-        attributes: Attrs,
-    }
-    let states: Vec<State> = match serde_json::from_str(body) {
-        Ok(s) => s,
-        Err(_) => return Vec::new(),
-    };
-    states
-        .into_iter()
-        .filter(|s| s.entity_id.starts_with("conversation."))
-        .map(|s| {
-            let label = s
-                .attributes
-                .friendly_name
-                .filter(|f| !f.is_empty())
-                .unwrap_or_else(|| s.entity_id.clone());
-            (s.entity_id, label)
+/// Parse the rendered `entity_id|friendly_name` lines into `(entity_id,
+/// friendly_name)` pairs. Falls back to the entity_id when no (or empty)
+/// friendly_name is present. Blank/whitespace lines are skipped.
+pub fn parse_conversation_agents(rendered: &str) -> Vec<(String, String)> {
+    rendered
+        .lines()
+        .filter_map(|line| {
+            let mut it = line.splitn(2, '|');
+            let entity = it.next()?.trim();
+            if entity.is_empty() {
+                return None;
+            }
+            let name = it.next().unwrap_or("").trim();
+            let label = if name.is_empty() { entity } else { name };
+            Some((entity.to_string(), label.to_string()))
         })
         .collect()
 }
@@ -497,20 +493,17 @@ mod agents_tests {
     use super::*;
 
     #[test]
-    fn states_request_targets_states_endpoint() {
-        let r = build_states_request("http://h:8123/", "tok");
-        assert_eq!(r.method, "GET");
-        assert_eq!(r.url, "http://h:8123/api/states");
+    fn agents_request_targets_template_endpoint() {
+        let r = build_agents_template_request("http://h:8123/", "tok");
+        assert_eq!(r.method, "POST");
+        assert_eq!(r.url, "http://h:8123/api/template");
+        assert!(r.body.contains("states.conversation"), "body: {}", r.body);
     }
 
     #[test]
-    fn parses_conversation_agents_from_states() {
-        let body = r#"[
-          {"entity_id":"light.kitchen","state":"on","attributes":{"friendly_name":"Kitchen"}},
-          {"entity_id":"conversation.home_assistant","state":"unknown","attributes":{"friendly_name":"Home Assistant"}},
-          {"entity_id":"conversation.chatgpt","state":"unknown","attributes":{"friendly_name":"ChatGPT"}}
-        ]"#;
-        let agents = parse_conversation_agents(body);
+    fn parses_conversation_agents_from_rendered_lines() {
+        let rendered = "conversation.home_assistant|Home Assistant\nconversation.chatgpt|ChatGPT\n";
+        let agents = parse_conversation_agents(rendered);
         assert_eq!(agents.len(), 2);
         assert_eq!(agents[0], ("conversation.home_assistant".to_string(), "Home Assistant".to_string()));
         assert_eq!(agents[1], ("conversation.chatgpt".to_string(), "ChatGPT".to_string()));
@@ -518,9 +511,18 @@ mod agents_tests {
 
     #[test]
     fn agent_without_friendly_name_falls_back_to_entity_id() {
-        let body = r#"[{"entity_id":"conversation.x","state":"unknown","attributes":{}}]"#;
-        let agents = parse_conversation_agents(body);
+        let rendered = "conversation.x|\n";
+        let agents = parse_conversation_agents(rendered);
+        assert_eq!(agents.len(), 1);
         assert_eq!(agents[0], ("conversation.x".to_string(), "conversation.x".to_string()));
+    }
+
+    #[test]
+    fn blank_lines_are_skipped() {
+        let rendered = "\n  \nconversation.only|Only\n";
+        let agents = parse_conversation_agents(rendered);
+        assert_eq!(agents.len(), 1);
+        assert_eq!(agents[0], ("conversation.only".to_string(), "Only".to_string()));
     }
 }
 
