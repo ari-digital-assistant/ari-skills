@@ -63,7 +63,34 @@ fn handle_settings_query(input: &str) -> String {
         }
     };
     let private = logic::is_private_base_url(base_url);
-    let req = logic::build_agents_template_request(base_url, token);
+
+    // Validate field in oauth mode: the stored `token` is a refresh token, not
+    // a Bearer — don't round-trip it (it would 401). Sign-in already proved the
+    // connection. The agent_id fetch still needs a live round-trip below.
+    if q.field != "agent_id" && matches!(ari::storage_get("auth_mode"), Some("oauth")) {
+        return SettingsResult::validated(&t_or(
+            "connected",
+            &[],
+            "Connected to Home Assistant.",
+        ))
+        .to_json();
+    }
+
+    // Bearer for the round-trip. Token mode: validate/use the form's token value
+    // as-is. OAuth mode (only reached here for agent_id): resolve a real access
+    // token — the stored `token` is a refresh token, not a Bearer.
+    let bearer: alloc::string::String = if matches!(ari::storage_get("auth_mode"), Some("oauth")) {
+        match resolve_bearer(base_url) {
+            Bearer::Token(t) => t,
+            Bearer::Reauth => {
+                return SettingsResult::error(&t_or("needs_reauth", &[],
+                    "I've lost my connection to Home Assistant — please sign in again in settings.")).to_json();
+            }
+        }
+    } else {
+        token.to_string()
+    };
+    let req = logic::build_agents_template_request(base_url, &bearer);
     let (auth_k, auth_v) = req.auth_header();
     let resp = ari::http_request(
         req.method,
@@ -87,13 +114,117 @@ fn handle_settings_query(input: &str) -> String {
                 .collect();
             SettingsResult::options(opts).to_json()
         }
-        _ => SettingsResult::validated(&t_or(
-            "connected",
-            &[],
-            "Connected to Home Assistant.",
-        ))
-        .to_json(),
+        _ => {
+            // token/manual mode succeeded — record it so the next validate and
+            // runtime calls treat the stored `token` as a Bearer.
+            ari::storage_set("auth_mode", "token");
+            SettingsResult::validated(&t_or(
+                "connected",
+                &[],
+                "Connected to Home Assistant.",
+            ))
+            .to_json()
+        }
     }
+}
+
+#[cfg(target_arch = "wasm32")]
+#[no_mangle]
+pub extern "C" fn settings_action(ptr: i32, len: i32) -> i64 {
+    let input = unsafe { ari::input(ptr, len) };
+    let result = handle_settings_action(input);
+    ari::respond_action(&result)
+}
+
+#[cfg(target_arch = "wasm32")]
+fn handle_settings_action(input: &str) -> String {
+    use ari::settings::{parse_action_input, SettingsResult};
+
+    let a = match parse_action_input(input) {
+        Some(a) => a,
+        None => return SettingsResult::error("bad action input").to_json(),
+    };
+    if a.action != "sign_in" {
+        return SettingsResult::error("unknown action").to_json();
+    }
+    let base_url = match a.value("base_url").filter(|s| !s.trim().is_empty()) {
+        Some(s) => s.to_string(),
+        None => return SettingsResult::error(&t_or("not_configured", &[], "Home Assistant isn't set up yet.")).to_json(),
+    };
+    let private = logic::is_private_base_url(&base_url);
+
+    let verifier = oauth_verifier();
+    let challenge = logic::pkce_challenge(&verifier);
+    let state = oauth_state();
+    let auth_url = logic::build_authorize_url(
+        &base_url, logic::OAUTH_CLIENT_ID, logic::OAUTH_REDIRECT_URI, &state, &challenge,
+    );
+
+    let res = ari::authorize(&auth_url, logic::OAUTH_REDIRECT_URI, logic::OAUTH_TIMEOUT_MS);
+    if !res.ok {
+        let (key, fallback) = match res.error.as_deref() {
+            Some("no_browser") => ("sign_in_no_browser", "I couldn't open a browser to sign in."),
+            _ => ("sign_in_incomplete", "Sign-in didn't complete. Please try again."),
+        };
+        return SettingsResult::error(&t_or(key, &[], fallback)).to_json();
+    }
+    if res.get("state") != Some(state.as_str()) || res.get("error").is_some() {
+        return SettingsResult::error(&t_or("sign_in_unverified", &[], "Sign-in couldn't be verified.")).to_json();
+    }
+    let code = match res.get("code") {
+        Some(c) if !c.is_empty() => c.to_string(),
+        _ => return SettingsResult::error(&t_or("sign_in_unverified", &[], "Sign-in couldn't be verified.")).to_json(),
+    };
+
+    let body = logic::build_exchange_body(&code, logic::OAUTH_CLIENT_ID, &verifier);
+    let resp = ari::http_request(
+        "POST",
+        &logic::token_endpoint(&base_url),
+        &[("Content-Type", "application/x-www-form-urlencoded")],
+        Some(&body),
+    );
+    if resp.status < 200 || resp.status >= 300 {
+        let key = if private { "sign_in_no_internet" } else { "sign_in_unverified" };
+        return SettingsResult::error(&t_or(key, &[], "Sign-in couldn't be verified.")).to_json();
+    }
+    let tokens = match resp.body.as_deref().and_then(logic::parse_token_response) {
+        Some(t) => t,
+        None => return SettingsResult::error(&t_or("sign_in_unverified", &[], "Sign-in couldn't be verified.")).to_json(),
+    };
+    let refresh = match tokens.refresh_token {
+        Some(r) => r,
+        None => return SettingsResult::error(&t_or("sign_in_unverified", &[], "Sign-in couldn't be verified.")).to_json(),
+    };
+
+    ari::setting_set("token", &refresh);
+    ari::storage_set("auth_mode", "oauth");
+    ari::storage_set("access_token", &tokens.access_token);
+    ari::storage_set("access_expires_at", &alloc::format!("{}", ari::now_ms() + (tokens.expires_in as i64) * 1000));
+    ari::storage_set("needs_reauth", "0");
+
+    SettingsResult::validated(&t_or("signed_in", &[], "Signed in to Home Assistant."))
+        .with_refresh()
+        .to_json()
+}
+
+/// CSPRNG base64url string for the PKCE verifier (32 bytes -> 43 chars).
+#[cfg(target_arch = "wasm32")]
+fn oauth_verifier() -> String {
+    let mut bytes = [0u8; 32];
+    for chunk in bytes.chunks_mut(8) {
+        let r = ari::rand_u64().to_le_bytes();
+        chunk.copy_from_slice(&r[..chunk.len()]);
+    }
+    ari::crypto::base64url_nopad(&bytes)
+}
+
+/// Random URL-safe state value (128-bit entropy).
+#[cfg(target_arch = "wasm32")]
+fn oauth_state() -> String {
+    let mut bytes = [0u8; 16];
+    bytes[..8].copy_from_slice(&ari::rand_u64().to_le_bytes());
+    bytes[8..].copy_from_slice(&ari::rand_u64().to_le_bytes());
+    ari::crypto::base64url_nopad(&bytes)
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -105,15 +236,117 @@ fn t_or(key: &str, args: &[(&str, &str)], fallback: &str) -> String {
 }
 
 #[cfg(target_arch = "wasm32")]
+enum Bearer {
+    Token(String),
+    Reauth,
+}
+
+#[cfg(target_arch = "wasm32")]
+fn resolve_bearer(base_url: &str) -> Bearer {
+    let auth_mode = ari::storage_get("auth_mode");
+    let cached_access = ari::storage_get("access_token");
+    let cached_exp = ari::storage_get("access_expires_at").and_then(|s| s.parse::<i64>().ok());
+    let token_setting = ari::setting_get("token");
+    match logic::plan_bearer(auth_mode, cached_access, cached_exp, ari::now_ms(), token_setting) {
+        logic::BearerPlan::UseDirect(t) | logic::BearerPlan::UseCached(t) => Bearer::Token(t),
+        logic::BearerPlan::NeedsReauth => Bearer::Reauth,
+        logic::BearerPlan::Refresh(refresh) => match refresh_access_token(base_url, &refresh) {
+            Some(access) => Bearer::Token(access),
+            None => Bearer::Reauth,
+        },
+    }
+}
+
+/// POST the refresh grant; cache + return the new access token, or None on failure
+/// (also flags needs_reauth + clears the cache).
+#[cfg(target_arch = "wasm32")]
+fn refresh_access_token(base_url: &str, refresh_token: &str) -> Option<String> {
+    let body = logic::build_refresh_body(refresh_token, logic::OAUTH_CLIENT_ID);
+    let resp = ari::http_request(
+        "POST",
+        &logic::token_endpoint(base_url),
+        &[("Content-Type", "application/x-www-form-urlencoded")],
+        Some(&body),
+    );
+    if resp.status < 200 || resp.status >= 300 {
+        ari::storage_set("access_token", "");
+        ari::storage_set("needs_reauth", "1");
+        return None;
+    }
+    let tokens = match resp.body.as_deref().and_then(logic::parse_token_response) {
+        Some(t) => t,
+        None => {
+            ari::storage_set("access_token", "");
+            ari::storage_set("needs_reauth", "1");
+            return None;
+        }
+    };
+    ari::storage_set("access_token", &tokens.access_token);
+    ari::storage_set(
+        "access_expires_at",
+        &alloc::format!("{}", ari::now_ms() + (tokens.expires_in as i64) * 1000),
+    );
+    // HA doesn't rotate refresh tokens by default, but persist a new one if sent
+    // (the prior refresh token may be invalidated after rotation).
+    if let Some(new_refresh) = &tokens.refresh_token {
+        ari::setting_set("token", new_refresh);
+    }
+    Some(tokens.access_token)
+}
+
+#[cfg(target_arch = "wasm32")]
+fn is_oauth_mode() -> bool {
+    matches!(ari::storage_get("auth_mode"), Some("oauth"))
+}
+
+/// Send an HA request; in oauth mode, a 401/403 triggers ONE forced token
+/// refresh and a single retry with the fresh access token.
+#[cfg(target_arch = "wasm32")]
+fn send_with_retry(base_url: &str, req: &logic::HaRequest) -> ari::HttpResponse {
+    let (auth_k, auth_v) = req.auth_header();
+    let resp = ari::http_request(
+        req.method,
+        &req.url,
+        &[(&auth_k, &auth_v), ("Content-Type", "application/json")],
+        Some(&req.body),
+    );
+    let unauthorized = resp.status == 401 || resp.status == 403;
+    if !unauthorized || !is_oauth_mode() {
+        return resp;
+    }
+    let refresh = match ari::setting_get("token") {
+        Some(r) if !r.trim().is_empty() => r,
+        _ => return resp,
+    };
+    let access = match refresh_access_token(base_url, refresh) {
+        Some(a) => a,
+        None => return resp,
+    };
+    let auth_v2 = alloc::format!("Bearer {}", access);
+    ari::http_request(
+        req.method,
+        &req.url,
+        &[("Authorization", &auth_v2), ("Content-Type", "application/json")],
+        Some(&req.body),
+    )
+}
+
+#[cfg(target_arch = "wasm32")]
 fn dispatch_wasm(input: &str) -> String {
     // 1. Settings.
     let base_url = match ari::setting_get("base_url") {
         Some(s) if !s.trim().is_empty() => s.to_string(),
         _ => return logic::error_envelope(&t_or("not_configured", &[], "Home Assistant isn't set up yet.")),
     };
-    let token = match ari::setting_get("token") {
-        Some(s) if !s.trim().is_empty() => s.to_string(),
-        _ => return logic::error_envelope(&t_or("not_configured", &[], "Home Assistant isn't set up yet.")),
+    let token = match resolve_bearer(&base_url) {
+        Bearer::Token(t) => t,
+        Bearer::Reauth => {
+            return logic::error_envelope(&t_or(
+                "needs_reauth",
+                &[],
+                "I've lost my connection to Home Assistant — please sign in again in settings.",
+            ))
+        }
     };
     let language = ari::setting_get("language")
         .map(|s| s.to_string())
@@ -135,13 +368,7 @@ fn dispatch_wasm(input: &str) -> String {
 #[cfg(target_arch = "wasm32")]
 fn forward_flow(base_url: &str, token: &str, input: &str, language: &str, agent_id: Option<&str>, private: bool) -> String {
     let req = logic::build_conversation_request(base_url, token, input, language, agent_id);
-    let (auth_k, auth_v) = req.auth_header();
-    let resp = ari::http_request(
-        req.method,
-        &req.url,
-        &[(&auth_k, &auth_v), ("Content-Type", "application/json")],
-        Some(&req.body),
-    );
+    let resp = send_with_retry(base_url, &req);
     if let Some(kind) = logic::http_error_kind(resp.status, private) {
         return logic::error_envelope(&render_error(kind));
     }
@@ -157,13 +384,7 @@ fn forward_flow(base_url: &str, token: &str, input: &str, language: &str, agent_
 #[cfg(target_arch = "wasm32")]
 fn person_flow(base_url: &str, token: &str, name: &str, private: bool) -> String {
     let req = logic::build_person_template_request(base_url, token);
-    let (auth_k, auth_v) = req.auth_header();
-    let resp = ari::http_request(
-        req.method,
-        &req.url,
-        &[(&auth_k, &auth_v), ("Content-Type", "application/json")],
-        Some(&req.body),
-    );
+    let resp = send_with_retry(base_url, &req);
     if let Some(kind) = logic::http_error_kind(resp.status, private) {
         return logic::error_envelope(&render_error(kind));
     }

@@ -11,5 +11,11 @@
   "card.person.home": "Home",
   "card.person.away": "Away",
   "card.done": "Done",
-  "connected": "Connected to Home Assistant."
+  "connected": "Connected to Home Assistant.",
+  "signed_in": "Signed in to Home Assistant.",
+  "sign_in_incomplete": "Sign-in didn't complete. Please try again.",
+  "sign_in_no_browser": "I couldn't open a browser to sign in.",
+  "sign_in_unverified": "Sign-in couldn't be verified. Please try again.",
+  "sign_in_no_internet": "Your Home Assistant couldn't complete sign-in — it may not be reachable from the internet. Use token authentication instead.",
+  "needs_reauth": "I've lost my connection to Home Assistant — please sign in again in settings."
 }
