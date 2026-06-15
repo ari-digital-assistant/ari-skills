@@ -130,11 +130,11 @@ fn handle_settings_action(input: &str) -> String {
 
     let res = ari::authorize(&auth_url, logic::OAUTH_REDIRECT_URI, logic::OAUTH_TIMEOUT_MS);
     if !res.ok {
-        let key = match res.error.as_deref() {
-            Some("no_browser") => "sign_in_no_browser",
-            _ => "sign_in_incomplete",
+        let (key, fallback) = match res.error.as_deref() {
+            Some("no_browser") => ("sign_in_no_browser", "I couldn't open a browser to sign in."),
+            _ => ("sign_in_incomplete", "Sign-in didn't complete. Please try again."),
         };
-        return SettingsResult::error(&t_or(key, &[], "Sign-in didn't complete.")).to_json();
+        return SettingsResult::error(&t_or(key, &[], fallback)).to_json();
     }
     if res.get("state") != Some(state.as_str()) || res.get("error").is_some() {
         return SettingsResult::error(&t_or("sign_in_unverified", &[], "Sign-in couldn't be verified.")).to_json();
@@ -186,10 +186,13 @@ fn oauth_verifier() -> String {
     ari::crypto::base64url_nopad(&bytes)
 }
 
-/// Random URL-safe state value.
+/// Random URL-safe state value (128-bit entropy).
 #[cfg(target_arch = "wasm32")]
 fn oauth_state() -> String {
-    ari::crypto::base64url_nopad(&ari::rand_u64().to_le_bytes())
+    let mut bytes = [0u8; 16];
+    bytes[..8].copy_from_slice(&ari::rand_u64().to_le_bytes());
+    bytes[8..].copy_from_slice(&ari::rand_u64().to_le_bytes());
+    ari::crypto::base64url_nopad(&bytes)
 }
 
 #[cfg(target_arch = "wasm32")]
