@@ -926,6 +926,50 @@ mod authorize_impl {
 pub use authorize_impl::{authorize, build_authorize_json, AuthorizeResult};
 
 // ---------------------------------------------------------------------------
+// Crypto (feature = "crypto")
+// ---------------------------------------------------------------------------
+
+#[cfg(feature = "crypto")]
+pub mod crypto {
+    #[cfg(not(feature = "std"))]
+    use alloc::string::String;
+    use sha2::{Digest, Sha256};
+
+    /// SHA-256 digest of `data` (32 bytes).
+    pub fn sha256(data: &[u8]) -> [u8; 32] {
+        let mut h = Sha256::new();
+        h.update(data);
+        let out = h.finalize();
+        let mut arr = [0u8; 32];
+        arr.copy_from_slice(&out);
+        arr
+    }
+
+    const ALPHABET: &[u8; 64] =
+        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+    /// base64url WITHOUT padding (RFC 4648 §5), as PKCE requires.
+    pub fn base64url_nopad(data: &[u8]) -> String {
+        let mut out = String::with_capacity((data.len() + 2) / 3 * 4);
+        for chunk in data.chunks(3) {
+            let b0 = chunk[0] as u32;
+            let b1 = if chunk.len() > 1 { chunk[1] as u32 } else { 0 };
+            let b2 = if chunk.len() > 2 { chunk[2] as u32 } else { 0 };
+            let n = (b0 << 16) | (b1 << 8) | b2;
+            out.push(ALPHABET[((n >> 18) & 0x3f) as usize] as char);
+            out.push(ALPHABET[((n >> 12) & 0x3f) as usize] as char);
+            if chunk.len() > 1 {
+                out.push(ALPHABET[((n >> 6) & 0x3f) as usize] as char);
+            }
+            if chunk.len() > 2 {
+                out.push(ALPHABET[(n & 0x3f) as usize] as char);
+            }
+        }
+        out
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Storage (feature = "storage")
 // ---------------------------------------------------------------------------
 
@@ -1649,5 +1693,37 @@ mod authorize_tests {
             j,
             r#"{"auth_url":"https://ha/authorize?x=1","redirect_uri":"https://ha/cb","timeout_ms":300000}"#
         );
+    }
+}
+
+#[cfg(all(test, feature = "crypto"))]
+mod crypto_tests {
+    use crate::crypto::{sha256, base64url_nopad};
+
+    #[test]
+    fn sha256_of_abc_is_known_vector() {
+        // FIPS 180-2 / NIST test vector for "abc".
+        let d = sha256(b"abc");
+        let hex: String = d.iter().map(|b| format!("{b:02x}")).collect();
+        assert_eq!(hex, "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+    }
+
+    #[test]
+    fn base64url_rfc4648_vectors() {
+        assert_eq!(base64url_nopad(b""), "");
+        assert_eq!(base64url_nopad(b"f"), "Zg");
+        assert_eq!(base64url_nopad(b"fo"), "Zm8");
+        assert_eq!(base64url_nopad(b"foo"), "Zm9v");
+        assert_eq!(base64url_nopad(b"foob"), "Zm9vYg");
+        assert_eq!(base64url_nopad(b"fooba"), "Zm9vYmE");
+        assert_eq!(base64url_nopad(b"foobar"), "Zm9vYmFy");
+    }
+
+    #[test]
+    fn pkce_s256_challenge_matches_rfc7636_appendix_b() {
+        // RFC 7636 Appendix B verifier → challenge.
+        let verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
+        let challenge = base64url_nopad(&sha256(verifier.as_bytes()));
+        assert_eq!(challenge, "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM");
     }
 }
