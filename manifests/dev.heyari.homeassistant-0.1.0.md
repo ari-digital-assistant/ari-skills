@@ -59,6 +59,8 @@ metadata:
         type: dynamic_select
         required: false
         depends_on: [base_url, token]
+    fallback:
+      requires_setting: base_url
     wasm:
       module: skill.wasm
       memory_limit_mb: 2
