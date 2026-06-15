@@ -76,7 +76,21 @@ fn handle_settings_query(input: &str) -> String {
         .to_json();
     }
 
-    let req = logic::build_agents_template_request(base_url, token);
+    // Bearer for the round-trip. Token mode: validate/use the form's token value
+    // as-is. OAuth mode (only reached here for agent_id): resolve a real access
+    // token — the stored `token` is a refresh token, not a Bearer.
+    let bearer: alloc::string::String = if matches!(ari::storage_get("auth_mode"), Some("oauth")) {
+        match resolve_bearer(base_url) {
+            Bearer::Token(t) => t,
+            Bearer::Reauth => {
+                return SettingsResult::error(&t_or("needs_reauth", &[],
+                    "I've lost my connection to Home Assistant — please sign in again in settings.")).to_json();
+            }
+        }
+    } else {
+        token.to_string()
+    };
+    let req = logic::build_agents_template_request(base_url, &bearer);
     let (auth_k, auth_v) = req.auth_header();
     let resp = ari::http_request(
         req.method,
