@@ -241,12 +241,24 @@ fn refresh_access_token(base_url: &str, refresh_token: &str) -> Option<String> {
         ari::storage_set("needs_reauth", "1");
         return None;
     }
-    let tokens = resp.body.as_deref().and_then(logic::parse_token_response)?;
+    let tokens = match resp.body.as_deref().and_then(logic::parse_token_response) {
+        Some(t) => t,
+        None => {
+            ari::storage_set("access_token", "");
+            ari::storage_set("needs_reauth", "1");
+            return None;
+        }
+    };
     ari::storage_set("access_token", &tokens.access_token);
     ari::storage_set(
         "access_expires_at",
         &alloc::format!("{}", ari::now_ms() + (tokens.expires_in as i64) * 1000),
     );
+    // HA doesn't rotate refresh tokens by default, but persist a new one if sent
+    // (the prior refresh token may be invalidated after rotation).
+    if let Some(new_refresh) = &tokens.refresh_token {
+        ari::setting_set("token", new_refresh);
+    }
     Some(tokens.access_token)
 }
 
