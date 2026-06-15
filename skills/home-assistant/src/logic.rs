@@ -35,6 +35,39 @@ pub fn classify(input: &str) -> Intent {
 }
 
 #[cfg(test)]
+mod oauth_tests {
+    use super::*;
+
+    #[test]
+    fn pkce_challenge_matches_rfc7636_appendix_b() {
+        let verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
+        assert_eq!(pkce_challenge(verifier), "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM");
+    }
+
+    #[test]
+    fn authorize_url_carries_all_params_encoded() {
+        let u = build_authorize_url(
+            "https://hass.example.com/",
+            "https://heyari.dev/oauth/ha",
+            "https://heyari.dev/oauth/ha/callback",
+            "STATE123",
+            "CHALLENGE456",
+        );
+        let parsed = url::Url::parse(&u).expect("valid url");
+        assert_eq!(parsed.scheme(), "https");
+        assert_eq!(parsed.host_str(), Some("hass.example.com"));
+        assert_eq!(parsed.path(), "/auth/authorize");
+        let q: std::collections::HashMap<_, _> = parsed.query_pairs().into_owned().collect();
+        assert_eq!(q.get("client_id").map(String::as_str), Some("https://heyari.dev/oauth/ha"));
+        assert_eq!(q.get("redirect_uri").map(String::as_str), Some("https://heyari.dev/oauth/ha/callback"));
+        assert_eq!(q.get("state").map(String::as_str), Some("STATE123"));
+        assert_eq!(q.get("code_challenge").map(String::as_str), Some("CHALLENGE456"));
+        assert_eq!(q.get("code_challenge_method").map(String::as_str), Some("S256"));
+        assert_eq!(q.get("response_type").map(String::as_str), Some("code"));
+    }
+}
+
+#[cfg(test)]
 mod classify_tests {
     use super::*;
 
@@ -83,6 +116,31 @@ pub const OAUTH_CLIENT_ID: &str = "https://heyari.dev/oauth/ha";
 pub const OAUTH_REDIRECT_URI: &str = "https://heyari.dev/oauth/ha/callback";
 /// How long to wait for the browser redirect before giving up (5 minutes).
 pub const OAUTH_TIMEOUT_MS: u64 = 300_000;
+
+/// PKCE S256 challenge for a verifier: base64url(sha256(verifier)), no padding.
+pub fn pkce_challenge(verifier: &str) -> String {
+    ari_skill_sdk::crypto::base64url_nopad(&ari_skill_sdk::crypto::sha256(verifier.as_bytes()))
+}
+
+/// Build the IndieAuth authorize URL the browser opens.
+pub fn build_authorize_url(
+    base_url: &str,
+    client_id: &str,
+    redirect_uri: &str,
+    state: &str,
+    code_challenge: &str,
+) -> String {
+    let endpoint = alloc::format!("{}/auth/authorize", base(base_url));
+    let mut u = url::Url::parse(&endpoint).expect("authorize endpoint");
+    u.query_pairs_mut()
+        .append_pair("client_id", client_id)
+        .append_pair("redirect_uri", redirect_uri)
+        .append_pair("response_type", "code")
+        .append_pair("state", state)
+        .append_pair("code_challenge", code_challenge)
+        .append_pair("code_challenge_method", "S256");
+    u.to_string()
+}
 
 pub fn build_conversation_request(
     base_url: &str,
