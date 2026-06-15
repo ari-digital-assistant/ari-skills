@@ -581,6 +581,23 @@ mod i18n_tests {
         assert_eq!(hex_nibble(10), 'a');
         assert_eq!(hex_nibble(15), 'f');
     }
+
+    #[test]
+    #[cfg(feature = "authorize")]
+    fn oauth_redirect_uri_symbol_exists() {
+        // The wrapper's body calls the wasm-only `oauth_redirect_uri` host
+        // import, so taking its fn pointer would force that unresolved symbol
+        // into the native test binary (link error) — the same reason the SDK's
+        // other host-import wrappers (e.g. `authorize`) are never referenced by
+        // native tests. So this is a compile-time check: the `use` proves the
+        // public wrapper is exported under the feature (without retaining its
+        // body) and the wasm32-gated fn-pointer assertion pins the signature on
+        // the target that can actually link the import.
+        #[allow(unused_imports)]
+        use super::oauth_redirect_uri;
+        #[cfg(target_arch = "wasm32")]
+        let _f: fn() -> String = oauth_redirect_uri;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -839,6 +856,8 @@ mod authorize_impl {
     extern "C" {
         #[link_name = "authorize"]
         fn host_authorize(req_ptr: i32, req_len: i32) -> i64;
+        #[link_name = "oauth_redirect_uri"]
+        fn host_oauth_redirect_uri() -> i64;
     }
 
     /// The callback params the browser returned (e.g. `code`, `state`).
@@ -900,6 +919,16 @@ mod authorize_impl {
         }
     }
 
+    /// The host's canonical OAuth redirect URI (the App Link Ari intercepts).
+    /// Build your authorization URL with this and pass it to `authorize`.
+    pub fn oauth_redirect_uri() -> String {
+        let packed = unsafe { host_oauth_redirect_uri() };
+        match unsafe { super::unpack(packed) } {
+            Some(s) => s.to_string(),
+            None => String::new(),
+        }
+    }
+
     fn parse_authorize_result(json: &str) -> AuthorizeResult {
         // Host emits {"ok":bool,"params":{...},"error":null|".."}. Reuse the
         // SDK's serde (available under `alloc`) — authorize already implies a
@@ -923,7 +952,7 @@ mod authorize_impl {
 }
 
 #[cfg(feature = "authorize")]
-pub use authorize_impl::{authorize, build_authorize_json, AuthorizeResult};
+pub use authorize_impl::{authorize, build_authorize_json, oauth_redirect_uri, AuthorizeResult};
 
 // ---------------------------------------------------------------------------
 // Crypto (feature = "crypto")
