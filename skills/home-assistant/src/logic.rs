@@ -625,6 +625,101 @@ pub fn is_private_base_url(base_url: &str) -> bool {
     }
 }
 
+/// Parsed `/auth/token` success response.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TokenResponse {
+    pub access_token: String,
+    /// Present on the authorization_code grant; absent on refresh.
+    pub refresh_token: Option<String>,
+    /// Access-token lifetime in seconds. Defaults to 1800 (30 min) if absent.
+    pub expires_in: u64,
+}
+
+pub fn token_endpoint(base_url: &str) -> String {
+    alloc::format!("{}/auth/token", base(base_url))
+}
+
+pub fn build_exchange_body(code: &str, client_id: &str, code_verifier: &str) -> String {
+    url::form_urlencoded::Serializer::new(String::new())
+        .append_pair("grant_type", "authorization_code")
+        .append_pair("code", code)
+        .append_pair("client_id", client_id)
+        .append_pair("code_verifier", code_verifier)
+        .finish()
+}
+
+pub fn build_refresh_body(refresh_token: &str, client_id: &str) -> String {
+    url::form_urlencoded::Serializer::new(String::new())
+        .append_pair("grant_type", "refresh_token")
+        .append_pair("refresh_token", refresh_token)
+        .append_pair("client_id", client_id)
+        .finish()
+}
+
+/// Parse a `/auth/token` JSON body. `None` if `access_token` is missing.
+/// Missing `expires_in` defaults to 1800s; missing `refresh_token` -> None.
+pub fn parse_token_response(json: &str) -> Option<TokenResponse> {
+    let v: serde_json::Value = serde_json::from_str(json).ok()?;
+    let access_token = v.get("access_token")?.as_str()?.to_string();
+    let refresh_token = v.get("refresh_token").and_then(|r| r.as_str()).map(|s| s.to_string());
+    let expires_in = v.get("expires_in").and_then(|e| e.as_u64()).unwrap_or(1800);
+    Some(TokenResponse { access_token, refresh_token, expires_in })
+}
+
+#[cfg(test)]
+mod token_tests {
+    use super::*;
+
+    #[test]
+    fn exchange_body_is_form_encoded_with_all_fields() {
+        let body = build_exchange_body("CODE&X", "https://heyari.dev/oauth/ha", "VERIFIER");
+        let pairs: std::collections::HashMap<_, _> =
+            url::form_urlencoded::parse(body.as_bytes()).into_owned().collect();
+        assert_eq!(pairs.get("grant_type").map(String::as_str), Some("authorization_code"));
+        assert_eq!(pairs.get("code").map(String::as_str), Some("CODE&X"));
+        assert_eq!(pairs.get("client_id").map(String::as_str), Some("https://heyari.dev/oauth/ha"));
+        assert_eq!(pairs.get("code_verifier").map(String::as_str), Some("VERIFIER"));
+    }
+
+    #[test]
+    fn refresh_body_is_form_encoded() {
+        let body = build_refresh_body("REFRESH", "https://heyari.dev/oauth/ha");
+        let pairs: std::collections::HashMap<_, _> =
+            url::form_urlencoded::parse(body.as_bytes()).into_owned().collect();
+        assert_eq!(pairs.get("grant_type").map(String::as_str), Some("refresh_token"));
+        assert_eq!(pairs.get("refresh_token").map(String::as_str), Some("REFRESH"));
+        assert_eq!(pairs.get("client_id").map(String::as_str), Some("https://heyari.dev/oauth/ha"));
+    }
+
+    #[test]
+    fn token_endpoint_strips_trailing_slash() {
+        assert_eq!(token_endpoint("https://hass.local:8123/"), "https://hass.local:8123/auth/token");
+    }
+
+    #[test]
+    fn parses_token_response() {
+        let json = r#"{"access_token":"AT","refresh_token":"RT","expires_in":1800,"token_type":"Bearer"}"#;
+        let t = parse_token_response(json).expect("parse");
+        assert_eq!(t.access_token, "AT");
+        assert_eq!(t.refresh_token.as_deref(), Some("RT"));
+        assert_eq!(t.expires_in, 1800);
+    }
+
+    #[test]
+    fn token_response_defaults_missing_expiry_and_refresh() {
+        let json = r#"{"access_token":"AT2"}"#;
+        let t = parse_token_response(json).expect("parse");
+        assert_eq!(t.access_token, "AT2");
+        assert_eq!(t.refresh_token, None);
+        assert_eq!(t.expires_in, 1800);
+    }
+
+    #[test]
+    fn token_response_rejects_missing_access_token() {
+        assert!(parse_token_response(r#"{"refresh_token":"x"}"#).is_none());
+    }
+}
+
 #[cfg(test)]
 mod error_tests {
     use super::*;
