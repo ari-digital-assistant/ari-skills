@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.homeassistant
-    version: "0.2.0"
+    version: "0.2.1"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.4"
@@ -48,10 +48,6 @@ metadata:
         label: "Sign in with Home Assistant"
         type: action
         depends_on: [base_url]
-      - key: language
-        label: "Voice command language (blank = app language)"
-        type: text
-        required: false
       - key: agent_id
         label: "Conversation agent entity (blank = HA default/local)"
         type: dynamic_select

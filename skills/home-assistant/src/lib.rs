@@ -349,10 +349,7 @@ fn dispatch_wasm(input: &str) -> String {
             ))
         }
     };
-    let language = ari::setting_get("language")
-        .map(|s| s.to_string())
-        .filter(|s| !s.trim().is_empty())
-        .unwrap_or_else(|| ari::get_locale().to_string());
+    let language = ari::get_locale().to_string();
     let private = logic::is_private_base_url(&base_url);
     // Optional: a specific HA conversation agent entity (e.g.
     // `conversation.openai_conversation`). Blank → HA's built-in default agent.
