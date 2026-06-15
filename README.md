@@ -13,15 +13,19 @@ The manifest format is [AgentSkills](https://agentskills.io)-compatible, with Ar
 
 ## Documentation
 
-- **[docs/skill-system.md](docs/skill-system.md)** — Technical overview of how the entire skill system works: the trait, scoring, the manifest format, capabilities, signing, registry workflow, engine integration. Read this if you want to understand the machinery.
-- **[docs/skill-authors.md](docs/skill-authors.md)** — Quick guide for skill developers, with a full walkthrough of building and submitting a declarative skill. Read this if you just want to write one.
+Start with **skill-authors.md** if you just want to write a skill; reach for the rest as you need them.
+
+- **[docs/skill-authors.md](docs/skill-authors.md)** — Quick guide for skill developers, with a full walkthrough of building and submitting a declarative skill, server-backed settings, and OAuth sign-in. Read this if you just want to write one.
+- **[docs/wasm-sdk.md](docs/wasm-sdk.md)** — Reference for WASM skills: the Rust and AssemblyScript SDKs, the host imports and capabilities (HTTP, storage, `authorize`/OAuth, i18n), and the ABI contract. Read this when a declarative skill isn't enough.
+- **[docs/action-responses.md](docs/action-responses.md)** — The action-envelope vocabulary skills emit for richer responses: cards, alerts, notifications, `launch_app`/`search`/`open_url`/`clipboard`, assets, and lock-screen takeover.
 - **[docs/i18n.md](docs/i18n.md)** — How to add a non-English language to a skill: per-locale `SKILL.{locale}.md` files, `strings/{locale}.json` translation tables, and the SDK helpers (`t`, `get_locale`, `format_*`). Read this when you're ready to ship beyond English.
+- **[docs/skill-system.md](docs/skill-system.md)** — Technical overview of how the entire skill system works: the trait, scoring, the manifest format, capabilities, signing, registry workflow, engine integration. Read this if you want to understand the machinery.
 
 ## Repo layout
 
 ```
 ari-skills/
-├── docs/                 # the two docs above
+├── docs/                 # the author + reference docs above
 ├── tools/                # local validator + helpers
 ├── skills/               # one directory per published skill
 └── index.json            # generated catalogue (do not edit by hand)

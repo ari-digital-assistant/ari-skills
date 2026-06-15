@@ -362,6 +362,134 @@ ari-skill-sdk = { path = "../../sdk/rust", features = ["http", "settings"] }
 
 (The real skill localizes its strings through `ari::t(...)` and maps a richer set of HTTP errors — see `skills/home-assistant/src/lib.rs` for the full thing. The skeleton above is trimmed to the shape, not the polish.)
 
+## Action buttons and OAuth sign-in
+
+Sometimes a setting isn't a *value* the user types — it's a *thing that has to
+happen*. "Sign in." "Reconnect." "Authorise access." For that there's a third
+settings field type, `type: action`: a button on the settings screen that, when
+pressed, calls a `settings_action` WASM export. The headline use is **OAuth** —
+the user taps "Sign in", a browser opens, they approve, and your skill comes
+back holding a token. No copy-pasting long-lived tokens out of a web console.
+
+### The `authorize` capability
+
+`ari::authorize` does the browser round-trip for you: it opens an authorization
+URL in the system browser, waits for the redirect back to your `redirect_uri`,
+and returns the callback query parameters. **Your skill builds the URL and owns
+the OAuth protocol** (the `state` check, PKCE, swapping the `code` for a token);
+the host just drives the browser.
+
+Declare the capability and enable the SDK features:
+
+```yaml
+    capabilities: [http, authorize, storage_kv]
+```
+
+```toml
+[dependencies]
+# `authorize` for the browser round-trip, `crypto` for PKCE, `http` for the
+# token exchange, `settings` for the action-input parser.
+ari-skill-sdk = { path = "../../sdk/rust", features = ["http", "authorize", "crypto", "settings"] }
+```
+
+> **You don't host anything and you don't need to own a domain.** Call
+> `ari::oauth_redirect_uri()` for the redirect URI and register *that value*
+> with your OAuth provider. For **standard OAuth2** (Google, GitHub, …) use the
+> `client_id` your provider issued you. For **IndieAuth** (Home Assistant,
+> Mastodon, …) use the shared Ari client id `https://heyari.dev/oauth/client`.
+> The host opens the browser, binds a nonce to the flow, and hands your skill
+> the callback params.
+
+### Declare the button
+
+An `action` field renders a button. `depends_on` greys it out until its
+dependencies are filled (no point letting someone sign in before they've given
+you the server URL):
+
+```yaml
+    settings:
+      - key: base_url
+        label: "Home Assistant URL"
+        type: text
+        required: true
+      - key: sign_in
+        label: "Sign in with Home Assistant"
+        type: action
+        depends_on: [base_url]
+```
+
+### Handle the press
+
+Export `settings_action` alongside `score`/`execute`. The host calls it with
+`{ "action": "<key>", "values": { ...committed settings... } }` and renders your
+`{ok, error?, message?}` reply (green ✓ message or red ✗ error) — same shape as
+`settings_query`. Use `ari::settings::parse_action_input` to read it.
+
+```rust
+#[no_mangle]
+pub extern "C" fn settings_action(ptr: i32, len: i32) -> i64 {
+    let input = unsafe { ari::input(ptr, len) };
+    ari::respond_action(&handle_sign_in(input))
+}
+
+fn handle_sign_in(input: &str) -> String {
+    use ari::settings::{parse_action_input, SettingsResult};
+    let a = parse_action_input(input).unwrap();
+    let base_url = a.value("base_url").unwrap_or("");
+
+    // 1. PKCE + state, both from the ungated CSPRNG (ari::rand_u64).
+    let verifier = make_verifier();                 // 32 random bytes -> base64url
+    let challenge = ari::crypto::base64url_nopad(&ari::crypto::sha256(verifier.as_bytes()));
+    let state = make_state();
+
+    // 2. Ask the host for its redirect URI, build the authorize URL, open the
+    //    browser. For IndieAuth the client_id is the shared Ari client page;
+    //    for standard OAuth2 it's the client_id your provider issued you.
+    let redirect = ari::oauth_redirect_uri();
+    let auth_url = build_authorize_url(
+        base_url, "https://heyari.dev/oauth/client", &redirect, &state, &challenge,
+    );
+    let res = ari::authorize(&auth_url, &redirect, 300_000);  // 5-minute timeout
+    if !res.ok {
+        let msg = match res.error.as_deref() {
+            Some("no_browser") => "I couldn't open a browser to sign in.",
+            _ => "Sign-in didn't complete. Please try again.",
+        };
+        return SettingsResult::error(msg).to_json();
+    }
+
+    // 3. Verify state, then swap the code for a token over HTTP.
+    if res.get("state") != Some(state.as_str()) || res.get("error").is_some() {
+        return SettingsResult::error("Sign-in couldn't be verified.").to_json();
+    }
+    let code = res.get("code").unwrap_or("");
+    let body = build_exchange_body(code, &verifier, &redirect);
+    let resp = ari::http_request("POST", TOKEN_ENDPOINT,
+        &[("Content-Type", "application/x-www-form-urlencoded")], Some(&body));
+    // ...parse the refresh token out of resp.body...
+
+    // 4. Persist it. Store the *refresh token*, never the auth code.
+    ari::setting_set("token", &refresh_token);
+    SettingsResult::validated("Signed in.").with_refresh().to_json()
+}
+```
+
+A few things the real skill (`skills/home-assistant/src/lib.rs`) does that are
+worth copying:
+
+- **`res.error` values:** `"cancelled"`, `"timeout"`, `"no_browser"`,
+  `"mismatch"` (the callback didn't match `redirect_uri`), `"bad_request"`,
+  `"bad_response"`. Map them to friendly messages.
+- **Always verify `state`** against the value you generated, and reject if the
+  callback carries an `error` param — that's your CSRF defence.
+- **Store the refresh token, not the authorization code.** The code is
+  single-use and short-lived; the refresh token is what you re-exchange later.
+- **`.with_refresh()`** on the result tells the settings screen to reload after
+  a successful sign-in, so other fields (like a now-unlocked dropdown) re-query.
+
+The full ABI for `ari::authorize` and the `authorize` capability is in
+[wasm-sdk.md](wasm-sdk.md#oauth-sign-in-features--authorize).
+
 ## When you actually need WASM
 
 Reach for WASM only if your skill needs to:
@@ -371,7 +499,7 @@ Reach for WASM only if your skill needs to:
 - Maintain state across invocations (`storage_kv`)
 - Compute something the declarative templates can't express
 
-A WASM skill declares its capabilities and ships a `skill.wasm` module alongside `SKILL.en.md`. The host exposes a tiny API: `log`, `http_fetch`, `storage_get`, `storage_set`, `get_capability`. That's it. If you need more, file an issue first — the surface is intentionally small.
+A WASM skill declares its capabilities and ships a `skill.wasm` module alongside `SKILL.en.md`. The host surface is deliberately small: logging, time/entropy, capability checks, the skill's own settings (`setting_get`/`setting_set`) and i18n helpers come for free; `http_fetch`/`http_request`, `storage_get`/`storage_set`, and `authorize` (OAuth sign-in) are capability-gated. The full ABI — every import, every signature, the SDK feature flags — is in [wasm-sdk.md](wasm-sdk.md#host-imports-all-in-the-ari-module). If you need something that isn't there, file an issue first.
 
 Two SDKs are available:
 

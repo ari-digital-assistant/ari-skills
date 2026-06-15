@@ -167,6 +167,47 @@ SettingsResult::error("bad token").to_json();      // red ✗
 Full author guide, including the manifest field declarations and a worked
 example: [skill-authors.md](skill-authors.md#server-backed-settings).
 
+#### OAuth sign-in (`features = ["authorize"]`)
+
+For skills that need to authenticate the user against a third-party service
+(OAuth 2.0 / IndieAuth), `ari::authorize` opens the system browser at an
+authorization URL, waits for the redirect back to your `redirect_uri`, and
+hands you the callback query parameters. Your skill builds the URL and owns the
+protocol (state, PKCE, exchanging the code for a token); the host only drives
+the browser round-trip.
+
+```rust
+// Build your provider's authorization URL (with client_id, redirect_uri,
+// state, PKCE challenge, etc.), then hand it to the host.
+let redirect = ari::oauth_redirect_uri();
+let res = ari::authorize(&auth_url, &redirect, 300_000);
+if res.ok {
+    let code = res.get("code").unwrap_or("");
+    let state = res.get("state").unwrap_or("");
+    // verify state, then POST `code` to the token endpoint via ari::http_request
+} else {
+    // res.error is one of: "cancelled", "timeout", "no_browser",
+    // "mismatch", "bad_request", "bad_response"
+}
+```
+
+- `authorize(auth_url, redirect_uri, timeout_ms) -> AuthorizeResult` — `timeout_ms`
+  is the max time to wait for the redirect (300_000 = 5 min is typical).
+- `AuthorizeResult { ok: bool, params: Vec<(String, String)>, error: Option<String> }`
+  — `res.get("code")` / `res.get("state")` look up a returned param by key.
+- The `redirect_uri` you pass is also matched by the host against the actual
+  callback; a mismatch fails with `error = "mismatch"`.
+
+Call `ari::oauth_redirect_uri()` to get the redirect URI to build into your
+auth URL and pass to `authorize` — never hardcode it. On Android it's the
+verified App Link `https://heyari.dev/oauth/callback`; the same call returns the
+right value on other frontends, so your skill code is portable.
+
+PKCE helpers (`sha256`, `base64url_nopad`) live behind the SDK's `crypto`
+feature. Full worked example (PKCE, the `action` settings button that triggers
+it, and the code-for-token exchange):
+[skill-authors.md](skill-authors.md#action-buttons-and-oauth-sign-in).
+
 #### Skill entry points
 
 Your crate must export two functions:
@@ -186,7 +227,7 @@ pub extern "C" fn execute(ptr: i32, len: i32) -> i64 {
 }
 ```
 
-The SDK automatically exports `memory` and `ari_alloc` — you don't need to handle those. A skill with server-backed settings exports a third function, `settings_query` (see the optional-exports table above and the [interactive settings](#interactive-settings-features--settings) helpers).
+The SDK automatically exports `memory` and `ari_alloc` — you don't need to handle those. A skill with server-backed settings can export two more functions: `settings_query` (drive a dropdown or validate a field) and `settings_action` (handle a settings button press, e.g. OAuth sign-in). See the optional-exports table above and the [interactive settings](#interactive-settings-features--settings) helpers.
 
 ### AssemblyScript (`ari-skill-sdk-as`)
 
@@ -270,6 +311,7 @@ Optional exports:
 | Export | Signature | Purpose |
 |--------|-----------|---------|
 | `settings_query` | `(ptr: i32, len: i32) -> i64` | Drive a `dynamic_select` dropdown or a `validate` field at settings-time. Input is `{field, values}` JSON, output is `{ok, error?, options?, message?}` JSON — same ABI as `execute`. Reuses the `http`/`t` imports; needs the SDK `settings` feature. Full guide: [skill-authors.md](skill-authors.md#server-backed-settings) |
+| `settings_action` | `(ptr: i32, len: i32) -> i64` | Handle a settings-screen `action` button press (e.g. an OAuth "Sign in" button). Input is `{action, values}` JSON, output is `{ok, error?, message?}` JSON — same ABI as `execute`. Full guide: [skill-authors.md](skill-authors.md#action-buttons-and-oauth-sign-in) |
 
 ### Tagged `execute` return value
 
@@ -302,14 +344,30 @@ Unconditional — any skill may import these without declaring a capability:
 | `get_capability` | `(name_ptr: i32, name_len: i32) -> i32` |
 | `now_ms` | `() -> i64` — current Unix time in milliseconds |
 | `rand_u64` | `() -> i64` — 64 bits of cryptographically-random entropy |
+| `oauth_redirect_uri` | `() -> i64` — the host's canonical OAuth redirect URI (packed string) |
+| `setting_get` | `(key_ptr: i32, key_len: i32) -> i64` — read one of the skill's own settings |
+| `setting_set` | `(key_ptr: i32, key_len: i32, val_ptr: i32, val_len: i32) -> i32` — write one of the skill's own settings |
+| `get_locale`, `t`, `format_date`, `format_number`, `format_currency` | i18n helpers — see [i18n.md](i18n.md) |
+
+(`setting_get`/`setting_set` are ungated because they only touch the skill's
+*own* settings store — distinct from the capability-gated `storage_get`/`storage_set`
+scratch store. There are a few more unconditional time/locale imports —
+`local_now_components`, `local_timezone_id`, `args` — exposed through the SDK's
+i18n and args helpers.)
 
 Capability-gated:
 
 | Import | Signature | Capability |
 |--------|-----------|------------|
 | `http_fetch` | `(url_ptr: i32, url_len: i32) -> i64` | `http` |
+| `http_request` | `(req_ptr: i32, req_len: i32) -> i64` | `http` |
 | `storage_get` | `(key_ptr: i32, key_len: i32) -> i64` | `storage_kv` |
 | `storage_set` | `(key_ptr: i32, key_len: i32, val_ptr: i32, val_len: i32) -> i32` | `storage_kv` |
+| `authorize` | `(req_ptr: i32, req_len: i32) -> i64` | `authorize` |
+
+The `tasks_*` and `calendar_*` host imports (gated by the `tasks` / `calendar`
+capabilities) follow the same pattern; they're surfaced through dedicated SDK
+modules rather than raw imports.
 
 ### Sandbox limits
 
@@ -326,7 +384,7 @@ Declare capabilities in your `SKILL.en.md`:
 
 Only import the SDK modules you need. The WASM module's imports must match the declared capabilities — the host's sneak guard rejects any module that imports `http_fetch` without declaring `[http]`, and vice versa.
 
-Available capabilities: `http`, `storage_kv`, `notifications`, `launch_app`, `clipboard`, `tts`, `location`.
+Available capabilities: `http`, `storage_kv`, `authorize`, `notifications`, `launch_app`, `clipboard`, `tts`, `location`, `calendar`, `tasks`.
 
 ## Common pitfalls
 

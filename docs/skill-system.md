@@ -135,15 +135,16 @@ Each entry in `metadata.ari.settings` declares one user-configurable field with 
 | `secret` | Free-text input, masked in the UI (tokens, passwords) |
 | `select` | Dropdown with statically-declared `options:` |
 | `dynamic_select` | Dropdown whose options the skill fetches at settings-time — declares **no** static `options:`; needs a `settings_query` export. WASM only |
+| `action` | A button that, when pressed, invokes the skill's `settings_action` export — e.g. an OAuth "Sign in" button. WASM only |
 
 Two field properties drive the interactive (server-backed) settings flow:
 
 | Property | Notes |
 |---|---|
 | `validate: true` | On any field. The skill's `settings_query` checks the value and the UI shows an inline ✓/✗ |
-| `depends_on: [<key>, ...]` | Sibling field keys whose committed values the query needs. The host auto-fires `settings_query` (debounced) once all are non-empty, and re-fires on change |
+| `depends_on: [<key>, ...]` | Sibling field keys whose committed values the query needs. The host auto-fires `settings_query` (debounced) once all are non-empty, and re-fires on change. On an `action` field it gates the button until the dependencies are filled |
 
-`dynamic_select` and `validate` both require a `settings_query` WASM export and reuse the `http`/`t` host imports — full author guide in [skill-authors.md](skill-authors.md#server-backed-settings).
+`dynamic_select` and `validate` both require a `settings_query` WASM export and reuse the `http`/`t` host imports; an `action` field requires a `settings_action` export. Full author guide in [skill-authors.md](skill-authors.md#server-backed-settings) (OAuth/action buttons: [Action buttons and OAuth sign-in](skill-authors.md#action-buttons-and-oauth-sign-in)).
 
 ## Capabilities
 
@@ -158,6 +159,9 @@ Capabilities are the contract between a skill and the host (engine + frontend). 
 | `clipboard` | Read/write clipboard |
 | `tts` | Trigger TTS playback |
 | `storage_kv` | Per-skill key-value scratch storage |
+| `authorize` | Open the system browser for an OAuth/IndieAuth sign-in and capture the redirect (see [skill-authors.md](skill-authors.md#action-buttons-and-oauth-sign-in)). Uses a single app-owned redirect (`/oauth/callback`); the host binds a nonce to the flow and routes the callback to the requesting skill |
+| `calendar` | Read/write the platform calendar |
+| `tasks` | Read/write the platform task/reminder lists |
 
 Declarative skills typically need no capabilities. WASM skills declare whatever they import from the host.
 
