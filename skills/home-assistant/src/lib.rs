@@ -97,6 +97,102 @@ fn handle_settings_query(input: &str) -> String {
 }
 
 #[cfg(target_arch = "wasm32")]
+#[no_mangle]
+pub extern "C" fn settings_action(ptr: i32, len: i32) -> i64 {
+    let input = unsafe { ari::input(ptr, len) };
+    let result = handle_settings_action(input);
+    ari::respond_action(&result)
+}
+
+#[cfg(target_arch = "wasm32")]
+fn handle_settings_action(input: &str) -> String {
+    use ari::settings::{parse_action_input, SettingsResult};
+
+    let a = match parse_action_input(input) {
+        Some(a) => a,
+        None => return SettingsResult::error("bad action input").to_json(),
+    };
+    if a.action != "sign_in" {
+        return SettingsResult::error("unknown action").to_json();
+    }
+    let base_url = match a.value("base_url").filter(|s| !s.trim().is_empty()) {
+        Some(s) => s.to_string(),
+        None => return SettingsResult::error(&t_or("not_configured", &[], "Home Assistant isn't set up yet.")).to_json(),
+    };
+    let private = logic::is_private_base_url(&base_url);
+
+    let verifier = oauth_verifier();
+    let challenge = logic::pkce_challenge(&verifier);
+    let state = oauth_state();
+    let auth_url = logic::build_authorize_url(
+        &base_url, logic::OAUTH_CLIENT_ID, logic::OAUTH_REDIRECT_URI, &state, &challenge,
+    );
+
+    let res = ari::authorize(&auth_url, logic::OAUTH_REDIRECT_URI, logic::OAUTH_TIMEOUT_MS);
+    if !res.ok {
+        let key = match res.error.as_deref() {
+            Some("no_browser") => "sign_in_no_browser",
+            _ => "sign_in_incomplete",
+        };
+        return SettingsResult::error(&t_or(key, &[], "Sign-in didn't complete.")).to_json();
+    }
+    if res.get("state") != Some(state.as_str()) || res.get("error").is_some() {
+        return SettingsResult::error(&t_or("sign_in_unverified", &[], "Sign-in couldn't be verified.")).to_json();
+    }
+    let code = match res.get("code") {
+        Some(c) if !c.is_empty() => c.to_string(),
+        _ => return SettingsResult::error(&t_or("sign_in_unverified", &[], "Sign-in couldn't be verified.")).to_json(),
+    };
+
+    let body = logic::build_exchange_body(&code, logic::OAUTH_CLIENT_ID, &verifier);
+    let resp = ari::http_request(
+        "POST",
+        &logic::token_endpoint(&base_url),
+        &[("Content-Type", "application/x-www-form-urlencoded")],
+        Some(&body),
+    );
+    if resp.status < 200 || resp.status >= 300 {
+        let key = if private { "sign_in_no_internet" } else { "sign_in_unverified" };
+        return SettingsResult::error(&t_or(key, &[], "Sign-in couldn't be verified.")).to_json();
+    }
+    let tokens = match resp.body.as_deref().and_then(logic::parse_token_response) {
+        Some(t) => t,
+        None => return SettingsResult::error(&t_or("sign_in_unverified", &[], "Sign-in couldn't be verified.")).to_json(),
+    };
+    let refresh = match tokens.refresh_token {
+        Some(r) => r,
+        None => return SettingsResult::error(&t_or("sign_in_unverified", &[], "Sign-in couldn't be verified.")).to_json(),
+    };
+
+    ari::setting_set("token", &refresh);
+    ari::storage_set("auth_mode", "oauth");
+    ari::storage_set("access_token", &tokens.access_token);
+    ari::storage_set("access_expires_at", &alloc::format!("{}", ari::now_ms() + (tokens.expires_in as i64) * 1000));
+    ari::storage_set("needs_reauth", "0");
+
+    SettingsResult::validated(&t_or("signed_in", &[], "Signed in to Home Assistant."))
+        .with_refresh()
+        .to_json()
+}
+
+/// CSPRNG base64url string for the PKCE verifier (32 bytes -> 43 chars).
+#[cfg(target_arch = "wasm32")]
+fn oauth_verifier() -> String {
+    let mut bytes = [0u8; 32];
+    for chunk in bytes.chunks_mut(8) {
+        let r = ari::rand_u64().to_le_bytes();
+        chunk.copy_from_slice(&r[..chunk.len()]);
+    }
+    ari::crypto::base64url_nopad(&bytes)
+}
+
+/// Random URL-safe state value.
+#[cfg(target_arch = "wasm32")]
+fn oauth_state() -> String {
+    ari::crypto::base64url_nopad(&ari::rand_u64().to_le_bytes())
+}
+
+#[cfg(target_arch = "wasm32")]
 use alloc::string::{String, ToString};
 
 #[cfg(target_arch = "wasm32")]
