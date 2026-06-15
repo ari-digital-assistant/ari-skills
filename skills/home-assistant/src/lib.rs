@@ -63,6 +63,19 @@ fn handle_settings_query(input: &str) -> String {
         }
     };
     let private = logic::is_private_base_url(base_url);
+
+    // Validate field in oauth mode: the stored `token` is a refresh token, not
+    // a Bearer — don't round-trip it (it would 401). Sign-in already proved the
+    // connection. The agent_id fetch still needs a live round-trip below.
+    if q.field != "agent_id" && matches!(ari::storage_get("auth_mode"), Some("oauth")) {
+        return SettingsResult::validated(&t_or(
+            "connected",
+            &[],
+            "Connected to Home Assistant.",
+        ))
+        .to_json();
+    }
+
     let req = logic::build_agents_template_request(base_url, token);
     let (auth_k, auth_v) = req.auth_header();
     let resp = ari::http_request(
@@ -87,12 +100,17 @@ fn handle_settings_query(input: &str) -> String {
                 .collect();
             SettingsResult::options(opts).to_json()
         }
-        _ => SettingsResult::validated(&t_or(
-            "connected",
-            &[],
-            "Connected to Home Assistant.",
-        ))
-        .to_json(),
+        _ => {
+            // token/manual mode succeeded — record it so the next validate and
+            // runtime calls treat the stored `token` as a Bearer.
+            ari::storage_set("auth_mode", "token");
+            SettingsResult::validated(&t_or(
+                "connected",
+                &[],
+                "Connected to Home Assistant.",
+            ))
+            .to_json()
+        }
     }
 }
 
