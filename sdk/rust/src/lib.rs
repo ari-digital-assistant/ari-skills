@@ -216,6 +216,9 @@ extern "C" {
     #[link_name = "setting_get"]
     fn host_setting_get(key_ptr: i32, key_len: i32) -> i64;
 
+    #[link_name = "setting_set"]
+    fn host_setting_set(key_ptr: i32, key_len: i32, val_ptr: i32, val_len: i32) -> i32;
+
     #[link_name = "args"]
     fn host_args() -> i64;
 
@@ -288,6 +291,24 @@ pub fn setting_get(key: &str) -> Option<&'static str> {
     let bytes = key.as_bytes();
     let packed = unsafe { host_setting_get(bytes.as_ptr() as i32, bytes.len() as i32) };
     unsafe { unpack(packed) }
+}
+
+/// Persist one of this skill's own settings (same namespace `setting_get`
+/// reads). The host writes it durably — encrypted for `secret` fields —
+/// and updates the in-memory mirror. Returns `true` on success. Scoped to
+/// the calling skill's id; always available (no capability declaration).
+pub fn setting_set(key: &str, value: &str) -> bool {
+    let kb = key.as_bytes();
+    let vb = value.as_bytes();
+    let rc = unsafe {
+        host_setting_set(
+            kb.as_ptr() as i32,
+            kb.len() as i32,
+            vb.as_ptr() as i32,
+            vb.len() as i32,
+        )
+    };
+    rc == 0
 }
 
 /// Typed JSON args extracted from the user's utterance by the
@@ -806,6 +827,149 @@ mod http_impl {
 pub use http_impl::{build_request_json, http_fetch, http_request, HttpResponse};
 
 // ---------------------------------------------------------------------------
+// Authorize (feature = "authorize")
+// ---------------------------------------------------------------------------
+
+#[cfg(feature = "authorize")]
+mod authorize_impl {
+    #[cfg(not(feature = "std"))]
+    use alloc::{string::String, vec::Vec};
+
+    #[link(wasm_import_module = "ari")]
+    extern "C" {
+        #[link_name = "authorize"]
+        fn host_authorize(req_ptr: i32, req_len: i32) -> i64;
+    }
+
+    /// The callback params the browser returned (e.g. `code`, `state`).
+    pub struct AuthorizeResult {
+        pub ok: bool,
+        pub params: Vec<(String, String)>,
+        pub error: Option<String>,
+    }
+
+    impl AuthorizeResult {
+        /// Look a returned param up by key.
+        pub fn get(&self, key: &str) -> Option<&str> {
+            self.params.iter().find(|(k, _)| k == key).map(|(_, v)| v.as_str())
+        }
+    }
+
+    /// Build the `{auth_url,redirect_uri,timeout_ms}` request JSON the host
+    /// decodes. Pure + native-testable. `auth_url`/`redirect_uri` are
+    /// JSON-escaped.
+    pub fn build_authorize_json(auth_url: &str, redirect_uri: &str, timeout_ms: u64) -> String {
+        let mut s = String::with_capacity(64 + auth_url.len() + redirect_uri.len());
+        s.push_str("{\"auth_url\":");
+        super::json_escape_into(&mut s, auth_url);
+        s.push_str(",\"redirect_uri\":");
+        super::json_escape_into(&mut s, redirect_uri);
+        s.push_str(",\"timeout_ms\":");
+        // u64 has no escaping concerns; push decimal directly.
+        push_u64(&mut s, timeout_ms);
+        s.push('}');
+        s
+    }
+
+    fn push_u64(out: &mut String, mut n: u64) {
+        if n == 0 {
+            out.push('0');
+            return;
+        }
+        let mut buf = [0u8; 20];
+        let mut i = buf.len();
+        while n > 0 {
+            i -= 1;
+            buf[i] = b'0' + (n % 10) as u8;
+            n /= 10;
+        }
+        out.push_str(core::str::from_utf8(&buf[i..]).unwrap());
+    }
+
+    /// Open `auth_url` in the system browser, wait up to `timeout_ms` for the
+    /// redirect to `redirect_uri`, and return the callback params. On failure
+    /// `ok` is false and `error` is one of `cancelled`/`timeout`/`no_browser`/
+    /// `mismatch`/`bad_request`.
+    pub fn authorize(auth_url: &str, redirect_uri: &str, timeout_ms: u64) -> AuthorizeResult {
+        let req = build_authorize_json(auth_url, redirect_uri, timeout_ms);
+        let bytes = req.as_bytes();
+        let packed = unsafe { host_authorize(bytes.as_ptr() as i32, bytes.len() as i32) };
+        match unsafe { super::unpack(packed) } {
+            Some(s) => parse_authorize_result(s),
+            None => AuthorizeResult { ok: false, params: Vec::new(), error: Some("no_browser".into()) },
+        }
+    }
+
+    fn parse_authorize_result(json: &str) -> AuthorizeResult {
+        // Host emits {"ok":bool,"params":{...},"error":null|".."}. Reuse the
+        // SDK's serde (available under `alloc`) — authorize already implies a
+        // skill big enough to carry it. Decode via serde_json::Value.
+        let v: serde_json::Value = match serde_json::from_str(json) {
+            Ok(v) => v,
+            Err(_) => return AuthorizeResult { ok: false, params: Vec::new(), error: Some("bad_response".into()) },
+        };
+        let ok = v.get("ok").and_then(|b| b.as_bool()).unwrap_or(false);
+        let error = v.get("error").and_then(|e| e.as_str()).map(|s| s.to_string());
+        let mut params = Vec::new();
+        if let Some(obj) = v.get("params").and_then(|p| p.as_object()) {
+            for (k, val) in obj {
+                if let Some(sv) = val.as_str() {
+                    params.push((k.clone(), sv.to_string()));
+                }
+            }
+        }
+        AuthorizeResult { ok, params, error }
+    }
+}
+
+#[cfg(feature = "authorize")]
+pub use authorize_impl::{authorize, build_authorize_json, AuthorizeResult};
+
+// ---------------------------------------------------------------------------
+// Crypto (feature = "crypto")
+// ---------------------------------------------------------------------------
+
+#[cfg(feature = "crypto")]
+pub mod crypto {
+    #[cfg(not(feature = "std"))]
+    use alloc::string::String;
+    use sha2::{Digest, Sha256};
+
+    /// SHA-256 digest of `data` (32 bytes).
+    pub fn sha256(data: &[u8]) -> [u8; 32] {
+        let mut h = Sha256::new();
+        h.update(data);
+        let out = h.finalize();
+        let mut arr = [0u8; 32];
+        arr.copy_from_slice(&out);
+        arr
+    }
+
+    const ALPHABET: &[u8; 64] =
+        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+    /// base64url WITHOUT padding (RFC 4648 §5), as PKCE requires.
+    pub fn base64url_nopad(data: &[u8]) -> String {
+        let mut out = String::with_capacity((data.len() + 2) / 3 * 4);
+        for chunk in data.chunks(3) {
+            let b0 = chunk[0] as u32;
+            let b1 = if chunk.len() > 1 { chunk[1] as u32 } else { 0 };
+            let b2 = if chunk.len() > 2 { chunk[2] as u32 } else { 0 };
+            let n = (b0 << 16) | (b1 << 8) | b2;
+            out.push(ALPHABET[((n >> 18) & 0x3f) as usize] as char);
+            out.push(ALPHABET[((n >> 12) & 0x3f) as usize] as char);
+            if chunk.len() > 1 {
+                out.push(ALPHABET[((n >> 6) & 0x3f) as usize] as char);
+            }
+            if chunk.len() > 2 {
+                out.push(ALPHABET[(n & 0x3f) as usize] as char);
+            }
+        }
+        out
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Storage (feature = "storage")
 // ---------------------------------------------------------------------------
 
@@ -1227,26 +1391,50 @@ pub mod settings {
         serde_json::from_str(json).ok()
     }
 
+    /// Parsed `{action, values}` input handed to a skill's `settings_action`
+    /// export. `action` is the field key of the button that was pressed.
+    #[derive(Deserialize)]
+    pub struct SettingsActionInput {
+        pub action: String,
+        #[serde(default)]
+        pub values: alloc_map::Map,
+    }
+
+    impl SettingsActionInput {
+        /// Current value of sibling field `key`, or `None`.
+        pub fn value(&self, key: &str) -> Option<&str> {
+            self.values.get(key)
+        }
+    }
+
+    /// Parse the host's `{action, values}` payload. `None` if malformed.
+    pub fn parse_action_input(json: &str) -> Option<SettingsActionInput> {
+        serde_json::from_str(json).ok()
+    }
+
     /// One dropdown option: the stored `value` and the human-facing `label`.
     pub struct SelectOpt {
         pub value: String,
         pub label: String,
     }
 
-    /// Builder for the `{ok,error?,options?,message?}` result the host decodes.
-    /// Construct via [`SettingsResult::options`], [`SettingsResult::validated`],
-    /// or [`SettingsResult::error`], then call [`to_json`](Self::to_json).
+    /// Builder for the `{ok,error?,options?,message?,refresh?}` result the host
+    /// decodes. Construct via [`SettingsResult::options`],
+    /// [`SettingsResult::validated`], or [`SettingsResult::error`], optionally
+    /// chain [`with_refresh`](Self::with_refresh), then call
+    /// [`to_json`](Self::to_json).
     pub struct SettingsResult {
         ok: bool,
         error: Option<String>,
         options: Vec<SelectOpt>,
         message: Option<String>,
+        refresh: bool,
     }
 
     impl SettingsResult {
         /// Success carrying a list of dropdown options to render.
         pub fn options(opts: Vec<SelectOpt>) -> Self {
-            SettingsResult { ok: true, error: None, options: opts, message: None }
+            SettingsResult { ok: true, error: None, options: opts, message: None, refresh: false }
         }
 
         /// Success carrying a short confirmation message (e.g. "Connected").
@@ -1256,6 +1444,7 @@ pub mod settings {
                 error: None,
                 options: Vec::new(),
                 message: Some(message.to_string()),
+                refresh: false,
             }
         }
 
@@ -1266,11 +1455,20 @@ pub mod settings {
                 error: Some(message.to_string()),
                 options: Vec::new(),
                 message: None,
+                refresh: false,
             }
         }
 
+        /// Mark the result so the host re-runs dependent settings queries
+        /// (e.g. re-fetch a dynamic_select after this action minted creds).
+        pub fn with_refresh(mut self) -> Self {
+            self.refresh = true;
+            self
+        }
+
         /// Serialise to the wire JSON the host expects. `error`/`message` are
-        /// only emitted when set; `options` only when non-empty.
+        /// only emitted when set; `options` only when non-empty; `refresh` only
+        /// when true.
         pub fn to_json(&self) -> String {
             let mut s = String::from("{\"ok\":");
             s.push_str(if self.ok { "true" } else { "false" });
@@ -1281,6 +1479,9 @@ pub mod settings {
             if let Some(m) = &self.message {
                 s.push_str(",\"message\":");
                 s.push_str(&json_str(m));
+            }
+            if self.refresh {
+                s.push_str(",\"refresh\":true");
             }
             if !self.options.is_empty() {
                 s.push_str(",\"options\":[");
@@ -1515,5 +1716,82 @@ mod http_response_tests {
         assert_eq!(r.status, 0);
         assert_eq!(r.body, None);
         assert_eq!(r.error.as_deref(), Some("oops\n"));
+    }
+}
+
+#[cfg(all(test, feature = "authorize"))]
+mod authorize_tests {
+    #[test]
+    fn builds_request_json() {
+        let j = crate::authorize_impl::build_authorize_json(
+            "https://ha/authorize?x=1", "https://ha/cb", 300000,
+        );
+        assert_eq!(
+            j,
+            r#"{"auth_url":"https://ha/authorize?x=1","redirect_uri":"https://ha/cb","timeout_ms":300000}"#
+        );
+    }
+}
+
+#[cfg(all(test, feature = "crypto"))]
+mod crypto_tests {
+    #[cfg(not(feature = "std"))]
+    use alloc::{format, string::String};
+    use crate::crypto::{sha256, base64url_nopad};
+
+    #[test]
+    fn sha256_of_abc_is_known_vector() {
+        // FIPS 180-2 / NIST test vector for "abc".
+        let d = sha256(b"abc");
+        let hex: String = d.iter().map(|b| format!("{b:02x}")).collect();
+        assert_eq!(hex, "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+    }
+
+    #[test]
+    fn base64url_rfc4648_vectors() {
+        assert_eq!(base64url_nopad(b""), "");
+        assert_eq!(base64url_nopad(b"f"), "Zg");
+        assert_eq!(base64url_nopad(b"fo"), "Zm8");
+        assert_eq!(base64url_nopad(b"foo"), "Zm9v");
+        assert_eq!(base64url_nopad(b"foob"), "Zm9vYg");
+        assert_eq!(base64url_nopad(b"fooba"), "Zm9vYmE");
+        assert_eq!(base64url_nopad(b"foobar"), "Zm9vYmFy");
+    }
+
+    #[test]
+    fn pkce_s256_challenge_matches_rfc7636_appendix_b() {
+        // RFC 7636 Appendix B verifier → challenge.
+        let verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
+        let challenge = base64url_nopad(&sha256(verifier.as_bytes()));
+        assert_eq!(challenge, "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM");
+    }
+}
+
+#[cfg(all(test, feature = "settings"))]
+mod settings_action_tests {
+    #[test]
+    fn parses_action_input() {
+        let inp = crate::settings::parse_action_input(
+            r#"{"action":"sign_in","values":{"base_url":"https://ha"}}"#,
+        ).unwrap();
+        assert_eq!(inp.action, "sign_in");
+        assert_eq!(inp.value("base_url"), Some("https://ha"));
+        assert_eq!(inp.value("missing"), None);
+    }
+}
+
+#[cfg(all(test, feature = "settings"))]
+mod settings_refresh_tests {
+    use crate::settings::SettingsResult;
+    #[test]
+    fn validated_with_refresh_emits_refresh_true() {
+        let json = SettingsResult::validated("Signed in").with_refresh().to_json();
+        assert!(json.contains("\"refresh\":true"));
+        assert!(json.contains("\"ok\":true"));
+    }
+    #[test]
+    fn plain_validated_omits_refresh() {
+        let json = SettingsResult::validated("ok").to_json();
+        assert!(!json.contains("refresh"));
     }
 }
