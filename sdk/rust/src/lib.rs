@@ -1391,6 +1391,27 @@ pub mod settings {
         serde_json::from_str(json).ok()
     }
 
+    /// Parsed `{action, values}` input handed to a skill's `settings_action`
+    /// export. `action` is the field key of the button that was pressed.
+    #[derive(Deserialize)]
+    pub struct SettingsActionInput {
+        pub action: String,
+        #[serde(default)]
+        pub values: alloc_map::Map,
+    }
+
+    impl SettingsActionInput {
+        /// Current value of sibling field `key`, or `None`.
+        pub fn value(&self, key: &str) -> Option<&str> {
+            self.values.get(key)
+        }
+    }
+
+    /// Parse the host's `{action, values}` payload. `None` if malformed.
+    pub fn parse_action_input(json: &str) -> Option<SettingsActionInput> {
+        serde_json::from_str(json).ok()
+    }
+
     /// One dropdown option: the stored `value` and the human-facing `label`.
     pub struct SelectOpt {
         pub value: String,
@@ -1725,5 +1746,18 @@ mod crypto_tests {
         let verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
         let challenge = base64url_nopad(&sha256(verifier.as_bytes()));
         assert_eq!(challenge, "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM");
+    }
+}
+
+#[cfg(all(test, feature = "settings"))]
+mod settings_action_tests {
+    #[test]
+    fn parses_action_input() {
+        let inp = crate::settings::parse_action_input(
+            r#"{"action":"sign_in","values":{"base_url":"https://ha"}}"#,
+        ).unwrap();
+        assert_eq!(inp.action, "sign_in");
+        assert_eq!(inp.value("base_url"), Some("https://ha"));
+        assert_eq!(inp.value("missing"), None);
     }
 }
