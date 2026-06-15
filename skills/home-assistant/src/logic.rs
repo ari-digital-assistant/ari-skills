@@ -48,7 +48,7 @@ mod oauth_tests {
     fn authorize_url_carries_all_params_encoded() {
         let u = build_authorize_url(
             "https://hass.example.com/",
-            "https://heyari.dev/oauth/ha",
+            "https://heyari.dev/oauth/client",
             "https://heyari.dev/oauth/ha/callback",
             "STATE123",
             "CHALLENGE456",
@@ -58,7 +58,7 @@ mod oauth_tests {
         assert_eq!(parsed.host_str(), Some("hass.example.com"));
         assert_eq!(parsed.path(), "/auth/authorize");
         let q: std::collections::HashMap<_, _> = parsed.query_pairs().into_owned().collect();
-        assert_eq!(q.get("client_id").map(String::as_str), Some("https://heyari.dev/oauth/ha"));
+        assert_eq!(q.get("client_id").map(String::as_str), Some("https://heyari.dev/oauth/client"));
         assert_eq!(q.get("redirect_uri").map(String::as_str), Some("https://heyari.dev/oauth/ha/callback"));
         assert_eq!(q.get("state").map(String::as_str), Some("STATE123"));
         assert_eq!(q.get("code_challenge").map(String::as_str), Some("CHALLENGE456"));
@@ -110,10 +110,9 @@ fn base(base_url: &str) -> &str {
     base_url.trim_end_matches('/')
 }
 
-/// OAuth/IndieAuth client identity. Must match the Android App Link host+path
-/// (subsystem #2 manifest) and the heyari.dev hosted pages (subsystem #4).
-pub const OAUTH_CLIENT_ID: &str = "https://heyari.dev/oauth/ha";
-pub const OAUTH_REDIRECT_URI: &str = "https://heyari.dev/oauth/ha/callback";
+/// OAuth/IndieAuth client identity. The shared Ari IndieAuth client; the
+/// redirect URI now comes from the host at runtime via `ari::oauth_redirect_uri()`.
+pub const OAUTH_CLIENT_ID: &str = "https://heyari.dev/oauth/client";
 /// How long to wait for the browser redirect before giving up (5 minutes).
 pub const OAUTH_TIMEOUT_MS: u64 = 300_000;
 
@@ -639,12 +638,13 @@ pub fn token_endpoint(base_url: &str) -> String {
     alloc::format!("{}/auth/token", base(base_url))
 }
 
-pub fn build_exchange_body(code: &str, client_id: &str, code_verifier: &str) -> String {
+pub fn build_exchange_body(code: &str, client_id: &str, code_verifier: &str, redirect_uri: &str) -> String {
     url::form_urlencoded::Serializer::new(String::new())
         .append_pair("grant_type", "authorization_code")
         .append_pair("code", code)
         .append_pair("client_id", client_id)
         .append_pair("code_verifier", code_verifier)
+        .append_pair("redirect_uri", redirect_uri)
         .finish()
 }
 
@@ -671,14 +671,15 @@ mod token_tests {
     use super::*;
 
     #[test]
-    fn exchange_body_is_form_encoded_with_all_fields() {
-        let body = build_exchange_body("CODE&X", "https://heyari.dev/oauth/ha", "VERIFIER");
+    fn exchange_body_carries_redirect_uri_and_fields() {
+        let body = build_exchange_body("CODE&X", "https://heyari.dev/oauth/client", "VERIFIER", "https://heyari.dev/oauth/callback");
         let pairs: std::collections::HashMap<_, _> =
             url::form_urlencoded::parse(body.as_bytes()).into_owned().collect();
         assert_eq!(pairs.get("grant_type").map(String::as_str), Some("authorization_code"));
         assert_eq!(pairs.get("code").map(String::as_str), Some("CODE&X"));
-        assert_eq!(pairs.get("client_id").map(String::as_str), Some("https://heyari.dev/oauth/ha"));
+        assert_eq!(pairs.get("client_id").map(String::as_str), Some("https://heyari.dev/oauth/client"));
         assert_eq!(pairs.get("code_verifier").map(String::as_str), Some("VERIFIER"));
+        assert_eq!(pairs.get("redirect_uri").map(String::as_str), Some("https://heyari.dev/oauth/callback"));
     }
 
     #[test]

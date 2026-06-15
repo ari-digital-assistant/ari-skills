@@ -156,11 +156,12 @@ fn handle_settings_action(input: &str) -> String {
     let verifier = oauth_verifier();
     let challenge = logic::pkce_challenge(&verifier);
     let state = oauth_state();
+    let redirect_uri = ari::oauth_redirect_uri();
     let auth_url = logic::build_authorize_url(
-        &base_url, logic::OAUTH_CLIENT_ID, logic::OAUTH_REDIRECT_URI, &state, &challenge,
+        &base_url, logic::OAUTH_CLIENT_ID, &redirect_uri, &state, &challenge,
     );
 
-    let res = ari::authorize(&auth_url, logic::OAUTH_REDIRECT_URI, logic::OAUTH_TIMEOUT_MS);
+    let res = ari::authorize(&auth_url, &redirect_uri, logic::OAUTH_TIMEOUT_MS);
     if !res.ok {
         let (key, fallback) = match res.error.as_deref() {
             Some("no_browser") => ("sign_in_no_browser", "I couldn't open a browser to sign in."),
@@ -176,7 +177,7 @@ fn handle_settings_action(input: &str) -> String {
         _ => return SettingsResult::error(&t_or("sign_in_unverified", &[], "Sign-in couldn't be verified.")).to_json(),
     };
 
-    let body = logic::build_exchange_body(&code, logic::OAUTH_CLIENT_ID, &verifier);
+    let body = logic::build_exchange_body(&code, logic::OAUTH_CLIENT_ID, &verifier, &redirect_uri);
     let resp = ari::http_request(
         "POST",
         &logic::token_endpoint(&base_url),
