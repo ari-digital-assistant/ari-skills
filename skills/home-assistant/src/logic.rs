@@ -720,6 +720,86 @@ mod token_tests {
     }
 }
 
+/// What the runtime must do to obtain a Bearer token for an HA request.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BearerPlan {
+    /// Use this value directly (long-lived token).
+    UseDirect(String),
+    /// Use this still-valid cached access token.
+    UseCached(String),
+    /// Cache is missing/expired — exchange this refresh token for a new access token.
+    Refresh(String),
+    /// No usable credential — the user must sign in again.
+    NeedsReauth,
+}
+
+/// 60s clock-skew margin before treating a cached access token as expired.
+const ACCESS_SKEW_MS: i64 = 60_000;
+
+/// Decide how to obtain a Bearer, purely from current state.
+/// `auth_mode`: storage value (`"oauth"`/`"token"`), or `None` if unset (-> token mode).
+/// `cached_access` + `cached_expires_at`: the access-token cache (ms epoch).
+/// `now_ms`: current time. `token_setting`: the `token` secret setting value.
+pub fn plan_bearer(
+    auth_mode: Option<&str>,
+    cached_access: Option<&str>,
+    cached_expires_at: Option<i64>,
+    now_ms: i64,
+    token_setting: Option<&str>,
+) -> BearerPlan {
+    let oauth = matches!(auth_mode, Some("oauth"));
+    if !oauth {
+        return match token_setting.filter(|s| !s.trim().is_empty()) {
+            Some(t) => BearerPlan::UseDirect(t.to_string()),
+            None => BearerPlan::NeedsReauth,
+        };
+    }
+    if let (Some(access), Some(exp)) = (cached_access.filter(|s| !s.trim().is_empty()), cached_expires_at) {
+        if now_ms < exp - ACCESS_SKEW_MS {
+            return BearerPlan::UseCached(access.to_string());
+        }
+    }
+    match token_setting.filter(|s| !s.trim().is_empty()) {
+        Some(rt) => BearerPlan::Refresh(rt.to_string()),
+        None => BearerPlan::NeedsReauth,
+    }
+}
+
+#[cfg(test)]
+mod bearer_tests {
+    use super::*;
+
+    #[test]
+    fn plan_bearer_token_mode_uses_setting_directly() {
+        assert_eq!(plan_bearer(Some("token"), None, None, 1_000, Some("LONGLIVED")), BearerPlan::UseDirect("LONGLIVED".into()));
+    }
+    #[test]
+    fn plan_bearer_unset_mode_defaults_to_token() {
+        assert_eq!(plan_bearer(None, None, None, 1_000, Some("LONGLIVED")), BearerPlan::UseDirect("LONGLIVED".into()));
+    }
+    #[test]
+    fn plan_bearer_oauth_valid_cache_uses_cached() {
+        assert_eq!(plan_bearer(Some("oauth"), Some("ACCESS"), Some(100_000), 1_000, Some("REFRESH")), BearerPlan::UseCached("ACCESS".into()));
+    }
+    #[test]
+    fn plan_bearer_oauth_expired_cache_refreshes() {
+        // now=100000, expires_at=120000; within 60s skew (120000-60000=60000 < 100000) -> refresh.
+        assert_eq!(plan_bearer(Some("oauth"), Some("ACCESS"), Some(120_000), 100_000, Some("REFRESH")), BearerPlan::Refresh("REFRESH".into()));
+    }
+    #[test]
+    fn plan_bearer_oauth_missing_cache_refreshes() {
+        assert_eq!(plan_bearer(Some("oauth"), None, None, 1_000, Some("REFRESH")), BearerPlan::Refresh("REFRESH".into()));
+    }
+    #[test]
+    fn plan_bearer_oauth_missing_refresh_token_is_reauth() {
+        assert_eq!(plan_bearer(Some("oauth"), None, None, 1_000, None), BearerPlan::NeedsReauth);
+    }
+    #[test]
+    fn plan_bearer_token_mode_missing_setting_is_reauth() {
+        assert_eq!(plan_bearer(Some("token"), None, None, 1_000, None), BearerPlan::NeedsReauth);
+    }
+}
+
 #[cfg(test)]
 mod error_tests {
     use super::*;
