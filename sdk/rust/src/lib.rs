@@ -216,6 +216,9 @@ extern "C" {
     #[link_name = "setting_get"]
     fn host_setting_get(key_ptr: i32, key_len: i32) -> i64;
 
+    #[link_name = "setting_set"]
+    fn host_setting_set(key_ptr: i32, key_len: i32, val_ptr: i32, val_len: i32) -> i32;
+
     #[link_name = "args"]
     fn host_args() -> i64;
 
@@ -288,6 +291,24 @@ pub fn setting_get(key: &str) -> Option<&'static str> {
     let bytes = key.as_bytes();
     let packed = unsafe { host_setting_get(bytes.as_ptr() as i32, bytes.len() as i32) };
     unsafe { unpack(packed) }
+}
+
+/// Persist one of this skill's own settings (same namespace `setting_get`
+/// reads). The host writes it durably — encrypted for `secret` fields —
+/// and updates the in-memory mirror. Returns `true` on success. Scoped to
+/// the calling skill's id; always available (no capability declaration).
+pub fn setting_set(key: &str, value: &str) -> bool {
+    let kb = key.as_bytes();
+    let vb = value.as_bytes();
+    let rc = unsafe {
+        host_setting_set(
+            kb.as_ptr() as i32,
+            kb.len() as i32,
+            vb.as_ptr() as i32,
+            vb.len() as i32,
+        )
+    };
+    rc == 0
 }
 
 /// Typed JSON args extracted from the user's utterance by the
