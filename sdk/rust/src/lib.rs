@@ -1418,20 +1418,23 @@ pub mod settings {
         pub label: String,
     }
 
-    /// Builder for the `{ok,error?,options?,message?}` result the host decodes.
-    /// Construct via [`SettingsResult::options`], [`SettingsResult::validated`],
-    /// or [`SettingsResult::error`], then call [`to_json`](Self::to_json).
+    /// Builder for the `{ok,error?,options?,message?,refresh?}` result the host
+    /// decodes. Construct via [`SettingsResult::options`],
+    /// [`SettingsResult::validated`], or [`SettingsResult::error`], optionally
+    /// chain [`with_refresh`](Self::with_refresh), then call
+    /// [`to_json`](Self::to_json).
     pub struct SettingsResult {
         ok: bool,
         error: Option<String>,
         options: Vec<SelectOpt>,
         message: Option<String>,
+        refresh: bool,
     }
 
     impl SettingsResult {
         /// Success carrying a list of dropdown options to render.
         pub fn options(opts: Vec<SelectOpt>) -> Self {
-            SettingsResult { ok: true, error: None, options: opts, message: None }
+            SettingsResult { ok: true, error: None, options: opts, message: None, refresh: false }
         }
 
         /// Success carrying a short confirmation message (e.g. "Connected").
@@ -1441,6 +1444,7 @@ pub mod settings {
                 error: None,
                 options: Vec::new(),
                 message: Some(message.to_string()),
+                refresh: false,
             }
         }
 
@@ -1451,11 +1455,20 @@ pub mod settings {
                 error: Some(message.to_string()),
                 options: Vec::new(),
                 message: None,
+                refresh: false,
             }
         }
 
+        /// Mark the result so the host re-runs dependent settings queries
+        /// (e.g. re-fetch a dynamic_select after this action minted creds).
+        pub fn with_refresh(mut self) -> Self {
+            self.refresh = true;
+            self
+        }
+
         /// Serialise to the wire JSON the host expects. `error`/`message` are
-        /// only emitted when set; `options` only when non-empty.
+        /// only emitted when set; `options` only when non-empty; `refresh` only
+        /// when true.
         pub fn to_json(&self) -> String {
             let mut s = String::from("{\"ok\":");
             s.push_str(if self.ok { "true" } else { "false" });
@@ -1466,6 +1479,9 @@ pub mod settings {
             if let Some(m) = &self.message {
                 s.push_str(",\"message\":");
                 s.push_str(&json_str(m));
+            }
+            if self.refresh {
+                s.push_str(",\"refresh\":true");
             }
             if !self.options.is_empty() {
                 s.push_str(",\"options\":[");
@@ -1761,5 +1777,21 @@ mod settings_action_tests {
         assert_eq!(inp.action, "sign_in");
         assert_eq!(inp.value("base_url"), Some("https://ha"));
         assert_eq!(inp.value("missing"), None);
+    }
+}
+
+#[cfg(all(test, feature = "settings"))]
+mod settings_refresh_tests {
+    use crate::settings::SettingsResult;
+    #[test]
+    fn validated_with_refresh_emits_refresh_true() {
+        let json = SettingsResult::validated("Signed in").with_refresh().to_json();
+        assert!(json.contains("\"refresh\":true"));
+        assert!(json.contains("\"ok\":true"));
+    }
+    #[test]
+    fn plain_validated_omits_refresh() {
+        let json = SettingsResult::validated("ok").to_json();
+        assert!(!json.contains("refresh"));
     }
 }
