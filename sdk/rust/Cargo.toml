@@ -36,6 +36,10 @@ clock = ["dep:serde", "dep:serde_json"]
 # On by default; turn off if you're shipping a text-only skill and want the
 # leanest possible wasm.
 presentation = ["dep:serde", "dep:serde_json"]
+# OAuth/IndieAuth browser round-trip (ari::authorize). Requires the
+# `authorize` capability in SKILL.md. Pulls serde_json (alloc) to decode
+# the host's `{ok,params,error}` result.
+authorize = ["dep:serde_json"]
 
 [dependencies]
 serde = { version = "1", default-features = false, features = ["alloc", "derive"], optional = true }

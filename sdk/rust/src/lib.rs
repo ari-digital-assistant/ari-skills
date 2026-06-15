@@ -827,6 +827,105 @@ mod http_impl {
 pub use http_impl::{build_request_json, http_fetch, http_request, HttpResponse};
 
 // ---------------------------------------------------------------------------
+// Authorize (feature = "authorize")
+// ---------------------------------------------------------------------------
+
+#[cfg(feature = "authorize")]
+mod authorize_impl {
+    #[cfg(not(feature = "std"))]
+    use alloc::{string::String, vec::Vec};
+
+    #[link(wasm_import_module = "ari")]
+    extern "C" {
+        #[link_name = "authorize"]
+        fn host_authorize(req_ptr: i32, req_len: i32) -> i64;
+    }
+
+    /// The callback params the browser returned (e.g. `code`, `state`).
+    pub struct AuthorizeResult {
+        pub ok: bool,
+        pub params: Vec<(String, String)>,
+        pub error: Option<String>,
+    }
+
+    impl AuthorizeResult {
+        /// Look a returned param up by key.
+        pub fn get(&self, key: &str) -> Option<&str> {
+            self.params.iter().find(|(k, _)| k == key).map(|(_, v)| v.as_str())
+        }
+    }
+
+    /// Build the `{auth_url,redirect_uri,timeout_ms}` request JSON the host
+    /// decodes. Pure + native-testable. `auth_url`/`redirect_uri` are
+    /// JSON-escaped.
+    pub fn build_authorize_json(auth_url: &str, redirect_uri: &str, timeout_ms: u64) -> String {
+        let mut s = String::with_capacity(64 + auth_url.len() + redirect_uri.len());
+        s.push_str("{\"auth_url\":");
+        super::json_escape_into(&mut s, auth_url);
+        s.push_str(",\"redirect_uri\":");
+        super::json_escape_into(&mut s, redirect_uri);
+        s.push_str(",\"timeout_ms\":");
+        // u64 has no escaping concerns; push decimal directly.
+        push_u64(&mut s, timeout_ms);
+        s.push('}');
+        s
+    }
+
+    fn push_u64(out: &mut String, mut n: u64) {
+        if n == 0 {
+            out.push('0');
+            return;
+        }
+        let mut buf = [0u8; 20];
+        let mut i = buf.len();
+        while n > 0 {
+            i -= 1;
+            buf[i] = b'0' + (n % 10) as u8;
+            n /= 10;
+        }
+        out.push_str(core::str::from_utf8(&buf[i..]).unwrap());
+    }
+
+    /// Open `auth_url` in the system browser, wait up to `timeout_ms` for the
+    /// redirect to `redirect_uri`, and return the callback params. On failure
+    /// `ok` is false and `error` is one of `cancelled`/`timeout`/`no_browser`/
+    /// `mismatch`/`bad_request`.
+    pub fn authorize(auth_url: &str, redirect_uri: &str, timeout_ms: u64) -> AuthorizeResult {
+        let req = build_authorize_json(auth_url, redirect_uri, timeout_ms);
+        let bytes = req.as_bytes();
+        let packed = unsafe { host_authorize(bytes.as_ptr() as i32, bytes.len() as i32) };
+        match unsafe { super::unpack(packed) } {
+            Some(s) => parse_authorize_result(s),
+            None => AuthorizeResult { ok: false, params: Vec::new(), error: Some("no_browser".into()) },
+        }
+    }
+
+    fn parse_authorize_result(json: &str) -> AuthorizeResult {
+        // Host emits {"ok":bool,"params":{...},"error":null|".."}. Reuse the
+        // SDK's serde (available under `alloc`) — authorize already implies a
+        // skill big enough to carry it. Decode via serde_json::Value.
+        let v: serde_json::Value = match serde_json::from_str(json) {
+            Ok(v) => v,
+            Err(_) => return AuthorizeResult { ok: false, params: Vec::new(), error: Some("bad_response".into()) },
+        };
+        let ok = v.get("ok").and_then(|b| b.as_bool()).unwrap_or(false);
+        let error = v.get("error").and_then(|e| e.as_str()).map(|s| s.to_string());
+        let mut params = Vec::new();
+        if let Some(obj) = v.get("params").and_then(|p| p.as_object()) {
+            for (k, val) in obj {
+                if let Some(sv) = val.as_str() {
+                    params.push((k.clone(), sv.to_string()));
+                }
+            }
+        }
+        AuthorizeResult { ok, params, error }
+    }
+}
+
+#[cfg(feature = "authorize")]
+pub use authorize_impl::{authorize, build_authorize_json, AuthorizeResult};
+
+// ---------------------------------------------------------------------------
 // Storage (feature = "storage")
 // ---------------------------------------------------------------------------
 
@@ -1536,5 +1635,19 @@ mod http_response_tests {
         assert_eq!(r.status, 0);
         assert_eq!(r.body, None);
         assert_eq!(r.error.as_deref(), Some("oops\n"));
+    }
+}
+
+#[cfg(all(test, feature = "authorize"))]
+mod authorize_tests {
+    #[test]
+    fn builds_request_json() {
+        let j = crate::authorize_impl::build_authorize_json(
+            "https://ha/authorize?x=1", "https://ha/cb", 300000,
+        );
+        assert_eq!(
+            j,
+            r#"{"auth_url":"https://ha/authorize?x=1","redirect_uri":"https://ha/cb","timeout_ms":300000}"#
+        );
     }
 }
