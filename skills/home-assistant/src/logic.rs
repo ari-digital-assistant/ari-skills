@@ -77,6 +77,13 @@ fn base(base_url: &str) -> &str {
     base_url.trim_end_matches('/')
 }
 
+/// OAuth/IndieAuth client identity. Must match the Android App Link host+path
+/// (subsystem #2 manifest) and the heyari.dev hosted pages (subsystem #4).
+pub const OAUTH_CLIENT_ID: &str = "https://heyari.dev/oauth/ha";
+pub const OAUTH_REDIRECT_URI: &str = "https://heyari.dev/oauth/ha/callback";
+/// How long to wait for the browser redirect before giving up (5 minutes).
+pub const OAUTH_TIMEOUT_MS: u64 = 300_000;
+
 pub fn build_conversation_request(
     base_url: &str,
     token: &str,

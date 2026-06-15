@@ -9,7 +9,7 @@ metadata:
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
-    capabilities: [http]
+    capabilities: [http, authorize, storage_kv]
     languages: [en]
     specificity: medium
     matching:

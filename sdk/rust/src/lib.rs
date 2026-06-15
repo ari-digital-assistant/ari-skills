@@ -833,7 +833,7 @@ pub use http_impl::{build_request_json, http_fetch, http_request, HttpResponse};
 #[cfg(feature = "authorize")]
 mod authorize_impl {
     #[cfg(not(feature = "std"))]
-    use alloc::{string::String, vec::Vec};
+    use alloc::{string::{String, ToString}, vec::Vec};
 
     #[link(wasm_import_module = "ari")]
     extern "C" {
