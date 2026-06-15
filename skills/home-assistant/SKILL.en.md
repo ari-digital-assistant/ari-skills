@@ -44,12 +44,10 @@ metadata:
         label: "Home Assistant URL"
         type: text
         required: true
-      - key: token
-        label: "Long-lived access token"
-        type: secret
-        required: true
-        validate: true
-        depends_on: [base_url, token]
+      - key: sign_in
+        label: "Sign in with Home Assistant"
+        type: action
+        depends_on: [base_url]
       - key: language
         label: "Voice command language (blank = app language)"
         type: text
@@ -59,6 +57,14 @@ metadata:
         type: dynamic_select
         required: false
         depends_on: [base_url, token]
+      - key: token
+        label: "Long-lived access token"
+        type: secret
+        required: false
+        validate: true
+        depends_on: [base_url, token]
+        collapsed_group: "Use token authentication instead"
+        help_text: "Create a long-lived access token in your Home Assistant profile (bottom of the page) and paste it here."
     fallback:
       requires_setting: base_url
     wasm:
