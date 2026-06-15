@@ -1719,6 +1719,8 @@ mod authorize_tests {
 
 #[cfg(all(test, feature = "crypto"))]
 mod crypto_tests {
+    #[cfg(not(feature = "std"))]
+    use alloc::{format, string::String};
     use crate::crypto::{sha256, base64url_nopad};
 
     #[test]
