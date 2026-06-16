@@ -85,6 +85,7 @@ Enable features for host imports your skill needs:
 ```toml
 ari-skill-sdk = { path = "../../sdk/rust", features = ["http"] }
 ari-skill-sdk = { path = "../../sdk/rust", features = ["storage"] }
+ari-skill-sdk = { path = "../../sdk/rust", features = ["location"] }
 ari-skill-sdk = { path = "../../sdk/rust", features = ["http", "storage"] }
 ```
 
@@ -143,6 +144,29 @@ if let Some(value) = ari::storage_get("my_key") {
 // Write (returns true on success)
 ari::storage_set("my_key", "my_value");
 ```
+
+#### Location (`features = ["location"]`)
+
+Coarse device location. Declare `capabilities: [location]` and enable the
+`location` SDK feature.
+
+```rust
+use ari_skill_sdk as ari;
+
+let loc = ari::location();
+match loc.status {
+    ari::LocationStatus::Ok => {
+        // loc.lat, loc.lon, loc.accuracy_m, loc.timestamp_ms
+    }
+    ari::LocationStatus::PermissionDenied => { /* ask the user to grant location */ }
+    ari::LocationStatus::Unavailable | ari::LocationStatus::Timeout => { /* fall back */ }
+}
+```
+
+Use `ari::location_with(max_age_ms, timeout_ms)` to override the defaults
+(10 min cached-fix freshness / 5 s active-fix timeout). Coarse accuracy only —
+fine location is never requested. On hosts without a location implementation
+(CLI, Linux until its app exists) the status is always `Unavailable`.
 
 #### Interactive settings (`features = ["settings"]`)
 
@@ -364,6 +388,7 @@ Capability-gated:
 | `storage_get` | `(key_ptr: i32, key_len: i32) -> i64` | `storage_kv` |
 | `storage_set` | `(key_ptr: i32, key_len: i32, val_ptr: i32, val_len: i32) -> i32` | `storage_kv` |
 | `authorize` | `(req_ptr: i32, req_len: i32) -> i64` | `authorize` |
+| `location_current` | `(max_age_ms: i64, timeout_ms: i64) -> i64` | `location` |
 
 The `tasks_*` and `calendar_*` host imports (gated by the `tasks` / `calendar`
 capabilities) follow the same pattern; they're surfaced through dedicated SDK
