@@ -26,6 +26,10 @@ tasks = ["dep:serde", "dep:serde_json"]
 # Calendar provider (calendar_*): list, insert, delete events.
 # Requires the `calendar` capability in SKILL.md.
 calendar = ["dep:serde", "dep:serde_json"]
+# Coarse device location (location_current). Requires the `location`
+# capability in SKILL.md. Pulls serde + serde_json (alloc) for the
+# result JSON.
+location = ["dep:serde", "dep:serde_json"]
 # Local-clock reader (local_now_components / local_timezone_id).
 # Ungated capability — every skill can read the wall clock — but the
 # SDK wrapper is behind a feature flag so skills that don't need it

@@ -1295,6 +1295,96 @@ pub use calendar_impl::{
 };
 
 // ---------------------------------------------------------------------------
+// Device location (feature = "location")
+// ---------------------------------------------------------------------------
+
+#[cfg(feature = "location")]
+mod location_impl {
+    #[link(wasm_import_module = "ari")]
+    extern "C" {
+        #[link_name = "location_current"]
+        fn host_location_current(max_age_ms: i64, timeout_ms: i64) -> i64;
+    }
+
+    /// Outcome of a location request. Only `Ok` carries a real fix.
+    #[derive(Debug, Clone, Copy, PartialEq)]
+    pub enum LocationStatus {
+        Ok,
+        PermissionDenied,
+        Unavailable,
+        Timeout,
+    }
+
+    /// A coarse location fix, or the reason there isn't one.
+    #[derive(Debug, Clone, Copy, PartialEq)]
+    pub struct Location {
+        pub status: LocationStatus,
+        /// Decimal degrees; valid only when `status == Ok`.
+        pub lat: f64,
+        pub lon: f64,
+        /// Horizontal accuracy estimate, metres.
+        pub accuracy_m: f64,
+        /// UTC epoch ms the fix was taken. 0 unless `status == Ok`.
+        pub timestamp_ms: i64,
+    }
+
+    impl Location {
+        fn unavailable() -> Self {
+            Location {
+                status: LocationStatus::Unavailable,
+                lat: 0.0,
+                lon: 0.0,
+                accuracy_m: 0.0,
+                timestamp_ms: 0,
+            }
+        }
+    }
+
+    /// Parse the host's result JSON. Any malformed input or unknown
+    /// status degrades to `Unavailable` — a skill never panics on a
+    /// bad fix. Split out so it's unit-testable off-wasm.
+    pub(crate) fn parse_location_json(json: &str) -> Location {
+        let v: serde_json::Value = match serde_json::from_str(json) {
+            Ok(v) => v,
+            Err(_) => return Location::unavailable(),
+        };
+        let status = match v.get("status").and_then(|s| s.as_str()) {
+            Some("ok") => LocationStatus::Ok,
+            Some("permission_denied") => LocationStatus::PermissionDenied,
+            Some("timeout") => LocationStatus::Timeout,
+            Some("unavailable") => LocationStatus::Unavailable,
+            _ => return Location::unavailable(),
+        };
+        Location {
+            status,
+            lat: v.get("lat").and_then(|x| x.as_f64()).unwrap_or(0.0),
+            lon: v.get("lon").and_then(|x| x.as_f64()).unwrap_or(0.0),
+            accuracy_m: v.get("accuracy_m").and_then(|x| x.as_f64()).unwrap_or(0.0),
+            timestamp_ms: v.get("timestamp_ms").and_then(|x| x.as_i64()).unwrap_or(0),
+        }
+    }
+
+    /// Coarse device location with default freshness/timeout (10 min / 5 s).
+    pub fn location() -> Location {
+        location_with(600_000, 5_000)
+    }
+
+    /// Coarse device location. `max_age_ms`: accept a cached fix at least
+    /// this fresh; else request one. `timeout_ms`: give up on an active
+    /// fix after this long (→ `Timeout`).
+    pub fn location_with(max_age_ms: i64, timeout_ms: i64) -> Location {
+        let packed = unsafe { host_location_current(max_age_ms, timeout_ms) };
+        match unsafe { super::unpack(packed) } {
+            Some(json) => parse_location_json(json),
+            None => Location::unavailable(),
+        }
+    }
+}
+
+#[cfg(feature = "location")]
+pub use location_impl::{location, location_with, Location, LocationStatus};
+
+// ---------------------------------------------------------------------------
 // Local clock (feature = "clock")
 // ---------------------------------------------------------------------------
 
@@ -1822,5 +1912,35 @@ mod settings_refresh_tests {
     fn plain_validated_omits_refresh() {
         let json = SettingsResult::validated("ok").to_json();
         assert!(!json.contains("refresh"));
+    }
+}
+
+#[cfg(all(test, feature = "location"))]
+mod location_tests {
+    use crate::location_impl::{parse_location_json, LocationStatus};
+
+    #[test]
+    fn parses_ok_fix() {
+        let json = r#"{"status":"ok","lat":35.8989,"lon":14.5146,"accuracy_m":65.0,"timestamp_ms":1718500000000}"#;
+        let r = parse_location_json(json);
+        assert_eq!(r.status, LocationStatus::Ok);
+        assert_eq!(r.lat, 35.8989);
+        assert_eq!(r.lon, 14.5146);
+        assert_eq!(r.accuracy_m, 65.0);
+        assert_eq!(r.timestamp_ms, 1718500000000);
+    }
+
+    #[test]
+    fn unknown_or_missing_status_is_unavailable() {
+        let r = parse_location_json("not json");
+        assert_eq!(r.status, LocationStatus::Unavailable);
+        let r2 = parse_location_json(r#"{"status":"weird"}"#);
+        assert_eq!(r2.status, LocationStatus::Unavailable);
+    }
+
+    #[test]
+    fn permission_denied_round_trips() {
+        let r = parse_location_json(r#"{"status":"permission_denied","lat":0.0,"lon":0.0,"accuracy_m":0.0,"timestamp_ms":0}"#);
+        assert_eq!(r.status, LocationStatus::PermissionDenied);
     }
 }
