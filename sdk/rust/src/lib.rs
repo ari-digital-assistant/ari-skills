@@ -1329,14 +1329,21 @@ mod location_impl {
     }
 
     impl Location {
-        fn unavailable() -> Self {
+        /// A coordinate-less `Location` carrying `status`. Used for every
+        /// non-`Ok` outcome so the struct's "coords valid only when Ok"
+        /// invariant holds regardless of what the host sent.
+        fn with_status(status: LocationStatus) -> Self {
             Location {
-                status: LocationStatus::Unavailable,
+                status,
                 lat: 0.0,
                 lon: 0.0,
                 accuracy_m: 0.0,
                 timestamp_ms: 0,
             }
+        }
+
+        fn unavailable() -> Self {
+            Location::with_status(LocationStatus::Unavailable)
         }
     }
 
@@ -1355,6 +1362,12 @@ mod location_impl {
             Some("unavailable") => LocationStatus::Unavailable,
             _ => return Location::unavailable(),
         };
+        // Coordinates are only meaningful on a real fix. For any non-`Ok`
+        // status, ignore whatever the host put in the numeric fields and
+        // return zeroed coords, upholding the struct's documented invariant.
+        if status != LocationStatus::Ok {
+            return Location::with_status(status);
+        }
         Location {
             status,
             lat: v.get("lat").and_then(|x| x.as_f64()).unwrap_or(0.0),
@@ -1942,5 +1955,19 @@ mod location_tests {
     fn permission_denied_round_trips() {
         let r = parse_location_json(r#"{"status":"permission_denied","lat":0.0,"lon":0.0,"accuracy_m":0.0,"timestamp_ms":0}"#);
         assert_eq!(r.status, LocationStatus::PermissionDenied);
+    }
+
+    #[test]
+    fn non_ok_status_zeroes_coords() {
+        // A misbehaving host could send coords alongside a non-ok status;
+        // the wrapper must not surface them.
+        let r = parse_location_json(
+            r#"{"status":"timeout","lat":35.0,"lon":14.0,"accuracy_m":50.0,"timestamp_ms":123}"#,
+        );
+        assert_eq!(r.status, LocationStatus::Timeout);
+        assert_eq!(r.lat, 0.0);
+        assert_eq!(r.lon, 0.0);
+        assert_eq!(r.accuracy_m, 0.0);
+        assert_eq!(r.timestamp_ms, 0);
     }
 }
