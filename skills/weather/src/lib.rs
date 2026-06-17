@@ -2,6 +2,7 @@
 extern crate alloc;
 
 mod conditions;
+mod dates;
 mod facets;
 mod forecast;
 mod metno;
