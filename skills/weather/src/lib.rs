@@ -1,6 +1,8 @@
 #![cfg_attr(target_arch = "wasm32", no_std)]
 extern crate alloc;
 
+mod conditions;
+
 #[cfg(target_arch = "wasm32")]
 use ari_skill_sdk as ari;
 
