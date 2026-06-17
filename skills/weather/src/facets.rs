@@ -1,5 +1,3 @@
-#![allow(dead_code)] // consumed by present/lib (later tasks)
-
 /// Wind speed band (m/s), Beaufort-informed. Returns a strings key.
 pub fn wind_band(ms: f64) -> &'static str {
     if ms < 3.0 { "wind.calm" }

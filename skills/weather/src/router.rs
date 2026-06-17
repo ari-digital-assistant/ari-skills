@@ -1,5 +1,3 @@
-#![allow(dead_code)] // consumed by lib.rs wire-up (later task)
-
 use alloc::string::{String, ToString};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

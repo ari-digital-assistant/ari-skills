@@ -1,5 +1,3 @@
-#![allow(dead_code)] // consumed by parser + present modules (later tasks)
-
 use alloc::string::String;
 use alloc::vec::Vec;
 use crate::conditions::Condition;

@@ -1,5 +1,3 @@
-#![allow(dead_code)] // consumed by lib.rs wire-up (later task)
-
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use ari_skill_sdk::presentation as p;
@@ -98,7 +96,12 @@ fn facet_speak(f: &Forecast, when: When, facet: Facet, sys: System, l: &dyn L10n
     match facet {
         Facet::Wind => {
             let band = l.t(wind_band(f.current.wind_speed_ms), &[]);
-            l.t("speak.wind", &[("band", &band), ("speed", &wind(sys, f.current.wind_speed_ms, l))])
+            let speed = wind(sys, f.current.wind_speed_ms, l);
+            match f.current.wind_gust_ms {
+                Some(g) if g > f.current.wind_speed_ms + 2.0 =>
+                    l.t("speak.wind_gust", &[("band", &band), ("speed", &speed), ("gust", &wind(sys, g, l))]),
+                _ => l.t("speak.wind", &[("band", &band), ("speed", &speed)]),
+            }
         }
         Facet::Uv => {
             let uv = if when != When::Now && !f.daily.is_empty() {
@@ -252,6 +255,12 @@ mod tests {
         assert!(env.contains("2026-06-17"));            // day label (faked = the date) present
         assert!(env.contains("2026-06-18"));
         assert!(env.contains("card.daily_row"));        // daily row template key used
+    }
+
+    #[test]
+    fn wind_facet_reports_gusts_when_present() {
+        let env = build(&current_only(), When::Now, Facet::Wind, System::Metric, "en", &Fakes);
+        assert!(env.contains("speak.wind_gust"));
     }
 
     #[test]

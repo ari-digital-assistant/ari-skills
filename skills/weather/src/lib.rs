@@ -1,4 +1,10 @@
 #![cfg_attr(target_arch = "wasm32", no_std)]
+// The skill's only entry points are the wasm-gated `#[no_mangle] extern "C"`
+// exports (`score`/`execute`/`ari_alloc`). On the host arch those don't exist,
+// so the entire crate body is structurally unreachable and would warn as dead
+// code. The wasm build stays strict (this allow is inert there); native is
+// where we run the unit tests, hence the gate.
+#![cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 extern crate alloc;
 
 mod conditions;
@@ -85,7 +91,11 @@ fn resolve_and_fetch(req: &router::Request, locale: &str) -> Result<forecast::Fo
         let gbody = http_get(&openmeteo::geocode_url(place, locale)).ok_or("err.network")?;
         let hit = openmeteo::parse_geocode(&gbody).map_err(|_| "err.network")?.ok_or("err.not_found")?;
         let fbody = http_get(&openmeteo::forecast_url(hit.lat, hit.lon)).ok_or("err.network")?;
-        return openmeteo::parse_forecast(&fbody, Some(hit.name)).map_err(|_| "err.network");
+        let label = match &hit.country {
+            Some(c) => alloc::format!("{}, {}", hit.name, c),
+            None => hit.name.clone(),
+        };
+        return openmeteo::parse_forecast(&fbody, Some(label)).map_err(|_| "err.network");
     }
     let loc = ari::location();
     match loc.status {

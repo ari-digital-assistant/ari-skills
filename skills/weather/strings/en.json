@@ -38,6 +38,7 @@
   "speak.forecast_place": "{when} in {place}: high {hi}, low {lo}, {cond}.",
   "speak.forecast_no_place": "{when}: high {hi}, low {lo}, {cond}.",
   "speak.wind": "It's {band} — around {speed}.",
+  "speak.wind_gust": "It's {band} — around {speed}, gusting {gust}.",
   "speak.rain": "Rain is {band} — around {mm} millimetres.",
   "speak.rain_amount": "About {mm} millimetres of rain expected.",
   "speak.rain_none": "No rain expected right now.",

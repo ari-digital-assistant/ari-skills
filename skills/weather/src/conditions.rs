@@ -4,7 +4,6 @@
 //!
 //! The public items are consumed by the backend parser modules (added in
 //! later cycles); until then they are only exercised by the unit tests.
-#![allow(dead_code)]
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Condition {

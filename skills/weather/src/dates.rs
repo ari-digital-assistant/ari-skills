@@ -1,5 +1,3 @@
-#![allow(dead_code)] // consumed by lib.rs SdkL10n (wasm only)
-
 /// Weekday for an ISO "YYYY-MM-DD" date, `0=Monday .. 6=Sunday`.
 /// `None` if the string isn't three integer fields. Uses Howard Hinnant's
 /// days-from-civil algorithm (pure integer math, no date library).

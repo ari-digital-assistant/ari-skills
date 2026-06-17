@@ -5,7 +5,6 @@
 //!
 //! [`ParseError`] is shared with the MET Norway parser (`metno.rs`, later).
 //! Public items are wired up by `lib.rs` in a later task.
-#![allow(dead_code)] // consumed by lib.rs wire-up (later task)
 
 use alloc::format;
 use alloc::string::{String, ToString};
