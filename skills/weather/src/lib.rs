@@ -3,6 +3,7 @@ extern crate alloc;
 
 mod conditions;
 mod forecast;
+mod metno;
 mod openmeteo;
 
 #[cfg(target_arch = "wasm32")]
