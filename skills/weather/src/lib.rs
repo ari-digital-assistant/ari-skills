@@ -6,6 +6,7 @@ mod facets;
 mod forecast;
 mod metno;
 mod openmeteo;
+mod present;
 mod router;
 mod units;
 
