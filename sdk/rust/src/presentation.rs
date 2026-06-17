@@ -183,6 +183,8 @@ pub struct Card {
     actions: Vec<Action>,
     #[serde(skip_serializing_if = "Option::is_none")]
     on_complete: Option<OnComplete>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    stat: Option<Stat>,
 }
 
 impl Card {
@@ -199,6 +201,7 @@ impl Card {
             accent: Accent::Default,
             actions: Vec::new(),
             on_complete: None,
+            stat: None,
         }
     }
 
@@ -251,6 +254,41 @@ impl Card {
         self.on_complete = Some(oc);
         self
     }
+
+    pub fn stat(mut self, stat: Stat) -> Self {
+        self.stat = Some(stat);
+        self
+    }
+}
+
+/// Generic "stat" card body: a big headline value, a secondary caption, an
+/// optional emphasised pill, a row of metrics, an opaque full-bleed background
+/// image, and a low-emphasis footer. Any skill can populate it.
+#[derive(Serialize)]
+pub struct Stat {
+    headline: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    caption: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pill: Option<IconText>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    metrics: Vec<IconText>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    background: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    footer: Option<IconText>,
+}
+
+impl Stat {
+    pub fn new(headline: impl Into<String>) -> Self {
+        Stat { headline: headline.into(), caption: None, pill: None,
+               metrics: Vec::new(), background: None, footer: None }
+    }
+    pub fn caption(mut self, c: impl Into<String>) -> Self { self.caption = Some(c.into()); self }
+    pub fn pill(mut self, p: IconText) -> Self { self.pill = Some(p); self }
+    pub fn metric(mut self, m: IconText) -> Self { self.metrics.push(m); self }
+    pub fn background(mut self, asset: Asset) -> Self { self.background = Some(asset.0); self }
+    pub fn footer(mut self, f: IconText) -> Self { self.footer = Some(f); self }
 }
 
 /// A styled icon + label, used by stat/list card slots (pill, metric, footer,
@@ -872,5 +910,24 @@ mod tests {
         let plain = IconText::new("just text");
         let j2 = serde_json::to_string(&plain).unwrap();
         assert_eq!(j2, r#"{"text":"just text"}"#);
+    }
+
+    #[test]
+    fn stat_card_serializes() {
+        let stat = Stat::new("21°")
+            .caption("cloudy")
+            .pill(IconText::new("Feels like 20°").icon(Asset::new("ui/thermometer.png")))
+            .metric(IconText::new("Wind 18 km/h").icon(Asset::new("ui/wind.png")))
+            .metric(IconText::new("Humidity 69%").icon(Asset::new("ui/droplet.png")))
+            .background(Asset::new("heroes/cloudy.png"))
+            .footer(IconText::new("Weather data by Open-Meteo.com").icon(Asset::new("ui/shield.png")));
+        let json = Envelope::new()
+            .card(Card::new("weather_current").title("London").stat(stat))
+            .to_json();
+        assert!(json.contains(r#""stat":{"#));
+        assert!(json.contains(r#""headline":"21°""#));
+        assert!(json.contains(r#""caption":"cloudy""#));
+        assert!(json.contains(r#""background":"asset:heroes/cloudy.png""#));
+        assert!(json.contains(r#""metrics":[{"icon":"asset:ui/wind.png","text":"Wind 18 km/h"}"#));
     }
 }
