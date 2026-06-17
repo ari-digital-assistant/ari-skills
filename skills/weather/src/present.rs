@@ -42,6 +42,13 @@ fn when_key(w: When) -> &'static str {
 }
 fn target_index(w: When) -> usize { match w { When::Tomorrow => 1, _ => 0 } }
 
+/// The forecast day a request targets (Tomorrow→[1], else→[0]), clamped to
+/// the available range so the index can never go out of bounds. Caller must
+/// ensure `f.daily` is non-empty (every call site is guarded by that check).
+fn day_at(f: &Forecast, when: When) -> &crate::forecast::DailyConditions {
+    &f.daily[target_index(when).min(f.daily.len() - 1)]
+}
+
 /// Compact current-conditions card (also used as the facet card).
 fn current_card(f: &Forecast, place: &Option<String>, sys: System, l: &dyn L10n) -> p::Card {
     let cond_label = l.t(f.current.condition.label_key(), &[]);
@@ -89,7 +96,7 @@ fn facet_speak(f: &Forecast, when: When, facet: Facet, sys: System, l: &dyn L10n
         }
         Facet::Uv => {
             let uv = if when != When::Now && !f.daily.is_empty() {
-                f.daily[target_index(when).min(f.daily.len() - 1)].uv_index_max
+                day_at(f, when).uv_index_max
             } else { f.current.uv_index };
             match uv {
                 Some(u) => l.t("speak.uv", &[("band", &l.t(uv_band(u), &[])), ("value", &l.num(u))]),
@@ -98,7 +105,7 @@ fn facet_speak(f: &Forecast, when: When, facet: Facet, sys: System, l: &dyn L10n
         }
         Facet::Rain => {
             let (prob, mm) = if when != When::Now && !f.daily.is_empty() {
-                let d = &f.daily[target_index(when).min(f.daily.len() - 1)];
+                let d = day_at(f, when);
                 (d.precip_probability, d.precip_mm)
             } else { (f.current.precip_probability, f.current.precip_mm) };
             let band = l.t(rain_band(prob), &[]);
@@ -120,8 +127,7 @@ pub fn build(f: &Forecast, when: When, facet: Facet, sys: System, _locale: &str,
 
     // Multi-day forecast.
     if when != When::Now && !f.daily.is_empty() {
-        let idx = target_index(when).min(f.daily.len() - 1);
-        let day = &f.daily[idx];
+        let day = day_at(f, when);
         let cond = l.t(day.condition.label_key(), &[]);
         let wk = l.t(when_key(when), &[]);
         let speak = match &place {
