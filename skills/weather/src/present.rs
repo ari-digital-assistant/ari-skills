@@ -114,8 +114,14 @@ fn facet_speak(f: &Forecast, when: When, facet: Facet, sys: System, l: &dyn L10n
                 let d = day_at(f, when);
                 (d.precip_probability, d.precip_mm)
             } else { (f.current.precip_probability, f.current.precip_mm) };
-            let band = l.t(rain_band(prob), &[]);
-            l.t("speak.rain", &[("band", &band), ("mm", &l.num(mm))])
+            match prob {
+                // A probability (Open-Meteo daily) → likelihood phrasing.
+                Some(_) => l.t("speak.rain", &[("band", &l.t(rain_band(prob), &[])), ("mm", &l.num(mm))]),
+                // No probability (MET, or a current snapshot) → answer from the
+                // amount so we never say "[blank] — about 0 millimetres".
+                None if mm >= 0.1 => l.t("speak.rain_amount", &[("mm", &l.num(mm))]),
+                None => l.t("speak.rain_none", &[]),
+            }
         }
         Facet::None => String::new(),
     }
@@ -211,6 +217,27 @@ mod tests {
         assert!(env.contains("Valletta"));
         assert!(env.contains("Open-Meteo"));            // attribution footer
         assert!(env.contains("asset:icons/"));          // icon attached
+    }
+
+    #[test]
+    fn rain_facet_no_probability_uses_amount() {
+        let mut wet = current_only();
+        wet.current.precip_probability = None;
+        wet.current.precip_mm = 3.0;
+        let env = build(&wet, When::Now, Facet::Rain, System::Metric, "en", &Fakes);
+        assert!(env.contains("speak.rain_amount"));
+        let mut dry = current_only();
+        dry.current.precip_probability = None;
+        dry.current.precip_mm = 0.0;
+        let env2 = build(&dry, When::Now, Facet::Rain, System::Metric, "en", &Fakes);
+        assert!(env2.contains("speak.rain_none"));
+    }
+
+    #[test]
+    fn rain_facet_with_probability_uses_band() {
+        // Tomorrow → daily[1] precip_probability 80 → very_likely band.
+        let env = build(&with_daily(), When::Tomorrow, Facet::Rain, System::Metric, "en", &Fakes);
+        assert!(env.contains("rain.very_likely"));
     }
 
     #[test]
