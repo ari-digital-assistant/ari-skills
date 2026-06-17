@@ -66,8 +66,8 @@ impl L10n for SdkL10n {
 pub extern "C" fn execute(ptr: i32, len: i32) -> i64 {
     let raw = unsafe { ari::input(ptr, len) };
     let args = ari::args();
-    let req = router::parse_request(args, raw);
     let locale = ari::get_locale();
+    let req = router::parse_request(args, raw, locale);
     let unit_setting = ari::setting_get("units").unwrap_or("auto");
     let sys = units::system_for(unit_setting, locale);
 
