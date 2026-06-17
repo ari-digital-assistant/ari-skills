@@ -5,6 +5,7 @@ mod conditions;
 mod forecast;
 mod metno;
 mod openmeteo;
+mod units;
 
 #[cfg(target_arch = "wasm32")]
 use ari_skill_sdk as ari;
