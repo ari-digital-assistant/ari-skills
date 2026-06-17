@@ -6,6 +6,7 @@ mod facets;
 mod forecast;
 mod metno;
 mod openmeteo;
+mod router;
 mod units;
 
 #[cfg(target_arch = "wasm32")]
