@@ -1,5 +1,4 @@
-use alloc::string::{String, ToString};
-use alloc::vec::Vec;
+use alloc::string::String;
 use ari_skill_sdk::presentation as p;
 use crate::forecast::{Forecast, Source};
 use crate::router::{When, Facet};
@@ -53,43 +52,58 @@ fn day_at(f: &Forecast, when: When) -> &crate::forecast::DailyConditions {
     &f.daily[target_index(when).min(f.daily.len() - 1)]
 }
 
-/// Compact current-conditions card (also used as the facet card).
+/// Current-conditions stat card: current temp leads, condition as caption,
+/// feels-like pill, wind/humidity metrics, condition background, attribution.
 fn current_card(f: &Forecast, place: &Option<String>, sys: System, l: &dyn L10n) -> p::Card {
     let cond_label = l.t(f.current.condition.label_key(), &[]);
     let title = place.clone().unwrap_or_else(|| l.t("card.current_location", &[]));
-    let mut lines: Vec<String> = Vec::new();
-    lines.push(l.t("card.feels_like", &[("temp", &temp(sys, f.current.feels_like_c, l))]));
-    lines.push(l.t("card.wind", &[("speed", &wind(sys, f.current.wind_speed_ms, l))]));
+    let headline = alloc::format!("{}°", temp(sys, f.current.temp_c, l));
+
+    let mut stat = p::Stat::new(headline)
+        .caption(cond_label)
+        .pill(p::IconText::new(l.t("card.feels_like", &[("temp", &temp(sys, f.current.feels_like_c, l))]))
+            .icon(p::Asset::new("ui/thermometer.png")))
+        .metric(p::IconText::new(l.t("card.metric_wind", &[("speed", &wind(sys, f.current.wind_speed_ms, l))]))
+            .icon(p::Asset::new("ui/wind.png")))
+        .background(p::Asset::new(f.current.condition.hero(f.current.is_day)))
+        .footer(p::IconText::new(attribution(f.source)).icon(p::Asset::new("ui/shield.png")));
     if let Some(h) = f.current.humidity_pct {
-        lines.push(l.t("card.humidity", &[("pct", &l.num(h))]));
+        stat = stat.metric(p::IconText::new(l.t("card.metric_humidity", &[("pct", &l.num(h))]))
+            .icon(p::Asset::new("ui/droplet.png")));
     }
-    lines.push(attribution(f.source).to_string());
-    p::Card::new("weather_current")
-        .title(title)
-        .subtitle(cond_label)
-        .body(lines.join("\n"))
-        .icon(p::Asset::new(f.current.condition.icon(f.current.is_day)))
+    p::Card::new("weather_current").title(title).icon(p::Asset::new("ui/pin.png")).stat(stat)
 }
 
-/// Multi-day forecast card: one row per day + attribution.
+/// Multi-day list card: summary chip (week hi/lo + dominant condition) + one
+/// row per day (weekday, icon, condition, hi/lo, rain-chance badge).
 fn forecast_card(f: &Forecast, place: &Option<String>, sys: System, l: &dyn L10n) -> p::Card {
     let title = place.clone().unwrap_or_else(|| l.t("card.current_location", &[]));
-    let mut lines: Vec<String> = Vec::new();
+    let subtitle = l.t("card.forecast_subtitle", &[]);
+    let max_hi = f.daily.iter().map(|d| d.temp_max_c).fold(f64::MIN, f64::max);
+    let min_lo = f.daily.iter().map(|d| d.temp_min_c).fold(f64::MAX, f64::min);
+    let dom = f.dominant_daily_condition();
+    let summary = p::IconText::new(l.t("card.forecast_summary", &[
+        ("hi", &temp(sys, max_hi, l)), ("lo", &temp(sys, min_lo, l)),
+        ("cond", &l.t(dom.label_key(), &[])),
+    ])).icon(p::Asset::new(dom.icon(true)));
+
+    let mut list = p::ListCard::new().summary(summary);
     for day in f.daily.iter().take(7) {
-        let cond = l.t(day.condition.label_key(), &[]);
-        lines.push(l.t("card.daily_row", &[
-            ("day", &l.day_label(&day.date)),
-            ("hi", &temp(sys, day.temp_max_c, l)),
-            ("lo", &temp(sys, day.temp_min_c, l)),
-            ("cond", &cond),
-        ]));
+        let mut row = p::ListRow::new(l.day_label(&day.date))
+            .icon(p::Asset::new(day.condition.icon(true)))
+            .text(l.t(day.condition.label_key(), &[]))
+            .trailing(l.t("card.row_temps", &[
+                ("hi", &temp(sys, day.temp_max_c, l)), ("lo", &temp(sys, day.temp_min_c, l))]));
+        if let Some(prob) = day.precip_probability {
+            if prob >= 20.0 {
+                row = row.badge(p::IconText::new(l.t("card.row_badge", &[("pct", &l.num(prob))]))
+                    .icon(p::Asset::new("ui/droplet.png")));
+            }
+        }
+        list = list.row(row);
     }
-    lines.push(attribution(f.source).to_string());
-    let icon_cond = f.daily.first().map(|d| d.condition).unwrap_or(crate::conditions::Condition::Unknown);
-    p::Card::new("weather_forecast")
-        .title(title)
-        .body(lines.join("\n"))
-        .icon(p::Asset::new(icon_cond.icon(true)))
+    list = list.footer(p::IconText::new(attribution(f.source)).icon(p::Asset::new("ui/shield.png")));
+    p::Card::new("weather_forecast").title(title).subtitle(subtitle).list(list)
 }
 
 fn facet_speak(f: &Forecast, when: When, facet: Facet, sys: System, l: &dyn L10n) -> String {
@@ -219,7 +233,25 @@ mod tests {
         assert!(env.contains("\"speak\""));
         assert!(env.contains("Valletta"));
         assert!(env.contains("Open-Meteo"));            // attribution footer
-        assert!(env.contains("asset:icons/"));          // icon attached
+    }
+
+    #[test]
+    fn current_envelope_is_a_stat_card() {
+        let env = build(&current_only(), When::Now, Facet::None, System::Metric, "en", &Fakes);
+        assert!(env.contains("\"stat\""));
+        assert!(env.contains("\"headline\""));
+        assert!(env.contains("asset:ui/wind.png"));
+        assert!(env.contains("asset:heroes/"));        // a background was set
+        assert!(env.contains("Open-Meteo"));           // footer attribution
+    }
+
+    #[test]
+    fn forecast_envelope_is_a_list_card() {
+        let env = build(&with_daily(), When::ThisWeek, Facet::None, System::Metric, "en", &Fakes);
+        assert!(env.contains("\"list\""));
+        assert!(env.contains("\"rows\""));
+        assert!(env.contains("\"leading\""));
+        assert!(env.contains("card.row_temps"));        // trailing temps key surfaced by Fakes
     }
 
     #[test]
@@ -254,7 +286,7 @@ mod tests {
         let env = build(&with_daily(), When::ThisWeek, Facet::None, System::Metric, "en", &Fakes);
         assert!(env.contains("2026-06-17"));            // day label (faked = the date) present
         assert!(env.contains("2026-06-18"));
-        assert!(env.contains("card.daily_row"));        // daily row template key used
+        assert!(env.contains("card.row_temps"));        // per-day temps row template key used
     }
 
     #[test]
