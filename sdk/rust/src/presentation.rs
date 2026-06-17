@@ -253,6 +253,25 @@ impl Card {
     }
 }
 
+/// A styled icon + label, used by stat/list card slots (pill, metric, footer,
+/// summary, row badge). `icon` is an `asset:` reference.
+#[derive(Serialize)]
+pub struct IconText {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    icon: Option<String>,
+    text: String,
+}
+
+impl IconText {
+    pub fn new(text: impl Into<String>) -> Self {
+        IconText { icon: None, text: text.into() }
+    }
+    pub fn icon(mut self, asset: Asset) -> Self {
+        self.icon = Some(asset.0);
+        self
+    }
+}
+
 #[derive(Serialize)]
 struct Progress {
     value: f32,
@@ -843,5 +862,15 @@ mod tests {
         assert_eq!(v["cards"][0]["progress"]["value"], 1.0);
         let v = value(&Envelope::new().card(Card::new("c").title("t").progress(-0.3)));
         assert_eq!(v["cards"][0]["progress"]["value"], 0.0);
+    }
+
+    #[test]
+    fn icon_text_serializes_with_and_without_icon() {
+        let with = IconText::new("Wind 18 km/h").icon(Asset::new("ui/wind.png"));
+        let j = serde_json::to_string(&with).unwrap();
+        assert_eq!(j, r#"{"icon":"asset:ui/wind.png","text":"Wind 18 km/h"}"#);
+        let plain = IconText::new("just text");
+        let j2 = serde_json::to_string(&plain).unwrap();
+        assert_eq!(j2, r#"{"text":"just text"}"#);
     }
 }
