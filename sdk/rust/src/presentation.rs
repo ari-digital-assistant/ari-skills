@@ -185,6 +185,8 @@ pub struct Card {
     on_complete: Option<OnComplete>,
     #[serde(skip_serializing_if = "Option::is_none")]
     stat: Option<Stat>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    list: Option<ListCard>,
 }
 
 impl Card {
@@ -202,6 +204,7 @@ impl Card {
             actions: Vec::new(),
             on_complete: None,
             stat: None,
+            list: None,
         }
     }
 
@@ -259,7 +262,57 @@ impl Card {
         self.stat = Some(stat);
         self
     }
+
+    pub fn list(mut self, list: ListCard) -> Self {
+        self.list = Some(list);
+        self
+    }
 }
+
+/// One row of a generic "list" card.
+#[derive(Serialize)]
+pub struct ListRow {
+    leading: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    icon: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    trailing: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    badge: Option<IconText>,
+}
+
+impl ListRow {
+    pub fn new(leading: impl Into<String>) -> Self {
+        ListRow { leading: leading.into(), icon: None, text: None, trailing: None, badge: None }
+    }
+    pub fn icon(mut self, asset: Asset) -> Self { self.icon = Some(asset.0); self }
+    pub fn text(mut self, t: impl Into<String>) -> Self { self.text = Some(t.into()); self }
+    pub fn trailing(mut self, t: impl Into<String>) -> Self { self.trailing = Some(t.into()); self }
+    pub fn badge(mut self, b: IconText) -> Self { self.badge = Some(b); self }
+}
+
+/// Generic "list" card body: an optional summary chip, a column of rows, and a
+/// footer. Any skill can populate it.
+#[derive(Serialize)]
+pub struct ListCard {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    summary: Option<IconText>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    rows: Vec<ListRow>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    footer: Option<IconText>,
+}
+
+impl ListCard {
+    pub fn new() -> Self { ListCard { summary: None, rows: Vec::new(), footer: None } }
+    pub fn summary(mut self, s: IconText) -> Self { self.summary = Some(s); self }
+    pub fn row(mut self, r: ListRow) -> Self { self.rows.push(r); self }
+    pub fn footer(mut self, f: IconText) -> Self { self.footer = Some(f); self }
+}
+
+impl Default for ListCard { fn default() -> Self { Self::new() } }
 
 /// Generic "stat" card body: a big headline value, a secondary caption, an
 /// optional emphasised pill, a row of metrics, an opaque full-bleed background
@@ -929,5 +982,23 @@ mod tests {
         assert!(json.contains(r#""caption":"cloudy""#));
         assert!(json.contains(r#""background":"asset:heroes/cloudy.png""#));
         assert!(json.contains(r#""metrics":[{"icon":"asset:ui/wind.png","text":"Wind 18 km/h"}"#));
+    }
+
+    #[test]
+    fn list_card_serializes() {
+        let list = ListCard::new()
+            .summary(IconText::new("High 31° · Low 17° · Mostly cloudy").icon(Asset::new("icons/cloudy.png")))
+            .row(ListRow::new("Wed").icon(Asset::new("icons/cloudy.png")).text("cloudy")
+                    .trailing("24° / 18°").badge(IconText::new("43%").icon(Asset::new("ui/droplet.png"))))
+            .row(ListRow::new("Thu").icon(Asset::new("icons/cloudy.png")).text("cloudy").trailing("28° / 17°"))
+            .footer(IconText::new("Weather data by Open-Meteo.com").icon(Asset::new("ui/shield.png")));
+        let json = Envelope::new()
+            .card(Card::new("weather_forecast").title("London").subtitle("7-day forecast").list(list))
+            .to_json();
+        assert!(json.contains(r#""list":{"#));
+        assert!(json.contains(r#""rows":[{"#));
+        assert!(json.contains(r#""leading":"Wed""#));
+        assert!(json.contains(r#""trailing":"24° / 18°""#));
+        assert!(json.contains(r#""badge":{"icon":"asset:ui/droplet.png","text":"43%"}"#));
     }
 }
