@@ -13,17 +13,19 @@ pub struct Request { pub location: Option<String>, pub when: When, pub facet: Fa
 
 fn when_from_str(s: &str) -> When {
     let s = s.to_lowercase();
-    if s.contains("week") { When::ThisWeek }
-    else if s.contains("tomorrow") { When::Tomorrow }
-    else if s.contains("today") { When::Today }
+    // English + Italian time words (it is a launch language; `when` and the
+    // facet are detected from text, so they must be bilingual).
+    if s.contains("week") || s.contains("settimana") { When::ThisWeek }
+    else if s.contains("tomorrow") || s.contains("domani") { When::Tomorrow }
+    else if s.contains("today") || s.contains("oggi") { When::Today }
     else { When::Now }
 }
 
 fn facet_from_text(t: &str) -> Facet {
     let t = t.to_lowercase();
     if t.contains("uv") { Facet::Uv }
-    else if t.contains("wind") { Facet::Wind }
-    else if t.contains("rain") { Facet::Rain }
+    else if t.contains("wind") || t.contains("vento") { Facet::Wind }
+    else if t.contains("rain") || t.contains("piov") || t.contains("piogg") { Facet::Rain }
     else { Facet::None }
 }
 
@@ -91,5 +93,14 @@ mod tests {
         assert!(parse_request(None, "weather").use_metno());
         assert!(!parse_request(None, "weather this week").use_metno());
         assert!(!parse_request(Some(r#"{"location":"rome","when":"now"}"#), "weather in rome").use_metno());
+    }
+    #[test]
+    fn italian_when_and_facet_detected() {
+        assert_eq!(parse_request(None, "che tempo fa domani").when, When::Tomorrow);
+        assert_eq!(parse_request(None, "previsioni questa settimana").when, When::ThisWeek);
+        assert_eq!(parse_request(None, "che tempo fa oggi").when, When::Today);
+        assert_eq!(parse_request(None, "c'e vento").facet, Facet::Wind);
+        assert_eq!(parse_request(None, "pioverà oggi").facet, Facet::Rain);
+        assert_eq!(parse_request(None, "indice uv").facet, Facet::Uv);
     }
 }
