@@ -29,8 +29,14 @@ fn temp(sys: System, c: f64, l: &dyn L10n) -> String {
     l.num(v)
 }
 fn wind(sys: System, ms: f64, l: &dyn L10n) -> String {
-    let v = if sys == System::Imperial { ms_to_mph(ms) } else { ms_to_kmh(ms) };
-    l.num(v)
+    // Append the speed unit — unlike temperature ("14 degrees"), a bare wind
+    // number is meaningless, and the unit varies by system so the strings
+    // templates can't carry it.
+    let (v, unit) = if sys == System::Imperial { (ms_to_mph(ms), "mph") } else { (ms_to_kmh(ms), "km/h") };
+    let mut s = l.num(v);
+    s.push(' ');
+    s.push_str(unit);
+    s
 }
 fn when_key(w: When) -> &'static str {
     match w {
