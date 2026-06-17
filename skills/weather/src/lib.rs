@@ -2,6 +2,7 @@
 extern crate alloc;
 
 mod conditions;
+mod forecast;
 
 #[cfg(target_arch = "wasm32")]
 use ari_skill_sdk as ari;
