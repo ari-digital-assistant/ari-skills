@@ -37,6 +37,7 @@
   "speak.current_no_place": "It's {temp} degrees and {cond}, feeling like {feels}.",
   "speak.forecast_place": "{when} in {place}: high {hi}, low {lo}, {cond}.",
   "speak.forecast_no_place": "{when}: high {hi}, low {lo}, {cond}.",
+  "speak.mostly": "mostly {cond}",
   "speak.wind": "It's {band} — around {speed}.",
   "speak.wind_gust": "It's {band} — around {speed}, gusting {gust}.",
   "speak.rain": "Rain is {band} — around {mm} millimetres.",

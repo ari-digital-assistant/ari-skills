@@ -79,8 +79,7 @@ fn current_card(f: &Forecast, place: &Option<String>, sys: System, l: &dyn L10n)
 fn forecast_card(f: &Forecast, place: &Option<String>, sys: System, l: &dyn L10n) -> p::Card {
     let title = place.clone().unwrap_or_else(|| l.t("card.current_location", &[]));
     let subtitle = l.t("card.forecast_subtitle", &[]);
-    let max_hi = f.daily.iter().map(|d| d.temp_max_c).fold(f64::MIN, f64::max);
-    let min_lo = f.daily.iter().map(|d| d.temp_min_c).fold(f64::MAX, f64::min);
+    let (max_hi, min_lo) = f.week_extremes();
     let dom = f.dominant_daily_condition();
     let summary = p::IconText::new(l.t("card.forecast_summary", &[
         ("hi", &temp(sys, max_hi, l)), ("lo", &temp(sys, min_lo, l)),
@@ -156,14 +155,23 @@ pub fn build(f: &Forecast, when: When, facet: Facet, sys: System, _locale: &str,
 
     // Multi-day forecast.
     if when != When::Now && !f.daily.is_empty() {
-        let day = day_at(f, when);
-        let cond = l.t(day.condition.label_key(), &[]);
         let wk = l.t(when_key(when), &[]);
+        // "This week" summarises the whole week (max high, min low, dominant
+        // condition) so the spoken line matches the card's summary chip. A
+        // single day (today/tomorrow) speaks that day's own figures.
+        let (hi_c, lo_c, cond) = if when == When::ThisWeek {
+            let (max_hi, min_lo) = f.week_extremes();
+            let dom = l.t(f.dominant_daily_condition().label_key(), &[]);
+            (max_hi, min_lo, l.t("speak.mostly", &[("cond", &dom)]))
+        } else {
+            let day = day_at(f, when);
+            (day.temp_max_c, day.temp_min_c, l.t(day.condition.label_key(), &[]))
+        };
         let speak = match &place {
             Some(pl) => l.t("speak.forecast_place", &[("when", &wk), ("place", pl),
-                ("hi", &temp(sys, day.temp_max_c, l)), ("lo", &temp(sys, day.temp_min_c, l)), ("cond", &cond)]),
+                ("hi", &temp(sys, hi_c, l)), ("lo", &temp(sys, lo_c, l)), ("cond", &cond)]),
             None => l.t("speak.forecast_no_place", &[("when", &wk),
-                ("hi", &temp(sys, day.temp_max_c, l)), ("lo", &temp(sys, day.temp_min_c, l)), ("cond", &cond)]),
+                ("hi", &temp(sys, hi_c, l)), ("lo", &temp(sys, lo_c, l)), ("cond", &cond)]),
         };
         return p::Envelope::new().speak(speak).card(forecast_card(f, &place, sys, l)).to_json();
     }
@@ -252,6 +260,18 @@ mod tests {
         assert!(env.contains("\"rows\""));
         assert!(env.contains("\"leading\""));
         assert!(env.contains("card.row_temps"));        // trailing temps key surfaced by Fakes
+    }
+
+    #[test]
+    fn this_week_speak_summarises_the_week_to_match_the_card() {
+        // Regression: the spoken "this week" line used to read a single day
+        // (day_at → today), disagreeing with the card's week summary. It must
+        // now use the week summary ("mostly {dominant}") so speak == card.
+        // with_daily(): max-high 31, min-low 20 across the two days.
+        let env = build(&with_daily(), When::ThisWeek, Facet::None, System::Metric, "en", &Fakes);
+        assert!(env.contains("speak.mostly"));       // week-summary phrasing, not a single day's condition
+        // Both the speak and the card summary surface the week extremes via Fakes.
+        assert!(env.contains("card.forecast_summary"));
     }
 
     #[test]

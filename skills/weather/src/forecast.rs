@@ -51,6 +51,16 @@ impl Forecast {
         }
         best
     }
+
+    /// `(max daily high, min daily low)` in °C across the forecast days — the
+    /// week's extremes. Used by BOTH the forecast card's summary chip and the
+    /// spoken "this week" line so they can't diverge. Returns `(MIN, MAX)`
+    /// sentinels for an empty `daily` (callers guard against that).
+    pub fn week_extremes(&self) -> (f64, f64) {
+        let max_hi = self.daily.iter().map(|d| d.temp_max_c).fold(f64::MIN, f64::max);
+        let min_lo = self.daily.iter().map(|d| d.temp_min_c).fold(f64::MAX, f64::min);
+        (max_hi, min_lo)
+    }
 }
 
 #[cfg(test)]
@@ -87,5 +97,19 @@ mod tests {
         assert_eq!(f.dominant_daily_condition(), Condition::Cloudy);
         f.daily.clear();
         assert_eq!(f.dominant_daily_condition(), Condition::Unknown);
+    }
+    #[test]
+    fn week_extremes_are_max_high_and_min_low() {
+        fn day(hi: f64, lo: f64) -> DailyConditions {
+            DailyConditions { date: alloc::string::String::new(), temp_min_c: lo, temp_max_c: hi,
+                condition: Condition::Cloudy, precip_mm: 0.0, precip_probability: None, uv_index_max: None }
+        }
+        let current = Conditions { temp_c: 0.0, feels_like_c: 0.0, condition: Condition::Clear,
+            is_day: true, wind_speed_ms: 0.0, wind_gust_ms: None, precip_mm: 0.0,
+            precip_probability: None, humidity_pct: None, uv_index: None };
+        let f = Forecast { place_label: None, source: Source::OpenMeteo, current,
+            daily: alloc::vec![day(33.0, 20.0), day(28.0, 15.0), day(31.0, 18.0)] };
+        // Max high across days = 33, min low across days = 15 (NOT the first day's low).
+        assert_eq!(f.week_extremes(), (33.0, 15.0));
     }
 }

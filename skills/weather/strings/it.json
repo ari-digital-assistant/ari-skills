@@ -37,6 +37,7 @@
   "speak.current_no_place": "Ci sono {temp} gradi, {cond}, percepiti {feels}.",
   "speak.forecast_place": "{when} a {place}: massima {hi}, minima {lo}, {cond}.",
   "speak.forecast_no_place": "{when}: massima {hi}, minima {lo}, {cond}.",
+  "speak.mostly": "per lo più {cond}",
   "speak.wind": "È {band} — circa {speed}.",
   "speak.wind_gust": "C'è {band} — circa {speed}, con raffiche fino a {gust}.",
   "speak.rain": "La pioggia è {band} — circa {mm} millimetri.",
