@@ -36,6 +36,7 @@ fn handle_settings_query(input: &str) -> String {
     use ari::settings::{parse_query_input, SelectOpt, SettingsResult};
     use alloc::vec::Vec;
 
+    migrate_refresh_token();
     let q = match parse_query_input(input) {
         Some(q) => q,
         None => return SettingsResult::error("bad query input").to_json(),
@@ -142,6 +143,7 @@ pub extern "C" fn settings_action(ptr: i32, len: i32) -> i64 {
 fn handle_settings_action(input: &str) -> String {
     use ari::settings::{parse_action_input, SettingsResult};
 
+    migrate_refresh_token();
     let a = match parse_action_input(input) {
         Some(a) => a,
         None => return SettingsResult::error("bad action input").to_json(),
@@ -340,12 +342,7 @@ fn send_with_retry(base_url: &str, req: &logic::HaRequest) -> ari::HttpResponse 
 }
 
 #[cfg(target_arch = "wasm32")]
-fn dispatch_wasm(input: &str) -> String {
-    // 1. Settings.
-    let base_url = match ari::setting_get("base_url") {
-        Some(s) if !s.trim().is_empty() => s.to_string(),
-        _ => return logic::error_envelope(&t_or("not_configured", &[], "Home Assistant isn't set up yet.")),
-    };
+fn migrate_refresh_token() {
     // Migration (one-time): pre-0.3.0 builds stored the OAuth refresh token
     // in the visible `token` setting. Move it into internal storage so the
     // user isn't forced to re-authenticate after upgrading, and clear the
@@ -358,6 +355,16 @@ fn dispatch_wasm(input: &str) -> String {
             ari::setting_set("token", "");
         }
     }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn dispatch_wasm(input: &str) -> String {
+    // 1. Settings.
+    let base_url = match ari::setting_get("base_url") {
+        Some(s) if !s.trim().is_empty() => s.to_string(),
+        _ => return logic::error_envelope(&t_or("not_configured", &[], "Home Assistant isn't set up yet.")),
+    };
+    migrate_refresh_token();
     let token = match resolve_bearer(&base_url) {
         Bearer::Token(t) => t,
         Bearer::Reauth => {
