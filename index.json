@@ -1,12 +1,13 @@
 {
   "index_version": 1,
-  "generated_at": "2026-06-18T07:50:50Z",
+  "generated_at": "2026-06-18T12:35:53Z",
   "skills": [
     {
       "id": "dev.heyari.githubzen",
       "version": "0.1.1",
       "name": "github-zen",
       "description": "Fetches a one-line piece of zen wisdom from the GitHub API. Use to test the WASM http_fetch host import end-to-end. Requires internet access.",
+      "type": "skill",
       "license": "MIT",
       "author": "Ari core team",
       "homepage": "https://github.com/ari-digital-assistant/ari-skills",
@@ -19,7 +20,7 @@
       ],
       "bundle": "bundles/dev.heyari.githubzen-0.1.1.tar.gz",
       "signature": "bundles/dev.heyari.githubzen-0.1.1.tar.gz.sig",
-      "sha256": "6570bd4e5b24379dc4c4487f17877ca0ca65f4918239a8c384c16baa6ea2ac86",
+      "sha256": "be99fa4520300d0e049211be04062e3dc1dd6b4f073a0f6cf6408f7618ed7e96",
       "manifest": "manifests/dev.heyari.githubzen-0.1.1.md",
       "localizations": {
         "it": {
@@ -30,9 +31,10 @@
     },
     {
       "id": "dev.heyari.homeassistant",
-      "version": "0.2.1",
+      "version": "0.3.0",
       "name": "home-assistant",
       "description": "Controls your Home Assistant smart home — turn devices on and off, set brightness or temperature, run scenes, check status, and ask where people are. Use for any smart-home or home-automation request.",
+      "type": "skill",
       "license": "MIT",
       "author": "Ari core team",
       "homepage": "https://github.com/ari-digital-assistant/ari-skills",
@@ -44,10 +46,10 @@
       "languages": [
         "en"
       ],
-      "bundle": "bundles/dev.heyari.homeassistant-0.2.1.tar.gz",
-      "signature": "bundles/dev.heyari.homeassistant-0.2.1.tar.gz.sig",
-      "sha256": "714101cb19fbbc1bf404af37d45ca39137537dd13030afaf69a54024456712ff",
-      "manifest": "manifests/dev.heyari.homeassistant-0.2.1.md",
+      "bundle": "bundles/dev.heyari.homeassistant-0.3.0.tar.gz",
+      "signature": "bundles/dev.heyari.homeassistant-0.3.0.tar.gz.sig",
+      "sha256": "35b3c1e1b80942b8c93318af619cfacc5921b5c204791497ee8b7db7a596b325",
+      "manifest": "manifests/dev.heyari.homeassistant-0.3.0.md",
       "localizations": {}
     },
     {
@@ -55,6 +57,7 @@
       "version": "0.3.0",
       "name": "gemini",
       "description": "Use Google's Gemini to answer general questions. Requires an API key from aistudio.google.com. Your questions are sent to Google's servers.\n",
+      "type": "assistant",
       "license": "MIT",
       "author": "Ari Project",
       "homepage": "https://github.com/ari-digital-assistant/ari",
@@ -65,7 +68,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.gemini-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.gemini-0.3.0.tar.gz.sig",
-      "sha256": "acc491704bf66b602b2c2730c2a8c06ef3a91c713ef939ec6f21e1a8024c00db",
+      "sha256": "4ca96e1fbd746b127ba4d7fedb8cb3aa33fd7c1d3a1537075b009b53b5ec8aad",
       "manifest": "manifests/dev.heyari.assistant.gemini-0.3.0.md",
       "localizations": {
         "it": {
@@ -79,6 +82,7 @@
       "version": "0.3.0",
       "name": "chatgpt",
       "description": "Use OpenAI's ChatGPT to answer general questions. Requires an API key from platform.openai.com. Your questions are sent to OpenAI's servers.\n",
+      "type": "assistant",
       "license": "MIT",
       "author": "Ari Project",
       "homepage": "https://github.com/ari-digital-assistant/ari",
@@ -89,7 +93,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz.sig",
-      "sha256": "d24551436006efc551f78b3cb748edcc475bddc4e4d330e046ab8f712fe0c56b",
+      "sha256": "8e395ef3727abece25b102806bdc439a9658df61edcec57830174aa0fb095ddd",
       "manifest": "manifests/dev.heyari.assistant.chatgpt-0.3.0.md",
       "localizations": {
         "it": {
@@ -103,6 +107,7 @@
       "version": "0.1.0",
       "name": "weather",
       "description": "Current weather, forecasts, and conditions like wind, rain, and UV — for your current location or any place you name.",
+      "type": "skill",
       "license": "MIT",
       "author": "Ari core team",
       "homepage": "https://github.com/ari-digital-assistant/ari-skills",
@@ -117,7 +122,7 @@
       ],
       "bundle": "bundles/dev.heyari.weather-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.weather-0.1.0.tar.gz.sig",
-      "sha256": "d3b3bd86b9d320c46f8b9720d515d426def55c10c41e87afa67e1189417156c3",
+      "sha256": "e0463526e2ac1a2c7589e1a585e3f34468045c266c396823836b7ad6c21ab4c0",
       "manifest": "manifests/dev.heyari.weather-0.1.0.md",
       "localizations": {
         "it": {
@@ -131,6 +136,7 @@
       "version": "0.1.0",
       "name": "coin-flip",
       "description": "Flips a virtual coin and returns heads or tails. Use when the user asks to flip a coin, toss a coin, or make a random binary choice.",
+      "type": "skill",
       "license": "MIT",
       "author": "Ari core team",
       "homepage": "https://github.com/ari-digital-assistant/ari-skills",
@@ -141,7 +147,7 @@
       ],
       "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "4aad3e0266380a0b2b0a6b037ea8e25b8ab97f4f3a993bb0c8c3ec9ba36cafde",
+      "sha256": "325301b3e65b4b304914a925840937e657931ead35ca0f5fa62f9756ebb7b6c6",
       "manifest": "manifests/dev.heyari.coinflip-0.1.0.md",
       "localizations": {
         "it": {
@@ -155,6 +161,7 @@
       "version": "0.3.0",
       "name": "reminder",
       "description": "Sets timed reminders and untimed list items. Routes to the user's tasks app (default), calendar, or both, with optional voice-named lists like \"add milk to my shopping list\".",
+      "type": "skill",
       "license": "MIT",
       "author": "Ari core team",
       "homepage": "https://github.com/ari-digital-assistant/ari-skills",
@@ -168,7 +175,7 @@
       ],
       "bundle": "bundles/dev.heyari.reminder-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.reminder-0.3.0.tar.gz.sig",
-      "sha256": "403e03fcb0929fded27c20d9296e2ea514206cff99b41516cba788129009da4e",
+      "sha256": "09fc19425451b19d8a568f0f386b777aa3a6c5847d1edbf1e3bf26343d9ddd0b",
       "manifest": "manifests/dev.heyari.reminder-0.3.0.md",
       "localizations": {
         "it": {
@@ -182,6 +189,7 @@
       "version": "0.1.0",
       "name": "counter",
       "description": "Counts how many times you've asked it to count, persisting across calls. Single-digit ASCII counter that wraps from 9 back to 1. Reference WASM skill for the storage_kv host imports.",
+      "type": "skill",
       "license": "MIT",
       "author": "Ari core team",
       "homepage": "https://github.com/ari-digital-assistant/ari-skills",
@@ -194,7 +202,7 @@
       ],
       "bundle": "bundles/dev.heyari.counter-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.counter-0.1.0.tar.gz.sig",
-      "sha256": "0564a136c44dca56f1669d864045cdb543aca56af979b8c3709cb2ab7a2a68a6",
+      "sha256": "e874cf69d5d2a23b090e91cb174dfc3925b45b7068fa30cc82596e2d0ac50801",
       "manifest": "manifests/dev.heyari.counter-0.1.0.md",
       "localizations": {
         "it": {
@@ -208,6 +216,7 @@
       "version": "0.1.0",
       "name": "wasm-echo",
       "description": "Tiny WASM smoke-test skill. Returns a fixed greeting from inside its sandboxed module. Use only for testing the WASM loader.",
+      "type": "skill",
       "license": "MIT",
       "author": "Ari core team",
       "homepage": null,
@@ -218,7 +227,7 @@
       ],
       "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
-      "sha256": "c53f8a6a26f26a9bd52e012ce4a9e128f348a286416cdcbe33a3fd1cbeae49fe",
+      "sha256": "c15d478c92da61eacb34cc0ac696dafdb435623d5edc39c6adcba6245acd6a9a",
       "manifest": "manifests/dev.heyari.wasmecho-0.1.0.md",
       "localizations": {
         "it": {
@@ -232,6 +241,7 @@
       "version": "0.1.0",
       "name": "timer",
       "description": "Sets, queries, and cancels named timers. Supports natural phrasing like \"set a pasta timer for 8 minutes\" or \"set a 4 minute pasta timer\". Handles multiple simultaneous timers.",
+      "type": "skill",
       "license": "MIT",
       "author": "Ari core team",
       "homepage": "https://github.com/ari-digital-assistant/ari-skills",
@@ -244,7 +254,7 @@
       ],
       "bundle": "bundles/dev.heyari.timer-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.timer-0.1.0.tar.gz.sig",
-      "sha256": "5c0be7ea8d40e2cea83f7040b778bec66f78d8d5942073400c2435e29d5a67d9",
+      "sha256": "d61c897391bf62d14b5bfd9c2f52a972bb779d1ec0414ee83db63a75d5b962a2",
       "manifest": "manifests/dev.heyari.timer-0.1.0.md",
       "localizations": {
         "it": {
@@ -258,6 +268,7 @@
       "version": "0.3.0",
       "name": "claude",
       "description": "Use Anthropic's Claude to answer general questions. Requires an API key from console.anthropic.com. Your questions are sent to Anthropic's servers.\n",
+      "type": "assistant",
       "license": "MIT",
       "author": "Ari Project",
       "homepage": "https://github.com/ari-digital-assistant/ari",
@@ -268,7 +279,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz.sig",
-      "sha256": "5e34c2036a4d4d8ee9a2d9e960930fb362ea9ad8664ca67b7b375cd2d76db509",
+      "sha256": "46f7b0d315d2938d4ced34d13b814a859ed67befce74262e96a3c500a5cf9841",
       "manifest": "manifests/dev.heyari.assistant.claude-0.3.0.md",
       "localizations": {
         "it": {
