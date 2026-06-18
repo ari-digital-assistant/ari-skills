@@ -50,7 +50,7 @@
   "card.metric_humidity": "Humidity {pct}%",
   "card.row_temps": "{hi}° / {lo}°",
   "card.row_badge": "{pct}%",
-  "card.forecast_summary": "High {hi}° · Low {lo}° · {cond}",
+  "card.forecast_summary": "High {hi}° · Low {lo}° · Mostly {cond}",
   "card.forecast_subtitle": "7-day forecast",
   "weekday.0": "Mon",
   "weekday.1": "Tue",

@@ -50,7 +50,7 @@
   "card.metric_humidity": "Umidità {pct}%",
   "card.row_temps": "{hi}° / {lo}°",
   "card.row_badge": "{pct}%",
-  "card.forecast_summary": "Max {hi}° · Min {lo}° · {cond}",
+  "card.forecast_summary": "Max {hi}° · Min {lo}° · Per lo più {cond}",
   "card.forecast_subtitle": "Previsioni a 7 giorni",
   "weekday.0": "Lun",
   "weekday.1": "Mar",
