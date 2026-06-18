@@ -36,6 +36,7 @@ fn handle_settings_query(input: &str) -> String {
     use ari::settings::{parse_query_input, SelectOpt, SettingsResult};
     use alloc::vec::Vec;
 
+    migrate_refresh_token();
     let q = match parse_query_input(input) {
         Some(q) => q,
         None => return SettingsResult::error("bad query input").to_json(),
@@ -51,23 +52,25 @@ fn handle_settings_query(input: &str) -> String {
             .to_json()
         }
     };
-    let token = match q.value("token").filter(|s| !s.trim().is_empty()) {
-        Some(s) => s,
-        None => {
-            return SettingsResult::error(&t_or(
-                "not_configured",
-                &[],
-                "Home Assistant isn't set up yet.",
-            ))
-            .to_json()
-        }
-    };
+    let oauth = matches!(ari::storage_get("auth_mode"), Some("oauth"));
+    // The form's `token` value is only relevant in manual mode. In oauth
+    // mode the manual token field is empty by design — auth is proven by
+    // the stored refresh token, validated by the early-return below.
+    let manual_token = q.value("token").filter(|s| !s.trim().is_empty());
+    if !oauth && manual_token.is_none() {
+        return SettingsResult::error(&t_or(
+            "not_configured",
+            &[],
+            "Home Assistant isn't set up yet.",
+        ))
+        .to_json();
+    }
     let private = logic::is_private_base_url(base_url);
 
     // Validate field in oauth mode: the stored `token` is a refresh token, not
     // a Bearer — don't round-trip it (it would 401). Sign-in already proved the
     // connection. The agent_id fetch still needs a live round-trip below.
-    if q.field != "agent_id" && matches!(ari::storage_get("auth_mode"), Some("oauth")) {
+    if q.field != "agent_id" && oauth {
         return SettingsResult::validated(&t_or(
             "connected",
             &[],
@@ -79,7 +82,7 @@ fn handle_settings_query(input: &str) -> String {
     // Bearer for the round-trip. Token mode: validate/use the form's token value
     // as-is. OAuth mode (only reached here for agent_id): resolve a real access
     // token — the stored `token` is a refresh token, not a Bearer.
-    let bearer: alloc::string::String = if matches!(ari::storage_get("auth_mode"), Some("oauth")) {
+    let bearer: alloc::string::String = if oauth {
         match resolve_bearer(base_url) {
             Bearer::Token(t) => t,
             Bearer::Reauth => {
@@ -88,7 +91,7 @@ fn handle_settings_query(input: &str) -> String {
             }
         }
     } else {
-        token.to_string()
+        manual_token.expect("manual_token checked non-None above").to_string()
     };
     let req = logic::build_agents_template_request(base_url, &bearer);
     let (auth_k, auth_v) = req.auth_header();
@@ -140,6 +143,7 @@ pub extern "C" fn settings_action(ptr: i32, len: i32) -> i64 {
 fn handle_settings_action(input: &str) -> String {
     use ari::settings::{parse_action_input, SettingsResult};
 
+    migrate_refresh_token();
     let a = match parse_action_input(input) {
         Some(a) => a,
         None => return SettingsResult::error("bad action input").to_json(),
@@ -197,8 +201,12 @@ fn handle_settings_action(input: &str) -> String {
         None => return SettingsResult::error(&t_or("sign_in_unverified", &[], "Sign-in couldn't be verified.")).to_json(),
     };
 
-    ari::setting_set("token", &refresh);
+    ari::storage_set("refresh_token", &refresh);
     ari::storage_set("auth_mode", "oauth");
+    // The visible `token` setting is manual-entry-only. Clear any stale
+    // manual token so the OAuth path doesn't leave a value in the
+    // "Use token authentication instead" field the user never typed.
+    ari::setting_set("token", "");
     ari::storage_set("access_token", &tokens.access_token);
     ari::storage_set("access_expires_at", &alloc::format!("{}", ari::now_ms() + (tokens.expires_in as i64) * 1000));
     ari::storage_set("needs_reauth", "0");
@@ -247,8 +255,9 @@ fn resolve_bearer(base_url: &str) -> Bearer {
     let auth_mode = ari::storage_get("auth_mode");
     let cached_access = ari::storage_get("access_token");
     let cached_exp = ari::storage_get("access_expires_at").and_then(|s| s.parse::<i64>().ok());
-    let token_setting = ari::setting_get("token");
-    match logic::plan_bearer(auth_mode, cached_access, cached_exp, ari::now_ms(), token_setting) {
+    let manual_token = ari::setting_get("token");
+    let refresh_token = ari::storage_get("refresh_token");
+    match logic::plan_bearer(auth_mode, cached_access, cached_exp, ari::now_ms(), manual_token, refresh_token) {
         logic::BearerPlan::UseDirect(t) | logic::BearerPlan::UseCached(t) => Bearer::Token(t),
         logic::BearerPlan::NeedsReauth => Bearer::Reauth,
         logic::BearerPlan::Refresh(refresh) => match refresh_access_token(base_url, &refresh) {
@@ -290,7 +299,7 @@ fn refresh_access_token(base_url: &str, refresh_token: &str) -> Option<String> {
     // HA doesn't rotate refresh tokens by default, but persist a new one if sent
     // (the prior refresh token may be invalidated after rotation).
     if let Some(new_refresh) = &tokens.refresh_token {
-        ari::setting_set("token", new_refresh);
+        ari::storage_set("refresh_token", new_refresh);
     }
     Some(tokens.access_token)
 }
@@ -315,7 +324,7 @@ fn send_with_retry(base_url: &str, req: &logic::HaRequest) -> ari::HttpResponse 
     if !unauthorized || !is_oauth_mode() {
         return resp;
     }
-    let refresh = match ari::setting_get("token") {
+    let refresh = match ari::storage_get("refresh_token") {
         Some(r) if !r.trim().is_empty() => r,
         _ => return resp,
     };
@@ -333,12 +342,29 @@ fn send_with_retry(base_url: &str, req: &logic::HaRequest) -> ari::HttpResponse 
 }
 
 #[cfg(target_arch = "wasm32")]
+fn migrate_refresh_token() {
+    // Migration (one-time): pre-0.3.0 builds stored the OAuth refresh token
+    // in the visible `token` setting. Move it into internal storage so the
+    // user isn't forced to re-authenticate after upgrading, and clear the
+    // setting so the manual-token field stops showing a value they never typed.
+    if matches!(ari::storage_get("auth_mode"), Some("oauth"))
+        && ari::storage_get("refresh_token").map(|s| s.trim().is_empty()).unwrap_or(true)
+    {
+        if let Some(legacy) = ari::setting_get("token").filter(|s| !s.trim().is_empty()) {
+            ari::storage_set("refresh_token", legacy);
+            ari::setting_set("token", "");
+        }
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
 fn dispatch_wasm(input: &str) -> String {
     // 1. Settings.
     let base_url = match ari::setting_get("base_url") {
         Some(s) if !s.trim().is_empty() => s.to_string(),
         _ => return logic::error_envelope(&t_or("not_configured", &[], "Home Assistant isn't set up yet.")),
     };
+    migrate_refresh_token();
     let token = match resolve_bearer(&base_url) {
         Bearer::Token(t) => t,
         Bearer::Reauth => {

@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.homeassistant
-    version: "0.2.1"
+    version: "0.3.0"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.4"
@@ -52,7 +52,7 @@ metadata:
         label: "Conversation agent entity (blank = HA default/local)"
         type: dynamic_select
         required: false
-        depends_on: [base_url, token]
+        depends_on: [base_url]
       - key: token
         label: "Long-lived access token"
         type: secret
