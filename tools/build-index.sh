@@ -150,6 +150,7 @@ echo "$SKILL_JSON" | jq -c '.[]' | while read -r SKILL_ROW; do
       version: .version,
       name: .name,
       description: .description,
+      type: (.type // "skill"),
       license: .license,
       author: .author,
       homepage: .homepage,
