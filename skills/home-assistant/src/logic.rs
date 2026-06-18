@@ -740,27 +740,32 @@ const ACCESS_SKEW_MS: i64 = 60_000;
 /// Decide how to obtain a Bearer, purely from current state.
 /// `auth_mode`: storage value (`"oauth"`/`"token"`), or `None` if unset (-> token mode).
 /// `cached_access` + `cached_expires_at`: the access-token cache (ms epoch).
-/// `now_ms`: current time. `token_setting`: the `token` secret setting value.
+/// `now_ms`: current time.
+/// `manual_token`: the user-entered `token` secret SETTING (manual long-lived token).
+/// `refresh_token`: the OAuth refresh token from internal STORAGE (never the setting).
 pub fn plan_bearer(
     auth_mode: Option<&str>,
     cached_access: Option<&str>,
     cached_expires_at: Option<i64>,
     now_ms: i64,
-    token_setting: Option<&str>,
+    manual_token: Option<&str>,
+    refresh_token: Option<&str>,
 ) -> BearerPlan {
     let oauth = matches!(auth_mode, Some("oauth"));
     if !oauth {
-        return match token_setting.filter(|s| !s.trim().is_empty()) {
+        return match manual_token.filter(|s| !s.trim().is_empty()) {
             Some(t) => BearerPlan::UseDirect(t.to_string()),
             None => BearerPlan::NeedsReauth,
         };
     }
-    if let (Some(access), Some(exp)) = (cached_access.filter(|s| !s.trim().is_empty()), cached_expires_at) {
+    if let (Some(access), Some(exp)) =
+        (cached_access.filter(|s| !s.trim().is_empty()), cached_expires_at)
+    {
         if now_ms < exp - ACCESS_SKEW_MS {
             return BearerPlan::UseCached(access.to_string());
         }
     }
-    match token_setting.filter(|s| !s.trim().is_empty()) {
+    match refresh_token.filter(|s| !s.trim().is_empty()) {
         Some(rt) => BearerPlan::Refresh(rt.to_string()),
         None => BearerPlan::NeedsReauth,
     }
@@ -771,33 +776,63 @@ mod bearer_tests {
     use super::*;
 
     #[test]
-    fn plan_bearer_token_mode_uses_setting_directly() {
-        assert_eq!(plan_bearer(Some("token"), None, None, 1_000, Some("LONGLIVED")), BearerPlan::UseDirect("LONGLIVED".into()));
+    fn plan_bearer_token_mode_uses_manual_token_directly() {
+        // Manual mode: refresh_token is irrelevant, manual token used as-is.
+        assert_eq!(
+            plan_bearer(Some("token"), None, None, 1_000, Some("LONGLIVED"), None),
+            BearerPlan::UseDirect("LONGLIVED".into())
+        );
     }
     #[test]
-    fn plan_bearer_unset_mode_defaults_to_token() {
-        assert_eq!(plan_bearer(None, None, None, 1_000, Some("LONGLIVED")), BearerPlan::UseDirect("LONGLIVED".into()));
+    fn plan_bearer_unset_mode_defaults_to_manual_token() {
+        assert_eq!(
+            plan_bearer(None, None, None, 1_000, Some("LONGLIVED"), None),
+            BearerPlan::UseDirect("LONGLIVED".into())
+        );
     }
     #[test]
     fn plan_bearer_oauth_valid_cache_uses_cached() {
-        assert_eq!(plan_bearer(Some("oauth"), Some("ACCESS"), Some(100_000), 1_000, Some("REFRESH")), BearerPlan::UseCached("ACCESS".into()));
+        assert_eq!(
+            plan_bearer(Some("oauth"), Some("ACCESS"), Some(100_000), 1_000, None, Some("REFRESH")),
+            BearerPlan::UseCached("ACCESS".into())
+        );
     }
     #[test]
-    fn plan_bearer_oauth_expired_cache_refreshes() {
-        // now=100000, expires_at=120000; within 60s skew (120000-60000=60000 < 100000) -> refresh.
-        assert_eq!(plan_bearer(Some("oauth"), Some("ACCESS"), Some(120_000), 100_000, Some("REFRESH")), BearerPlan::Refresh("REFRESH".into()));
+    fn plan_bearer_oauth_expired_cache_uses_refresh_token() {
+        assert_eq!(
+            plan_bearer(Some("oauth"), Some("ACCESS"), Some(120_000), 100_000, None, Some("REFRESH")),
+            BearerPlan::Refresh("REFRESH".into())
+        );
     }
     #[test]
-    fn plan_bearer_oauth_missing_cache_refreshes() {
-        assert_eq!(plan_bearer(Some("oauth"), None, None, 1_000, Some("REFRESH")), BearerPlan::Refresh("REFRESH".into()));
+    fn plan_bearer_oauth_missing_cache_uses_refresh_token() {
+        assert_eq!(
+            plan_bearer(Some("oauth"), None, None, 1_000, None, Some("REFRESH")),
+            BearerPlan::Refresh("REFRESH".into())
+        );
     }
     #[test]
     fn plan_bearer_oauth_missing_refresh_token_is_reauth() {
-        assert_eq!(plan_bearer(Some("oauth"), None, None, 1_000, None), BearerPlan::NeedsReauth);
+        // No refresh token in storage (e.g. fresh install or post-migration) → reauth.
+        assert_eq!(
+            plan_bearer(Some("oauth"), None, None, 1_000, None, None),
+            BearerPlan::NeedsReauth
+        );
     }
     #[test]
-    fn plan_bearer_token_mode_missing_setting_is_reauth() {
-        assert_eq!(plan_bearer(Some("token"), None, None, 1_000, None), BearerPlan::NeedsReauth);
+    fn plan_bearer_oauth_ignores_manual_token_for_refresh() {
+        // In oauth mode a stray manual_token must NOT be used as a refresh token.
+        assert_eq!(
+            plan_bearer(Some("oauth"), None, None, 1_000, Some("STRAY"), None),
+            BearerPlan::NeedsReauth
+        );
+    }
+    #[test]
+    fn plan_bearer_token_mode_missing_manual_token_is_reauth() {
+        assert_eq!(
+            plan_bearer(Some("token"), None, None, 1_000, None, None),
+            BearerPlan::NeedsReauth
+        );
     }
 }
 
