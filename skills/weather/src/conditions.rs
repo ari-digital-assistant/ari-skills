@@ -122,6 +122,23 @@ impl Condition {
             Condition::Unknown => "icons/cloudy.png",
         }
     }
+
+    /// Bundled full-bleed background image for this condition (opaque PNG under
+    /// `assets/heroes/`). Day/night variants for clear & partly-cloudy; the wet
+    /// conditions collapse to `rain`, the frozen ones to `snow`.
+    pub fn hero(self, is_day: bool) -> &'static str {
+        match self {
+            Condition::Clear => if is_day { "heroes/clear_day.png" } else { "heroes/clear_night.png" },
+            Condition::PartlyCloudy => if is_day { "heroes/partly_cloudy_day.png" } else { "heroes/partly_cloudy_night.png" },
+            Condition::Cloudy => "heroes/cloudy.png",
+            Condition::Fog => "heroes/fog.png",
+            Condition::Drizzle | Condition::LightRain | Condition::Rain
+                | Condition::HeavyRain | Condition::Showers => "heroes/rain.png",
+            Condition::Sleet | Condition::LightSnow | Condition::Snow | Condition::HeavySnow => "heroes/snow.png",
+            Condition::Thunder => "heroes/thunder.png",
+            Condition::Unknown => "heroes/cloudy.png",
+        }
+    }
 }
 
 #[cfg(test)]
@@ -175,5 +192,18 @@ mod tests {
         assert_eq!(Condition::Clear.icon(false), "icons/clearsky_night.png");
         assert_eq!(Condition::Cloudy.icon(true), "icons/cloudy.png"); // no day/night variant
         assert_eq!(Condition::Cloudy.icon(false), "icons/cloudy.png");
+    }
+    #[test]
+    fn condition_backgrounds() {
+        assert_eq!(Condition::Clear.hero(true), "heroes/clear_day.png");
+        assert_eq!(Condition::Clear.hero(false), "heroes/clear_night.png");
+        assert_eq!(Condition::PartlyCloudy.hero(false), "heroes/partly_cloudy_night.png");
+        assert_eq!(Condition::Rain.hero(true), "heroes/rain.png");
+        assert_eq!(Condition::Showers.hero(true), "heroes/rain.png");
+        assert_eq!(Condition::Snow.hero(true), "heroes/snow.png");
+        assert_eq!(Condition::Sleet.hero(true), "heroes/snow.png");
+        assert_eq!(Condition::Thunder.hero(true), "heroes/thunder.png");
+        assert_eq!(Condition::Fog.hero(true), "heroes/fog.png");
+        assert_eq!(Condition::Unknown.hero(true), "heroes/cloudy.png");
     }
 }
