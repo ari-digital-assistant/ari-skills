@@ -64,5 +64,5 @@
   "err.not_found": "Non sono riuscito a trovare quel luogo.",
   "err.location_permission": "Mi serve l'accesso alla posizione — attivalo nelle Impostazioni, oppure chiedimi di una città.",
   "err.location_unavailable": "I servizi di localizzazione sono disattivati — attivali, oppure chiedimi di una città.",
-  "err.location_timeout": "Non sono riuscito a rilevare la tua posizione in questo momento — riprova tra poco, oppure chiedimi di una città."
+  "err.location_timeout": "Non è stato possibile rilevare la tua posizione in questo momento — riprova tra poco, oppure chiedimi di una città."
 }
