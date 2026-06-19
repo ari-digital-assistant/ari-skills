@@ -118,7 +118,16 @@ echo "$SKILL_JSON" | jq -c '.[]' | while read -r SKILL_ROW; do
   echo "build-index: packaging $id $version ($slug → $bundle_name)"
   # -C skills puts the archive root at <slug>/, which is what the engine's
   # bundle extractor expects.
-  tar -czf "$bundle_path" -C skills "$slug"
+  #
+  # Exclude build-only directories: src/ (Rust sources + test fixtures) and
+  # target/ (cargo output) are never needed at runtime — the engine loads
+  # the prebuilt skill.wasm plus assets/, strings/ and the manifest. Shipping
+  # them was dead weight; for the weather skill the src/ test fixture alone
+  # was 60 KB, and historically nobody noticed because every other skill's
+  # source is tiny. Skipping them keeps bundles lean and avoids leaking
+  # source into the signed artifact.
+  tar --exclude="$slug/src" --exclude="$slug/target" \
+    -czf "$bundle_path" -C skills "$slug"
 
   # shellcheck disable=SC2086
   $SIGN sign "$bundle_path" "$ARI_SIGNING_KEY_FILE" >/dev/null
