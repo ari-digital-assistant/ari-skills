@@ -108,7 +108,11 @@ fn resolve_and_fetch(req: &router::Request, locale: &str) -> Result<forecast::Fo
                 openmeteo::parse_forecast(&body, None).map_err(|_| "err.network")
             }
         }
-        _ => Err("err.location_off"),
+        // Distinct messages per failure so we don't tell someone to "turn it
+        // on in Settings" when the real problem is a transient timeout.
+        ari::LocationStatus::PermissionDenied => Err("err.location_permission"),
+        ari::LocationStatus::Unavailable => Err("err.location_unavailable"),
+        ari::LocationStatus::Timeout => Err("err.location_timeout"),
     }
 }
 

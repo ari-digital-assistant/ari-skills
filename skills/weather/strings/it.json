@@ -62,5 +62,7 @@
   "weekday.6": "Dom",
   "err.network": "Non sono riuscito a contattare il servizio meteo in questo momento.",
   "err.not_found": "Non sono riuscito a trovare quel luogo.",
-  "err.location_off": "Mi serve l'accesso alla posizione — attivalo nelle Impostazioni, oppure chiedimi di una città."
+  "err.location_permission": "Mi serve l'accesso alla posizione — attivalo nelle Impostazioni, oppure chiedimi di una città.",
+  "err.location_unavailable": "I servizi di localizzazione sono disattivati — attivali, oppure chiedimi di una città.",
+  "err.location_timeout": "Non sono riuscito a rilevare la tua posizione in questo momento — riprova tra poco, oppure chiedimi di una città."
 }
