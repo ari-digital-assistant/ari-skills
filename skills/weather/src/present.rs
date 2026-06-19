@@ -62,16 +62,16 @@ fn current_card(f: &Forecast, place: &Option<String>, sys: System, l: &dyn L10n)
     let mut stat = p::Stat::new(headline)
         .caption(cond_label)
         .pill(p::IconText::new(l.t("card.feels_like", &[("temp", &temp(sys, f.current.feels_like_c, l))]))
-            .icon(p::Asset::new("ui/thermometer.png")))
+            .icon(p::Asset::new("ui/thermometer.webp")))
         .metric(p::IconText::new(l.t("card.metric_wind", &[("speed", &wind(sys, f.current.wind_speed_ms, l))]))
-            .icon(p::Asset::new("ui/wind.png")))
+            .icon(p::Asset::new("ui/wind.webp")))
         .background(p::Asset::new(f.current.condition.hero(f.current.is_day)))
-        .footer(p::IconText::new(attribution(f.source)).icon(p::Asset::new("ui/shield.png")));
+        .footer(p::IconText::new(attribution(f.source)).icon(p::Asset::new("ui/shield.webp")));
     if let Some(h) = f.current.humidity_pct {
         stat = stat.metric(p::IconText::new(l.t("card.metric_humidity", &[("pct", &l.num(h))]))
-            .icon(p::Asset::new("ui/droplet.png")));
+            .icon(p::Asset::new("ui/droplet.webp")));
     }
-    p::Card::new("weather_current").title(title).icon(p::Asset::new("ui/pin.png")).stat(stat)
+    p::Card::new("weather_current").title(title).icon(p::Asset::new("ui/pin.webp")).stat(stat)
 }
 
 /// Multi-day list card: summary chip (week hi/lo + dominant condition) + one
@@ -96,12 +96,12 @@ fn forecast_card(f: &Forecast, place: &Option<String>, sys: System, l: &dyn L10n
         if let Some(prob) = day.precip_probability {
             if prob >= 20.0 {
                 row = row.badge(p::IconText::new(l.t("card.row_badge", &[("pct", &l.num(prob))]))
-                    .icon(p::Asset::new("ui/droplet.png")));
+                    .icon(p::Asset::new("ui/droplet.webp")));
             }
         }
         list = list.row(row);
     }
-    list = list.footer(p::IconText::new(attribution(f.source)).icon(p::Asset::new("ui/shield.png")));
+    list = list.footer(p::IconText::new(attribution(f.source)).icon(p::Asset::new("ui/shield.webp")));
     p::Card::new("weather_forecast").title(title).subtitle(subtitle).list(list)
 }
 
@@ -248,7 +248,7 @@ mod tests {
         let env = build(&current_only(), When::Now, Facet::None, System::Metric, "en", &Fakes);
         assert!(env.contains("\"stat\""));
         assert!(env.contains("\"headline\""));
-        assert!(env.contains("asset:ui/wind.png"));
+        assert!(env.contains("asset:ui/wind.webp"));
         assert!(env.contains("asset:heroes/"));        // a background was set
         assert!(env.contains("Open-Meteo"));           // footer attribution
     }

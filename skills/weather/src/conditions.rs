@@ -105,21 +105,21 @@ impl Condition {
     /// weathericons set (MIT) bundled under `assets/icons/`.
     pub fn icon(self, is_day: bool) -> &'static str {
         match self {
-            Condition::Clear => if is_day { "icons/clearsky_day.png" } else { "icons/clearsky_night.png" },
-            Condition::PartlyCloudy => if is_day { "icons/partlycloudy_day.png" } else { "icons/partlycloudy_night.png" },
-            Condition::Showers => if is_day { "icons/rainshowers_day.png" } else { "icons/rainshowers_night.png" },
-            Condition::Cloudy => "icons/cloudy.png",
-            Condition::Fog => "icons/fog.png",
-            Condition::Drizzle => "icons/lightrain.png",
-            Condition::LightRain => "icons/lightrain.png",
-            Condition::Rain => "icons/rain.png",
-            Condition::HeavyRain => "icons/heavyrain.png",
-            Condition::Sleet => "icons/sleet.png",
-            Condition::LightSnow => "icons/lightsnow.png",
-            Condition::Snow => "icons/snow.png",
-            Condition::HeavySnow => "icons/heavysnow.png",
-            Condition::Thunder => "icons/rainandthunder.png",
-            Condition::Unknown => "icons/cloudy.png",
+            Condition::Clear => if is_day { "icons/clearsky_day.webp" } else { "icons/clearsky_night.webp" },
+            Condition::PartlyCloudy => if is_day { "icons/partlycloudy_day.webp" } else { "icons/partlycloudy_night.webp" },
+            Condition::Showers => if is_day { "icons/rainshowers_day.webp" } else { "icons/rainshowers_night.webp" },
+            Condition::Cloudy => "icons/cloudy.webp",
+            Condition::Fog => "icons/fog.webp",
+            Condition::Drizzle => "icons/lightrain.webp",
+            Condition::LightRain => "icons/lightrain.webp",
+            Condition::Rain => "icons/rain.webp",
+            Condition::HeavyRain => "icons/heavyrain.webp",
+            Condition::Sleet => "icons/sleet.webp",
+            Condition::LightSnow => "icons/lightsnow.webp",
+            Condition::Snow => "icons/snow.webp",
+            Condition::HeavySnow => "icons/heavysnow.webp",
+            Condition::Thunder => "icons/rainandthunder.webp",
+            Condition::Unknown => "icons/cloudy.webp",
         }
     }
 
@@ -128,15 +128,15 @@ impl Condition {
     /// conditions collapse to `rain`, the frozen ones to `snow`.
     pub fn hero(self, is_day: bool) -> &'static str {
         match self {
-            Condition::Clear => if is_day { "heroes/clear_day.png" } else { "heroes/clear_night.png" },
-            Condition::PartlyCloudy => if is_day { "heroes/partly_cloudy_day.png" } else { "heroes/partly_cloudy_night.png" },
-            Condition::Cloudy => "heroes/cloudy.png",
-            Condition::Fog => "heroes/fog.png",
+            Condition::Clear => if is_day { "heroes/clear_day.webp" } else { "heroes/clear_night.webp" },
+            Condition::PartlyCloudy => if is_day { "heroes/partly_cloudy_day.webp" } else { "heroes/partly_cloudy_night.webp" },
+            Condition::Cloudy => "heroes/cloudy.webp",
+            Condition::Fog => "heroes/fog.webp",
             Condition::Drizzle | Condition::LightRain | Condition::Rain
-                | Condition::HeavyRain | Condition::Showers => "heroes/rain.png",
-            Condition::Sleet | Condition::LightSnow | Condition::Snow | Condition::HeavySnow => "heroes/snow.png",
-            Condition::Thunder => "heroes/thunder.png",
-            Condition::Unknown => "heroes/cloudy.png",
+                | Condition::HeavyRain | Condition::Showers => "heroes/rain.webp",
+            Condition::Sleet | Condition::LightSnow | Condition::Snow | Condition::HeavySnow => "heroes/snow.webp",
+            Condition::Thunder => "heroes/thunder.webp",
+            Condition::Unknown => "heroes/cloudy.webp",
         }
     }
 }
@@ -188,22 +188,22 @@ mod tests {
     }
     #[test]
     fn condition_icon_picks_day_night() {
-        assert_eq!(Condition::Clear.icon(true), "icons/clearsky_day.png");
-        assert_eq!(Condition::Clear.icon(false), "icons/clearsky_night.png");
-        assert_eq!(Condition::Cloudy.icon(true), "icons/cloudy.png"); // no day/night variant
-        assert_eq!(Condition::Cloudy.icon(false), "icons/cloudy.png");
+        assert_eq!(Condition::Clear.icon(true), "icons/clearsky_day.webp");
+        assert_eq!(Condition::Clear.icon(false), "icons/clearsky_night.webp");
+        assert_eq!(Condition::Cloudy.icon(true), "icons/cloudy.webp"); // no day/night variant
+        assert_eq!(Condition::Cloudy.icon(false), "icons/cloudy.webp");
     }
     #[test]
     fn condition_backgrounds() {
-        assert_eq!(Condition::Clear.hero(true), "heroes/clear_day.png");
-        assert_eq!(Condition::Clear.hero(false), "heroes/clear_night.png");
-        assert_eq!(Condition::PartlyCloudy.hero(false), "heroes/partly_cloudy_night.png");
-        assert_eq!(Condition::Rain.hero(true), "heroes/rain.png");
-        assert_eq!(Condition::Showers.hero(true), "heroes/rain.png");
-        assert_eq!(Condition::Snow.hero(true), "heroes/snow.png");
-        assert_eq!(Condition::Sleet.hero(true), "heroes/snow.png");
-        assert_eq!(Condition::Thunder.hero(true), "heroes/thunder.png");
-        assert_eq!(Condition::Fog.hero(true), "heroes/fog.png");
-        assert_eq!(Condition::Unknown.hero(true), "heroes/cloudy.png");
+        assert_eq!(Condition::Clear.hero(true), "heroes/clear_day.webp");
+        assert_eq!(Condition::Clear.hero(false), "heroes/clear_night.webp");
+        assert_eq!(Condition::PartlyCloudy.hero(false), "heroes/partly_cloudy_night.webp");
+        assert_eq!(Condition::Rain.hero(true), "heroes/rain.webp");
+        assert_eq!(Condition::Showers.hero(true), "heroes/rain.webp");
+        assert_eq!(Condition::Snow.hero(true), "heroes/snow.webp");
+        assert_eq!(Condition::Sleet.hero(true), "heroes/snow.webp");
+        assert_eq!(Condition::Thunder.hero(true), "heroes/thunder.webp");
+        assert_eq!(Condition::Fog.hero(true), "heroes/fog.webp");
+        assert_eq!(Condition::Unknown.hero(true), "heroes/cloudy.webp");
     }
 }
