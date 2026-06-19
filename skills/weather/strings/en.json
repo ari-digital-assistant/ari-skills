@@ -62,5 +62,7 @@
   "weekday.6": "Sun",
   "err.network": "I couldn't reach the weather service just now.",
   "err.not_found": "I couldn't find that place.",
-  "err.location_off": "I need location access for that — turn it on in Settings, or ask me about a specific city."
+  "err.location_permission": "I need location access for that — turn it on in Settings, or ask me about a specific city.",
+  "err.location_unavailable": "Location services are off — switch them on, or ask me about a specific city.",
+  "err.location_timeout": "I couldn't get your location just now — try again in a moment, or ask me about a specific city."
 }
