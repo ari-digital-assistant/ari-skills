@@ -36,11 +36,11 @@
 
   "error.no_tasks_app": "Non posso aggiungere attività perché non c'è nessuna app delle attività installata.",
   "error.no_lists": "La tua app delle attività non ha ancora nessuna lista impostata.",
-  "error.tasks_save_failed": "Non sono riuscito a salvare l'attività. Verifica che l'app delle attività abbia i permessi.",
+  "error.tasks_save_failed": "Non è stato possibile salvare l'attività. Verifica che l'app delle attività abbia i permessi.",
   "error.calendar_no_time": "Quel promemoria non ha un orario, quindi non posso metterlo nel calendario.",
   "error.calendar_no_permission": "Mi serve il permesso di scrittura sul calendario per salvarlo.",
   "error.calendar_no_writable": "Non ho trovato calendari scrivibili.",
-  "error.calendar_save_failed": "Non sono riuscito ad aggiungerlo al calendario.",
+  "error.calendar_save_failed": "Non è stato possibile aggiungerlo al calendario.",
 
   "partial_card.subtitle.untimed": "nessun orario specifico",
   "partial_card.body.unparsed": "Non ho capito \"{unparsed}\". Tocca Annulla se era importante.",
