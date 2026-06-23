@@ -1,0 +1,12 @@
+{
+  "clarify_no_query": "What would you like me to play?",
+  "ask_which_service": "Which service would you like to use?",
+  "no_music_app": "I couldn't find a music app installed.",
+  "service_spotify": "Spotify",
+  "service_apple_music": "Apple Music",
+  "service_youtube_music": "YouTube Music",
+  "service_tidal": "Tidal",
+  "service_deezer": "Deezer",
+  "service_youtube": "YouTube",
+  "service_amazon_music": "Amazon Music"
+}
