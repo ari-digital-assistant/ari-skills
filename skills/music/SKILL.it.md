@@ -1,6 +1,10 @@
 ---
+# `name` must match the directory (`music/`) — it's the stable
+# system identifier, not a display field. Per-locale display strings
+# live in `description` (below) and the markdown body. Don't translate
+# this.
 name: music
-description: Plays music by name in a music app, optionally on a named service.
+description: Riproduce musica per nome in un'app musicale, facoltativamente su un servizio specificato.
 license: MIT
 metadata:
   ari:
@@ -12,54 +16,12 @@ metadata:
     languages: [en, it]
     specificity: medium
     matching:
+      # Pattern confrontati con l'input POST-NORMALIZZATO: minuscolo,
+      # apostrofi/contrazioni rimossi prima che l'engine esegua la regex.
       patterns:
-        - regex: "\\b(play|put on|listen to)\\b"
+        - regex: "\\b(metti su|riproduci|ascolta)\\b"
           weight: 0.9
     examples:
-      - text: "play hotel california"
-        args:
-          query: "hotel california"
-      - text: "play some pink floyd"
-        args:
-          query: "pink floyd"
-      - text: "put on comfortably numb"
-        args:
-          query: "comfortably numb"
-      - text: "listen to the beatles"
-        args:
-          query: "the beatles"
-      - text: "play hotel california on spotify"
-        args:
-          query: "hotel california"
-          service: "spotify"
-      - text: "play bohemian rhapsody on youtube music"
-        args:
-          query: "bohemian rhapsody"
-          service: "youtube_music"
-      - text: "put on some jazz"
-        args:
-          query: "jazz"
-      - text: "play abbey road on apple music"
-        args:
-          query: "abbey road"
-          service: "apple_music"
-      - text: "listen to radiohead on tidal"
-        args:
-          query: "radiohead"
-          service: "tidal"
-      - text: "play something relaxing"
-        args:
-          query: "relaxing music"
-      - text: "put on led zeppelin"
-        args:
-          query: "led zeppelin"
-      - text: "play thriller on spotify"
-        args:
-          query: "thriller"
-          service: "spotify"
-      # Italian examples — routed here because play/put on/listen to
-      # are English triggers; Italian routing is handled by SKILL.it.md.
-      # These bilingual entries teach FunctionGemma the arg shape.
       - text: "metti su bohemian rhapsody"
         args:
           query: "bohemian rhapsody"
@@ -98,17 +60,20 @@ metadata:
       - text: "metti su qualcosa dei beatles"
         args:
           query: "beatles"
+      - text: "riproduci comfortably numb"
+        args:
+          query: "comfortably numb"
     settings:
       - key: default_service
-        label: Default music service
+        label: Servizio musicale predefinito
         type: select
         default: last_used
-        help_text: "Which service to use when you don't say one. 'Last used' remembers your previous choice."
+        help_text: "Quale servizio usare quando non ne specifichi uno. 'Ultimo usato' ricorda la tua scelta precedente."
         options:
           - value: last_used
-            label: Last used
+            label: Ultimo usato
           - value: ask
-            label: Ask each time
+            label: Chiedi ogni volta
           - value: spotify
             label: Spotify
           - value: youtube_music
@@ -128,6 +93,6 @@ metadata:
       memory_limit_mb: 2
 ---
 
-# Music
+# Musica
 
-Plays music by name in the user's chosen music service.
+Riproduce musica per nome nel servizio musicale scelto dall'utente.
