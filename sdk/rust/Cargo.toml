@@ -30,6 +30,10 @@ calendar = ["dep:serde", "dep:serde_json"]
 # capability in SKILL.md. Pulls serde + serde_json (alloc) for the
 # result JSON.
 location = ["dep:serde", "dep:serde_json"]
+# Installed media service ids (media_services). Requires the `media`
+# capability in SKILL.md. Pulls serde_json (alloc) to decode the
+# host's JSON array response.
+media = ["dep:serde", "dep:serde_json"]
 # Local-clock reader (local_now_components / local_timezone_id).
 # Ungated capability — every skill can read the wall clock — but the
 # SDK wrapper is behind a feature flag so skills that don't need it

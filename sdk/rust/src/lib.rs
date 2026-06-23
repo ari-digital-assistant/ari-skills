@@ -1398,6 +1398,48 @@ mod location_impl {
 pub use location_impl::{location, location_with, Location, LocationStatus};
 
 // ---------------------------------------------------------------------------
+// Media services (feature = "media")
+// ---------------------------------------------------------------------------
+
+#[cfg(feature = "media")]
+mod media_impl {
+    extern crate alloc;
+    use alloc::string::String;
+    use alloc::vec::Vec;
+
+    #[cfg(target_arch = "wasm32")]
+    #[link(wasm_import_module = "ari")]
+    extern "C" {
+        #[link_name = "media_services"]
+        fn host_media_services() -> i64;
+    }
+
+    pub(crate) fn parse_ids_json(json: &str) -> Vec<String> {
+        serde_json::from_str::<Vec<String>>(json).unwrap_or_default()
+    }
+
+    /// Canonical ids of the installed music services the host recognises.
+    /// Empty when the host has no media implementation.
+    pub fn media_services() -> Vec<String> {
+        #[cfg(target_arch = "wasm32")]
+        {
+            let packed = unsafe { host_media_services() };
+            match unsafe { super::unpack(packed) } {
+                Some(json) => parse_ids_json(json),
+                None => Vec::new(),
+            }
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            Vec::new()
+        }
+    }
+}
+
+#[cfg(feature = "media")]
+pub use media_impl::media_services;
+
+// ---------------------------------------------------------------------------
 // Local clock (feature = "clock")
 // ---------------------------------------------------------------------------
 
@@ -1925,6 +1967,19 @@ mod settings_refresh_tests {
     fn plain_validated_omits_refresh() {
         let json = SettingsResult::validated("ok").to_json();
         assert!(!json.contains("refresh"));
+    }
+}
+
+#[cfg(all(test, feature = "media"))]
+mod media_tests {
+    #[test]
+    fn parses_installed_ids_json() {
+        let ids = super::media_impl::parse_ids_json("[\"spotify\",\"youtube_music\"]");
+        assert_eq!(ids, vec!["spotify".to_string(), "youtube_music".to_string()]);
+    }
+    #[test]
+    fn parses_empty_array() {
+        assert!(super::media_impl::parse_ids_json("[]").is_empty());
     }
 }
 
