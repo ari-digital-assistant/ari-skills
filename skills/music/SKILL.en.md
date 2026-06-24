@@ -32,10 +32,6 @@ metadata:
         args:
           query: "hotel california"
           service: "spotify"
-      - text: "play bohemian rhapsody on youtube music"
-        args:
-          query: "bohemian rhapsody"
-          service: "youtube_music"
       - text: "put on some jazz"
         args:
           query: "jazz"
@@ -77,10 +73,6 @@ metadata:
         args:
           query: "radiohead"
           service: "tidal"
-      - text: "riproduci bohemian rhapsody su youtube music"
-        args:
-          query: "bohemian rhapsody"
-          service: "youtube_music"
       - text: "metti su abbey road su apple music"
         args:
           query: "abbey road"
@@ -111,8 +103,6 @@ metadata:
             label: Ask each time
           - value: spotify
             label: Spotify
-          - value: youtube_music
-            label: YouTube Music
           - value: apple_music
             label: Apple Music
           - value: tidal

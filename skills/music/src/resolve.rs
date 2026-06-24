@@ -61,7 +61,7 @@ pub fn decide(
 mod tests {
     use super::*;
     fn installed() -> Vec<String> {
-        vec!["spotify".to_string(), "youtube_music".to_string()]
+        vec!["spotify".to_string(), "tidal".to_string()]
     }
     fn parsed(q: Option<&str>, s: Option<&str>) -> Parsed {
         Parsed { query: q.map(|x| x.to_string()), service: s.map(|x| x.to_string()) }
@@ -81,15 +81,15 @@ mod tests {
 
     #[test]
     fn named_uninstalled_service_asks() {
-        // tidal not installed → fall to ASK rather than dead-end
-        let d = decide(parsed(Some("x"), Some("tidal")), "last_used", None, &installed());
+        // deezer not installed → fall to ASK rather than dead-end
+        let d = decide(parsed(Some("x"), Some("deezer")), "last_used", None, &installed());
         assert!(matches!(d, Decision::Ask { .. }));
     }
 
     #[test]
     fn specific_setting_used_when_no_named_service() {
-        let d = decide(parsed(Some("x"), None), "youtube_music", None, &installed());
-        assert!(matches!(d, Decision::Play { ref service, .. } if service == "youtube_music"));
+        let d = decide(parsed(Some("x"), None), "tidal", None, &installed());
+        assert!(matches!(d, Decision::Play { ref service, .. } if service == "tidal"));
     }
 
     #[test]
@@ -106,7 +106,7 @@ mod tests {
 
     #[test]
     fn last_used_uninstalled_asks() {
-        let d = decide(parsed(Some("x"), None), "last_used", Some("tidal".to_string()), &installed());
+        let d = decide(parsed(Some("x"), None), "last_used", Some("deezer".to_string()), &installed());
         assert!(matches!(d, Decision::Ask { .. }));
     }
 
