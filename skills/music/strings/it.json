@@ -1,0 +1,10 @@
+{
+  "clarify_no_query": "Cosa vuoi ascoltare?",
+  "ask_which_service": "Quale servizio vuoi usare?",
+  "no_music_app": "Non ho trovato nessuna app musicale installata.",
+  "service_spotify": "Spotify",
+  "service_apple_music": "Apple Music",
+  "service_tidal": "Tidal",
+  "service_deezer": "Deezer",
+  "service_amazon_music": "Amazon Music"
+}
