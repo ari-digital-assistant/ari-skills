@@ -162,6 +162,7 @@ Capabilities are the contract between a skill and the host (engine + frontend). 
 | `authorize` | Open the system browser for an OAuth/IndieAuth sign-in and capture the redirect (see [skill-authors.md](skill-authors.md#action-buttons-and-oauth-sign-in)). Uses a single app-owned redirect (`/oauth/callback`); the host binds a nonce to the flow and routes the callback to the requesting skill |
 | `calendar` | Read/write the platform calendar |
 | `tasks` | Read/write the platform task/reminder lists |
+| `critical_alert` | Emit a critical, full-takeover alert that breaks through Do Not Disturb and takes over the locked screen (e.g. the timer alarm). On Android the frontend nudges the user to grant `USE_FULL_SCREEN_INTENT` when a skill declaring this is installed |
 
 Declarative skills typically need no capabilities. WASM skills declare whatever they import from the host.
 
