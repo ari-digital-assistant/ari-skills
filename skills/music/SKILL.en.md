@@ -109,8 +109,6 @@ metadata:
             label: Tidal
           - value: deezer
             label: Deezer
-          - value: youtube
-            label: YouTube
           - value: amazon_music
             label: Amazon Music
     wasm:

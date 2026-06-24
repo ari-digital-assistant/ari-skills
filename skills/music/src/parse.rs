@@ -1,8 +1,8 @@
 extern crate alloc;
 use alloc::string::{String, ToString};
 
-pub const SERVICE_IDS: [&str; 6] = [
-    "spotify", "apple_music", "tidal", "deezer", "youtube", "amazon_music",
+pub const SERVICE_IDS: [&str; 5] = [
+    "spotify", "apple_music", "tidal", "deezer", "amazon_music",
 ];
 
 /// (canonical id, alias). Longest aliases first so "amazon music" wins over "amazon".
@@ -12,7 +12,6 @@ const SERVICE_ALIASES: &[(&str, &str)] = &[
     ("spotify", "spotify"),
     ("tidal", "tidal"),
     ("deezer", "deezer"),
-    ("youtube", "youtube"),
 ];
 
 const TRIGGERS: &[&str] = &[
