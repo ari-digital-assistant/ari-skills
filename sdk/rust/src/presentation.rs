@@ -64,6 +64,8 @@ pub struct Envelope {
     open_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     clipboard: Option<Clipboard>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    await_reply: Option<AwaitReply>,
     #[serde(skip_serializing_if = "Dismiss::is_empty")]
     dismiss: Dismiss,
 }
@@ -113,6 +115,15 @@ impl Envelope {
         self
     }
 
+    /// Signal that the engine should await the user's spoken reply to this
+    /// envelope's question and deliver it to this skill's `execute_reply`.
+    /// `context` is opaque, skill-defined, engine-stored (never round-tripped
+    /// through an utterance — so it can be arbitrarily large JSON).
+    pub fn await_reply(mut self, context: impl Into<String>) -> Self {
+        self.await_reply = Some(AwaitReply { context: context.into() });
+        self
+    }
+
     pub fn dismiss_card(mut self, id: impl Into<String>) -> Self {
         self.dismiss.cards.push(id.into());
         self
@@ -139,6 +150,11 @@ impl Envelope {
 #[derive(Serialize)]
 struct Clipboard {
     text: String,
+}
+
+#[derive(Serialize, Default)]
+struct AwaitReply {
+    context: String,
 }
 
 #[derive(Serialize, Default)]
@@ -982,6 +998,21 @@ mod tests {
         assert!(json.contains(r#""caption":"cloudy""#));
         assert!(json.contains(r#""background":"asset:heroes/cloudy.png""#));
         assert!(json.contains(r#""metrics":[{"icon":"asset:ui/wind.png","text":"Wind 18 km/h"}"#));
+    }
+
+    #[test]
+    fn envelope_await_reply_serializes_context() {
+        let json = Envelope::new().speak("which service?").await_reply("Q1").to_json();
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(v["await_reply"]["context"], "Q1");
+        assert_eq!(v["speak"], "which service?");
+    }
+
+    #[test]
+    fn envelope_without_await_reply_omits_field() {
+        let json = Envelope::new().speak("hi").to_json();
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert!(v.get("await_reply").is_none());
     }
 
     #[test]

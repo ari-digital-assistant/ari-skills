@@ -187,6 +187,40 @@ unsafe fn unpack(packed: i64) -> Option<&'static str> {
 }
 
 // ---------------------------------------------------------------------------
+// Multi-turn reply helpers (not wasm-gated — usable in skill logic + tests)
+// ---------------------------------------------------------------------------
+
+// `serde_json` is available whenever any JSON-enabled feature is active.
+// Gate under `presentation` (always on for skills that use await_reply) so
+// the crate still compiles with `default-features = false` in lean text-only
+// skills that opt out of JSON features entirely.
+#[cfg(feature = "presentation")]
+/// A user's spoken reply to a question the skill previously asked via
+/// `Envelope::await_reply`. Delivered to the skill as the `execute` input
+/// wrapped in `{"_ari_reply":{"context":…,"text":…}}`.
+#[derive(Debug)]
+pub struct Reply {
+    pub context: String,
+    pub text: String,
+}
+
+#[cfg(feature = "presentation")]
+/// Detect and unwrap the multi-turn reply envelope. Returns `None` for any
+/// ordinary input, so a skill can call this first in `execute` and fall
+/// through to its normal parsing.
+pub fn parse_reply(input: &str) -> Option<Reply> {
+    let trimmed = input.trim_start();
+    if !trimmed.starts_with("{\"_ari_reply\"") {
+        return None;
+    }
+    let v: serde_json::Value = serde_json::from_str(trimmed).ok()?;
+    let inner = v.get("_ari_reply")?.as_object()?;
+    let context = inner.get("context")?.as_str()?.to_string();
+    let text = inner.get("text")?.as_str()?.to_string();
+    Some(Reply { context, text })
+}
+
+// ---------------------------------------------------------------------------
 // Logging
 // ---------------------------------------------------------------------------
 
@@ -1967,6 +2001,25 @@ mod settings_refresh_tests {
     fn plain_validated_omits_refresh() {
         let json = SettingsResult::validated("ok").to_json();
         assert!(!json.contains("refresh"));
+    }
+}
+
+#[cfg(all(test, feature = "presentation"))]
+mod parse_reply_tests {
+    use super::{parse_reply};
+
+    #[test]
+    fn parse_reply_extracts_context_and_text() {
+        let input = r#"{"_ari_reply":{"context":"Q1","text":"spotify"}}"#;
+        let r = parse_reply(input).expect("should parse");
+        assert_eq!(r.context, "Q1");
+        assert_eq!(r.text, "spotify");
+    }
+
+    #[test]
+    fn parse_reply_returns_none_for_ordinary_input() {
+        assert!(parse_reply("play hotel california").is_none());
+        assert!(parse_reply(r#"{"query":"x"}"#).is_none());
     }
 }
 
