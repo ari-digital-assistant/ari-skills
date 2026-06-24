@@ -209,6 +209,8 @@ pub struct Reply {
 /// ordinary input, so a skill can call this first in `execute` and fall
 /// through to its normal parsing.
 pub fn parse_reply(input: &str) -> Option<Reply> {
+    #[cfg(not(feature = "std"))]
+    use alloc::string::ToString;
     let trimmed = input.trim_start();
     if !trimmed.starts_with("{\"_ari_reply\"") {
         return None;
