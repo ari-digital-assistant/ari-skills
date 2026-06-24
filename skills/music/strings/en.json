@@ -1,6 +1,7 @@
 {
   "clarify_no_query": "What would you like me to play?",
   "ask_which_service": "Which service would you like to use?",
+  "reply_unrecognized": "Sorry, I didn't catch which service.",
   "no_music_app": "I couldn't find a music app installed.",
   "service_spotify": "Spotify",
   "service_apple_music": "Apple Music",

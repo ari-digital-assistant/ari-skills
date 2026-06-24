@@ -7,6 +7,78 @@ mod resolve;
 
 use ari_skill_sdk as ari;
 
+use alloc::string::String;
+use alloc::vec::Vec;
+
+#[derive(Debug)]
+pub enum ReplyOutcome {
+    Play { query: String, service: String },
+    Unrecognized,
+}
+
+/// Resolve a spoken reply to the "which service?" question. `context_json` is
+/// the blob the picker stored: `{"query":…,"installed":[…]}`. We scan the
+/// reply's tokens for the first that canonicalises to an installed service.
+pub fn resolve_reply(context_json: &str, text: &str) -> ReplyOutcome {
+    use alloc::string::ToString;
+    let v: serde_json::Value = match serde_json::from_str(context_json) {
+        Ok(v) => v,
+        Err(_) => return ReplyOutcome::Unrecognized,
+    };
+    let query = v.get("query").and_then(|q| q.as_str()).unwrap_or("").to_string();
+    let installed: Vec<String> = v
+        .get("installed")
+        .and_then(|i| i.as_array())
+        .map(|a| a.iter().filter_map(|s| s.as_str().map(|s| s.to_string())).collect())
+        .unwrap_or_default();
+
+    // Try the whole reply, then each whitespace token, through the existing
+    // canonicaliser; accept the first canonical id that is installed.
+    let candidates = core::iter::once(text).chain(text.split_whitespace());
+    for cand in candidates {
+        if let Some(canon) = parse::canonical_service(cand) {
+            if installed.iter().any(|s| s == &canon) {
+                return ReplyOutcome::Play { query, service: canon };
+            }
+        }
+    }
+    ReplyOutcome::Unrecognized
+}
+
+#[cfg(test)]
+mod reply_tests {
+    use super::*;
+
+    #[test]
+    fn reply_matching_installed_service_yields_play() {
+        let ctx = r#"{"query":"hotel california","installed":["spotify","ytmusic"]}"#;
+        let outcome = resolve_reply(ctx, "spotify");
+        match outcome {
+            ReplyOutcome::Play { query, service } => {
+                assert_eq!(query, "hotel california");
+                assert_eq!(service, "spotify");
+            }
+            other => panic!("expected Play, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn reply_with_alias_and_filler_still_matches() {
+        let ctx = r#"{"query":"hotel california","installed":["spotify"]}"#;
+        // canonical_service handles case/aliases; filler words are tolerated
+        // by scanning tokens.
+        assert!(matches!(resolve_reply(ctx, "spotify please"),
+            ReplyOutcome::Play { ref service, .. } if service == "spotify"));
+    }
+
+    #[test]
+    fn reply_not_matching_any_installed_service_fails() {
+        let ctx = r#"{"query":"hotel california","installed":["spotify"]}"#;
+        assert!(matches!(resolve_reply(ctx, "pandora"), ReplyOutcome::Unrecognized));
+        assert!(matches!(resolve_reply(ctx, "blah blah"), ReplyOutcome::Unrecognized));
+    }
+}
+
 #[cfg(target_arch = "wasm32")]
 #[no_mangle]
 pub extern "C" fn score(_ptr: i32, _len: i32) -> f32 {
@@ -18,6 +90,23 @@ pub extern "C" fn score(_ptr: i32, _len: i32) -> f32 {
 pub extern "C" fn execute(ptr: i32, len: i32) -> i64 {
     use alloc::string::ToString;
     let input = unsafe { ari::input(ptr, len) };
+
+    // Multi-turn: if this is the user's reply to our "which service?" picker,
+    // handle it directly — it must NOT be re-parsed as a fresh "play" request.
+    if let Some(reply) = ari::parse_reply(input) {
+        return match resolve_reply(&reply.context, &reply.text) {
+            ReplyOutcome::Play { query, service } => {
+                let _ = ari::storage_set("last_service", &service);
+                ari::respond_action(&action::play_action_json(&query, &service))
+            }
+            ReplyOutcome::Unrecognized => {
+                ari::respond_text(
+                    ari::t("reply_unrecognized", &[])
+                        .unwrap_or("Sorry, I didn't catch which service."),
+                )
+            }
+        };
+    }
 
     // Prefer router typed args, else keyword parse.
     let parsed = match ari::args().and_then(parse_args) {
@@ -72,5 +161,9 @@ fn build_picker(query: &str, installed: &[alloc::string::String]) -> alloc::stri
         let utt = format!("play {query} on {label}");
         card = card.action(p::Action::new(id, &label).utterance(&utt));
     }
-    p::Envelope::new().card(card).to_json()
+    // Context the engine stores for our reply short-circuit: the pending query
+    // and the services to match a spoken answer against. Buttons above remain
+    // for tap + legacy voice-intercept; await_reply adds the multi-turn path.
+    let context = serde_json::json!({ "query": query, "installed": installed }).to_string();
+    p::Envelope::new().card(card).await_reply(context).to_json()
 }
