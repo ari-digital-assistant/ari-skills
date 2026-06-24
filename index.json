@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-06-19T11:33:31Z",
+  "generated_at": "2026-06-24T08:59:23Z",
   "skills": [
     {
       "id": "dev.heyari.githubzen",
@@ -20,7 +20,7 @@
       ],
       "bundle": "bundles/dev.heyari.githubzen-0.1.1.tar.gz",
       "signature": "bundles/dev.heyari.githubzen-0.1.1.tar.gz.sig",
-      "sha256": "b114f159f713dde727632800ba7a86a5e04f717260bc2cd0787c63d22905c5f6",
+      "sha256": "3dbb51e64c128f6aa5cfc954f3acafee617f334909c91e2c239f26da5a1762d4",
       "manifest": "manifests/dev.heyari.githubzen-0.1.1.md",
       "localizations": {
         "it": {
@@ -48,7 +48,7 @@
       ],
       "bundle": "bundles/dev.heyari.homeassistant-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.homeassistant-0.3.0.tar.gz.sig",
-      "sha256": "1f40ea5ab04c1ce922d24af6f7cc3bce38248542efcde5317e39543f8db418eb",
+      "sha256": "462cfec63469fa4b1826e1980179b89ec3ab5be5a1de1666c26527569d1d2b1b",
       "manifest": "manifests/dev.heyari.homeassistant-0.3.0.md",
       "localizations": {}
     },
@@ -68,7 +68,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.gemini-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.gemini-0.3.0.tar.gz.sig",
-      "sha256": "d37c699af313be7f9d6b1bc48941323de459277be0888cbd847fe118ef662868",
+      "sha256": "98ad954fa1d503e5706c9462f40dd8db30b95d02a7ebff2bba11edffb9fba071",
       "manifest": "manifests/dev.heyari.assistant.gemini-0.3.0.md",
       "localizations": {
         "it": {
@@ -93,7 +93,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz.sig",
-      "sha256": "1c51e99b15f2e2aee1d61d4463301cb5ba1f4b264112cb6db92a45b70ceede2f",
+      "sha256": "78bfce614e58ac971214ce76ef61794d45e6a589eff419668e157ee7372c250d",
       "manifest": "manifests/dev.heyari.assistant.chatgpt-0.3.0.md",
       "localizations": {
         "it": {
@@ -122,7 +122,7 @@
       ],
       "bundle": "bundles/dev.heyari.weather-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.weather-0.1.0.tar.gz.sig",
-      "sha256": "01b17a7348dada8270f189dd7e78ec836e984650b12c4198009780b88849b533",
+      "sha256": "f890cdf99df5884c39bbb7a25e0c0d0ad0506254b1cc6856aed4e52c4530aa7e",
       "manifest": "manifests/dev.heyari.weather-0.1.0.md",
       "localizations": {
         "it": {
@@ -147,7 +147,7 @@
       ],
       "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "4da796dff287204c16ff49d7f355588431e9ea29abd68801382bda69df2a7f70",
+      "sha256": "b6befaacf37b7615d94ecb65a9aad299b43fdfdea75651f5f66f86eff492707c",
       "manifest": "manifests/dev.heyari.coinflip-0.1.0.md",
       "localizations": {
         "it": {
@@ -175,7 +175,7 @@
       ],
       "bundle": "bundles/dev.heyari.reminder-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.reminder-0.3.0.tar.gz.sig",
-      "sha256": "fbfb2e1b08d7df707b64db5f06cf3e35bac88efcca83b0f823681d18b26332db",
+      "sha256": "17ca0254468d72071bfca96b327b6889daff1c39d132f1425706a037b795cd51",
       "manifest": "manifests/dev.heyari.reminder-0.3.0.md",
       "localizations": {
         "it": {
@@ -202,7 +202,7 @@
       ],
       "bundle": "bundles/dev.heyari.counter-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.counter-0.1.0.tar.gz.sig",
-      "sha256": "2a841bab6245b8cca2f3a31c87053795dc8bf9e1da286d9a9cc3884fa47b3448",
+      "sha256": "3de6967aef152d858f7ff87bdbd8dc1f5078d6e882dc975fcd4e239915349841",
       "manifest": "manifests/dev.heyari.counter-0.1.0.md",
       "localizations": {
         "it": {
@@ -227,7 +227,7 @@
       ],
       "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
-      "sha256": "f6786580e24ea33d62010911ad5c03f0dd5cbfd8b65d77d5d13e805e4295e877",
+      "sha256": "652a1f9bcd1ecec453758e0326e70b371767bc7f58250631fdc9ae88008b3f0c",
       "manifest": "manifests/dev.heyari.wasmecho-0.1.0.md",
       "localizations": {
         "it": {
@@ -254,12 +254,41 @@
       ],
       "bundle": "bundles/dev.heyari.timer-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.timer-0.1.0.tar.gz.sig",
-      "sha256": "bf1f455182a657c2aadb5814450419cb30fdeb8db17ea7b9fd69f4af2d0f8750",
+      "sha256": "36a07f939bae82f8f600878661952d7958f01374c97c0a5d272d81b4a7386338",
       "manifest": "manifests/dev.heyari.timer-0.1.0.md",
       "localizations": {
         "it": {
           "name": "timer",
           "description": "Imposta, interroga e annulla timer con nome. Supporta frasi naturali come \"imposta un timer per la pasta di 8 minuti\". Gestisce più timer contemporaneamente."
+        }
+      }
+    },
+    {
+      "id": "dev.heyari.music",
+      "version": "0.1.0",
+      "name": "music",
+      "description": "Plays music by name in a music app, optionally on a named service.",
+      "type": "skill",
+      "license": "MIT",
+      "author": "Ari core team",
+      "homepage": null,
+      "capabilities": [
+        "media_control",
+        "media_services",
+        "storage_kv"
+      ],
+      "languages": [
+        "en",
+        "it"
+      ],
+      "bundle": "bundles/dev.heyari.music-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.music-0.1.0.tar.gz.sig",
+      "sha256": "39a2c2375615dd9d446d605614873c795b765815f669f8390c2d2003651b96a2",
+      "manifest": "manifests/dev.heyari.music-0.1.0.md",
+      "localizations": {
+        "it": {
+          "name": "music",
+          "description": "Riproduce musica per nome in un'app musicale, facoltativamente su un servizio specificato."
         }
       }
     },
@@ -279,7 +308,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz.sig",
-      "sha256": "322d20b4b1d5aa62538f3e55896b11267b5c2857ba3406585545ae8cf1ecb15e",
+      "sha256": "88a3c24463f93c737aab71775d2a701c32c68ac36857b4e4997c637292667f79",
       "manifest": "manifests/dev.heyari.assistant.claude-0.3.0.md",
       "localizations": {
         "it": {
