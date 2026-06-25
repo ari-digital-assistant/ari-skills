@@ -1,6 +1,7 @@
 {
   "clarify_no_query": "Cosa vuoi ascoltare?",
   "ask_which_service": "Quale servizio vuoi usare?",
+  "reply_unrecognized": "Scusa, non ho capito quale servizio.",
   "no_music_app": "Non ho trovato nessuna app musicale installata.",
   "service_spotify": "Spotify",
   "service_apple_music": "Apple Music",
