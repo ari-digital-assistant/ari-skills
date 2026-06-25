@@ -152,9 +152,13 @@ fn build_picker(query: &str, installed: &[alloc::string::String]) -> alloc::stri
     use ari_skill_sdk::presentation as p;
     use alloc::format;
     use alloc::string::ToString;
-    let mut card = p::Card::new("music_pick").title(
-        ari::t("ask_which_service", &[]).unwrap_or("Which service would you like to use?"),
-    );
+    // The question doubles as the spoken prompt: on the voice path the mic
+    // re-arms (await_reply) and the user must HEAR what's being asked — a card
+    // title alone is silent. `speak` and `title` carry the same string.
+    let prompt = ari::t("ask_which_service", &[])
+        .unwrap_or("Which service would you like to use?")
+        .to_string();
+    let mut card = p::Card::new("music_pick").title(prompt.clone());
     for id in installed {
         let label = ari::t(&format!("service_{id}"), &[]).unwrap_or(id).to_string();
         // utterance re-uses the natural parse path; label drives voice-pick.
@@ -165,5 +169,5 @@ fn build_picker(query: &str, installed: &[alloc::string::String]) -> alloc::stri
     // and the services to match a spoken answer against. Buttons above remain
     // for tap + legacy voice-intercept; await_reply adds the multi-turn path.
     let context = serde_json::json!({ "query": query, "installed": installed }).to_string();
-    p::Envelope::new().card(card).await_reply(context).to_json()
+    p::Envelope::new().speak(prompt).card(card).await_reply(context).to_json()
 }
