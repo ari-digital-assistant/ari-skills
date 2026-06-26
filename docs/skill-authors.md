@@ -516,19 +516,29 @@ When a user speaks, Ari does this:
    every installed skill against the user's input using the `matching.patterns`
    you declared. If something clears the threshold, that skill executes. Done.
 
-2. **If nothing matched**, Ari optionally consults the **FunctionGemma router** —
-   a small (~250MB) on-device language model fine-tuned for routing. It sees
-   your skill's `name` and `description`, and the user's input, and picks one.
-   This is the safety net for paraphrases the keyword matcher missed.
+2. **If nothing matched**, Ari hands the query to a *router*. Which one depends
+   on the user's setup: on-device English uses the **FunctionGemma** model
+   (~250MB, fine-tuned on Ari's skills); a user with a cloud assistant uses the
+   cloud model directly (one call that either routes or just answers); a
+   non-English user uses whichever assistant is configured. Whichever it is, it
+   reads your skill's `description` and the user's input and either picks your
+   skill or decides it's a general question for the assistant to answer. This is
+   the safety net for paraphrases the keyword matcher missed.
 
 So a user saying *"flip a coin"* always lands on coin-flip via keywords. A user
 saying *"let's leave it to chance, heads or tails"* won't trigger any keyword
-patterns — but the FunctionGemma router can still route them to coin-flip,
-**because it understood the description**.
+patterns — but the router can still send them to coin-flip, **because it
+understood the description**.
 
 This is why your `description` matters more than you might think. The keyword
-matcher only ever reads `matching.patterns`. The FunctionGemma router reads
-the `description`. Two completely different consumers, both important.
+matcher only ever reads `matching.patterns`. The router reads the `description`
+(and, for FunctionGemma, was trained on your `examples`). Two completely
+different consumers, both important.
+
+> **Aside:** FunctionGemma is shown your skill by a short **alias** — the final
+> segment of your reverse-DNS id (`weather` for `dev.heyari.weather`) — because
+> a 270M model can't reliably emit a full dotted id. The engine maps it back, so
+> this is invisible to you; it just means router logs show the short name.
 
 ### Writing a description that works for the router
 

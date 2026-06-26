@@ -29,13 +29,15 @@ Declarative and WASM skills are wrapped by adapter structs (in the `ari-skill-lo
 
 ## How a skill gets picked
 
-Ari is **not** an LLM. Routing is deterministic. Every skill scores itself against the input, and the engine runs three ranking rounds with thresholds based on the skill's declared `Specificity`:
+The **first** stage of routing is deterministic — no LLM. Every skill scores itself against the input, and the engine runs three ranking rounds with thresholds based on the skill's declared `Specificity`:
 
 - Round 1: only `High` specificity skills, threshold 0.85
 - Round 2: `High` + `Medium`, threshold 0.75
 - Round 3: all skills, threshold 0.80
 
-The first skill to clear its round's threshold wins. If nothing clears, Ari falls back to a default response. This means a `High`-specificity skill that's confident about a narrow input ("flip a coin") wins before a `Low`-specificity catch-all gets a look in.
+The first skill to clear its round's threshold wins. This means a `High`-specificity skill that's confident about a narrow input ("flip a coin") wins before a `Low`-specificity catch-all gets a look in.
+
+**If nothing clears**, the input is handed to a router for the leftover — and *that* part does use a model: on-device English goes to the FunctionGemma router (which picks a skill or abstains), a cloud-assistant user's query goes to the cloud (one call that routes or answers), and non-English routes via the configured assistant. Only when none of those claim it does Ari fall back to "didn't understand" / the assistant answering directly. So the keyword layer is deterministic and free; the model layer is the fuzzy safety net behind it. See `ari-engine/docs/architecture.md` for the full flow.
 
 For declarative skills, the engine builds a native scorer at load time from the manifest's `metadata.ari.matching.patterns` (keywords + optional regex + weights). **The WASM module is never called during scoring** — this is what lets the registry scale to hundreds of skills without paying an FFI cost per utterance.
 
