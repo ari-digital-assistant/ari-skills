@@ -33,17 +33,33 @@ pub fn resolve_reply(context_json: &str, text: &str) -> ReplyOutcome {
         .map(|a| a.iter().filter_map(|s| s.as_str().map(|s| s.to_string())).collect())
         .unwrap_or_default();
 
-    // Try the whole reply, then each whitespace token, through the existing
-    // canonicaliser; accept the first canonical id that is installed.
-    let candidates = core::iter::once(text).chain(text.split_whitespace());
-    for cand in candidates {
-        if let Some(canon) = parse::canonical_service(cand) {
-            if installed.iter().any(|s| s == &canon) {
-                return ReplyOutcome::Play { query, service: canon };
+    // The reply is either a bare label ("apple music") or — for BOTH the tap
+    // and the voice-intercept paths — the card action's utterance
+    // ("play <query> on <label>"). Service aliases are up to two words
+    // ("apple music", "amazon music"), so scan each token AND each adjacent
+    // pair through the canonicaliser. Longest window wins at a given position
+    // (so "apple music" beats "apple"); we keep the LAST installed match so a
+    // service named after "on" wins over any service-like word in the query.
+    let tokens: Vec<&str> = text.split_whitespace().collect();
+    let mut chosen: Option<String> = None;
+    for i in 0..tokens.len() {
+        for span in [2usize, 1] {
+            if i + span > tokens.len() {
+                continue;
+            }
+            let cand = tokens[i..i + span].join(" ");
+            if let Some(canon) = parse::canonical_service(&cand) {
+                if installed.iter().any(|s| s == &canon) {
+                    chosen = Some(canon);
+                    break; // longest match at this position wins
+                }
             }
         }
     }
-    ReplyOutcome::Unrecognized
+    match chosen {
+        Some(service) => ReplyOutcome::Play { query, service },
+        None => ReplyOutcome::Unrecognized,
+    }
 }
 
 #[cfg(test)]
@@ -77,6 +93,45 @@ mod reply_tests {
         let ctx = r#"{"query":"hotel california","installed":["spotify"]}"#;
         assert!(matches!(resolve_reply(ctx, "pandora"), ReplyOutcome::Unrecognized));
         assert!(matches!(resolve_reply(ctx, "blah blah"), ReplyOutcome::Unrecognized));
+    }
+
+    // Both tap and voice-intercept submit the card action's utterance
+    // ("play <query> on <label>") as the reply — NOT the bare label — so a
+    // MULTI-WORD service label must resolve out of that full sentence.
+    #[test]
+    fn reply_from_card_utterance_multiword_service_matches() {
+        let ctx = r#"{"query":"hotel california","installed":["spotify","apple_music"]}"#;
+        let outcome = resolve_reply(ctx, "play hotel california on apple music");
+        match outcome {
+            ReplyOutcome::Play { query, service } => {
+                assert_eq!(query, "hotel california");
+                assert_eq!(service, "apple_music");
+            }
+            other => panic!("expected Play(apple_music), got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn reply_from_card_utterance_singleword_service_matches() {
+        let ctx = r#"{"query":"x","installed":["spotify","apple_music"]}"#;
+        assert!(matches!(resolve_reply(ctx, "play x on spotify"),
+            ReplyOutcome::Play { ref service, .. } if service == "spotify"));
+    }
+
+    // The service after "on" must win over a service-like word buried in the
+    // query (the picked service is always at the end of the utterance).
+    #[test]
+    fn reply_service_after_on_wins_over_query_token() {
+        let ctx = r#"{"query":"spotify anthem","installed":["spotify","apple_music"]}"#;
+        assert!(matches!(resolve_reply(ctx, "play spotify anthem on apple music"),
+            ReplyOutcome::Play { ref service, .. } if service == "apple_music"));
+    }
+
+    #[test]
+    fn bare_multiword_label_still_matches() {
+        let ctx = r#"{"query":"x","installed":["spotify","apple_music"]}"#;
+        assert!(matches!(resolve_reply(ctx, "apple music"),
+            ReplyOutcome::Play { ref service, .. } if service == "apple_music"));
     }
 }
 
