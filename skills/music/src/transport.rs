@@ -20,6 +20,12 @@ pub enum Transport {
 pub fn parse(input: &str) -> Option<Transport> {
     let s = input.trim();
 
+    // Bare "play" (no query) means resume; "play <song>" must NOT match here
+    // (it falls through to the play path). Exact-input only.
+    if s == "play" {
+        return Some(Transport::Resume);
+    }
+
     // Volume set: "set volume [to] N[%]" / "imposta|metti il volume al N[%]".
     if let Some(level) = parse_volume_level(s) {
         return Some(Transport::VolumeSet(level));
@@ -155,5 +161,17 @@ mod tests {
     #[test]
     fn volume_set_clamps_over_100() {
         assert_eq!(parse("set volume to 250%"), Some(Transport::VolumeSet(100)));
+    }
+
+    #[test]
+    fn bare_play_is_resume() {
+        assert_eq!(parse("play"), Some(Transport::Resume));
+    }
+
+    #[test]
+    fn play_with_query_is_not_transport() {
+        // Must still fall through to the play path, not resume.
+        assert_eq!(parse("play hotel california"), None);
+        assert_eq!(parse("play some jazz"), None);
     }
 }
