@@ -4,6 +4,7 @@ extern crate alloc;
 mod parse;
 mod action;
 mod resolve;
+mod transport;
 
 use ari_skill_sdk as ari;
 
