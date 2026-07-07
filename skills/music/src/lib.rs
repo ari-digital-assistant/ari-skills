@@ -109,6 +109,13 @@ pub extern "C" fn execute(ptr: i32, len: i32) -> i64 {
         };
     }
 
+    // Transport/volume verbs are unambiguous (no query) and must be handled
+    // before the play path — a bare "pause"/"next"/"stop" is a command, not a
+    // song title. Parsed from the raw utterance, independent of router args.
+    if let Some(t) = transport::parse(input) {
+        return ari::respond_action(&action::transport_action_json(&t));
+    }
+
     // Prefer router typed args, else keyword parse.
     let parsed = match ari::args().and_then(parse_args) {
         Some(p) => p,
