@@ -21,6 +21,8 @@ metadata:
       patterns:
         - regex: "\\b(metti su|riproduci|ascolta)\\b"
           weight: 0.9
+        - regex: "\\b(pausa|riprendi|prossima|successiva|avanti|salta|precedente|ferma|muto|silenzia|volume)\\b"
+          weight: 0.9
     examples:
       - text: "metti su bohemian rhapsody"
         args:
@@ -59,6 +61,37 @@ metadata:
       - text: "riproduci comfortably numb"
         args:
           query: "comfortably numb"
+      - text: "pausa"
+        args:
+          action: "pause"
+      - text: "metti in pausa"
+        args:
+          action: "pause"
+      - text: "riprendi"
+        args:
+          action: "resume"
+      - text: "prossima"
+        args:
+          action: "next"
+      - text: "torna indietro"
+        args:
+          action: "previous"
+      - text: "ferma la musica"
+        args:
+          action: "stop"
+      - text: "alza il volume"
+        args:
+          action: "volume_up"
+      - text: "abbassa il volume"
+        args:
+          action: "volume_down"
+      - text: "imposta il volume al 40%"
+        args:
+          action: "volume_set"
+          level: 40
+      - text: "muto"
+        args:
+          action: "mute"
     settings:
       - key: default_service
         label: Servizio musicale predefinito
