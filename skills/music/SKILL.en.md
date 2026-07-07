@@ -15,6 +15,8 @@ metadata:
       patterns:
         - regex: "\\b(play|put on|listen to)\\b"
           weight: 0.9
+        - regex: "\\b(pause|resume|skip|next|previous|stop|mute|unmute|louder|quieter|volume)\\b"
+          weight: 0.9
     examples:
       - text: "play hotel california"
         args:
@@ -90,6 +92,37 @@ metadata:
       - text: "metti su qualcosa dei beatles"
         args:
           query: "beatles"
+      - text: "pause"
+        args:
+          action: "pause"
+      - text: "resume"
+        args:
+          action: "resume"
+      - text: "next"
+        args:
+          action: "next"
+      - text: "skip this song"
+        args:
+          action: "next"
+      - text: "previous"
+        args:
+          action: "previous"
+      - text: "stop the music"
+        args:
+          action: "stop"
+      - text: "volume up"
+        args:
+          action: "volume_up"
+      - text: "turn it down"
+        args:
+          action: "volume_down"
+      - text: "set volume to 50%"
+        args:
+          action: "volume_set"
+          level: 50
+      - text: "mute"
+        args:
+          action: "mute"
     settings:
       - key: default_service
         label: Default music service
