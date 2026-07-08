@@ -155,6 +155,28 @@ For one-line side effects:
 
 For `launch_app`, `search`, `open_url`, omit `speak` so the frontend can phrase the response platform-appropriately. The skill's `speak` (if set) wins as an override.
 
+### `alarm`
+
+Sets a device alarm or opens the alarm list. Generic across frontends.
+
+```json
+{ "v": 1,
+  "alarm": { "op": "set", "hour": 7, "minute": 0,
+             "message": "Wake up", "days": ["mon","fri"], "skip_ui": true },
+  "cards": [ { "id": "alarm-confirm", "title": "Alarm set", "subtitle": "7:00" } ],
+  "speak": "Alarm set for 7:00." }
+```
+
+- `op`: `"set"` creates an alarm; `"show"` opens the alarm list (used for
+  cancel/list, which the platform API can't do directly).
+- `days`: lowercase 3-letter codes `mon`..`sun`; omitted/empty = one-shot.
+- `skip_ui`: create silently without showing the Clock UI (Android
+  `EXTRA_SKIP_UI`; some Clock apps ignore it).
+
+The frontend maps `set` to its platform alarm mechanism (Android:
+`AlarmClock.ACTION_SET_ALARM`) and `show` to the alarm list
+(`ACTION_SHOW_ALARMS`).
+
 ## Action buttons
 
 Used by cards, alerts, and notifications.

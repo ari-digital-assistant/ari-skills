@@ -1,18 +1,8 @@
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use alloc::vec;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Day { Mon, Tue, Wed, Thu, Fri, Sat, Sun }
-
-impl Day {
-    pub fn code(&self) -> &'static str {
-        match self {
-            Day::Mon => "mon", Day::Tue => "tue", Day::Wed => "wed",
-            Day::Thu => "thu", Day::Fri => "fri", Day::Sat => "sat", Day::Sun => "sun",
-        }
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Intent {
