@@ -65,6 +65,8 @@ pub struct Envelope {
     #[serde(skip_serializing_if = "Option::is_none")]
     clipboard: Option<Clipboard>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    alarm: Option<Alarm>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     await_reply: Option<AwaitReply>,
     #[serde(skip_serializing_if = "Dismiss::is_empty")]
     dismiss: Dismiss,
@@ -115,6 +117,11 @@ impl Envelope {
         self
     }
 
+    pub fn alarm(mut self, alarm: Alarm) -> Self {
+        self.alarm = Some(alarm);
+        self
+    }
+
     /// Signal that the engine should await the user's spoken reply to this
     /// envelope's question and deliver it to this skill's `execute_reply`.
     /// `context` is opaque, skill-defined, engine-stored (never round-tripped
@@ -150,6 +157,65 @@ impl Envelope {
 #[derive(Serialize)]
 struct Clipboard {
     text: String,
+}
+
+/// A day-of-week code for alarm recurrence. Serialises to its 3-letter code.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Day {
+    Mon, Tue, Wed, Thu, Fri, Sat, Sun,
+}
+
+impl Day {
+    pub fn code(&self) -> &'static str {
+        match self {
+            Day::Mon => "mon", Day::Tue => "tue", Day::Wed => "wed",
+            Day::Thu => "thu", Day::Fri => "fri", Day::Sat => "sat",
+            Day::Sun => "sun",
+        }
+    }
+}
+
+/// An alarm command. `op:"set"` creates a device alarm; `op:"show"` opens the
+/// alarm list. Semantic only — carries no platform intent knowledge.
+#[derive(Serialize, Default)]
+pub struct Alarm {
+    op: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    hour: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    minute: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    message: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    days: Vec<&'static str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    skip_ui: Option<bool>,
+}
+
+impl Alarm {
+    pub fn set(hour: u8, minute: u8) -> Self {
+        Alarm {
+            op: "set",
+            hour: Some(hour),
+            minute: Some(minute),
+            skip_ui: Some(true),
+            ..Default::default()
+        }
+    }
+
+    pub fn show() -> Self {
+        Alarm { op: "show", ..Default::default() }
+    }
+
+    pub fn message(mut self, m: impl Into<String>) -> Self {
+        self.message = Some(m.into());
+        self
+    }
+
+    pub fn days(mut self, days: &[Day]) -> Self {
+        self.days = days.iter().map(|d| d.code()).collect();
+        self
+    }
 }
 
 #[derive(Serialize, Default)]
@@ -1031,5 +1097,43 @@ mod tests {
         assert!(json.contains(r#""leading":"Wed""#));
         assert!(json.contains(r#""trailing":"24° / 18°""#));
         assert!(json.contains(r#""badge":{"icon":"asset:ui/droplet.png","text":"43%"}"#));
+    }
+
+    #[test]
+    fn alarm_set_serialises_full() {
+        let env = Envelope::new()
+            .speak("Alarm set for 7am on weekdays.")
+            .alarm(
+                Alarm::set(7, 0)
+                    .message("Wake up")
+                    .days(&[Day::Mon, Day::Tue, Day::Wed, Day::Thu, Day::Fri]),
+            );
+        let v: serde_json::Value = serde_json::from_str(&env.to_json()).unwrap();
+        assert_eq!(v["v"], 1);
+        assert_eq!(v["alarm"]["op"], "set");
+        assert_eq!(v["alarm"]["hour"], 7);
+        assert_eq!(v["alarm"]["minute"], 0);
+        assert_eq!(v["alarm"]["message"], "Wake up");
+        assert_eq!(v["alarm"]["days"][0], "mon");
+        assert_eq!(v["alarm"]["days"][4], "fri");
+        assert_eq!(v["alarm"]["skip_ui"], true);
+    }
+
+    #[test]
+    fn alarm_set_omits_optional_fields() {
+        let env = Envelope::new().alarm(Alarm::set(6, 30));
+        let v: serde_json::Value = serde_json::from_str(&env.to_json()).unwrap();
+        assert_eq!(v["alarm"]["hour"], 6);
+        assert_eq!(v["alarm"]["minute"], 30);
+        assert!(v["alarm"].get("message").is_none());
+        assert!(v["alarm"].get("days").is_none());
+    }
+
+    #[test]
+    fn alarm_show_serialises_minimal() {
+        let env = Envelope::new().alarm(Alarm::show());
+        let v: serde_json::Value = serde_json::from_str(&env.to_json()).unwrap();
+        assert_eq!(v["alarm"]["op"], "show");
+        assert!(v["alarm"].get("hour").is_none());
     }
 }
