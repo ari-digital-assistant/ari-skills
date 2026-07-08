@@ -5,6 +5,7 @@ extern crate alloc;
 use alloc::format;
 use alloc::string::{String, ToString};
 
+#[cfg(target_arch = "wasm32")]
 use ari_skill_sdk as ari;
 use ari_skill_sdk::presentation as p;
 
