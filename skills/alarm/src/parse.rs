@@ -193,9 +193,18 @@ fn parse_time(tokens: &[&str]) -> Option<(u8, u8)> {
         let hour = num(tokens[hidx]).unwrap();
         let rest = &tokens[hidx + 1..];
         let rj = rest.join(" ");
-        if rj.contains("e mezza") { return Some((hour % 24, 30)); }
+        if rj.contains("e mezza") || rj.contains("e mezzo") { return Some((hour % 24, 30)); }
         if rj.contains("e un quarto") { return Some((hour % 24, 15)); }
         if rj.contains("meno un quarto") { return Some(((hour + 23) % 24, 45)); }
+        // General "meno <N>" — N minutes before the hour (e.g. "otto meno
+        // venti" = 7:40). N is a digit or an Italian number-word.
+        if let Some(mpos) = rest.iter().position(|t| *t == "meno") {
+            if let Some(n) = rest.get(mpos + 1).and_then(|t| num(t)) {
+                if (1..=59).contains(&n) {
+                    return Some(((hour + 23) % 24, 60 - n));
+                }
+            }
+        }
         if rj.contains("in punto") { return Some((hour % 24, 0)); }
         // "e <minute>" where <minute> is a digit or an Italian number-word.
         if let Some(epos) = rest.iter().position(|t| *t == "e") {
@@ -406,6 +415,25 @@ mod tests {
     #[test]
     fn it_meno_un_quarto() {
         assert_eq!(set("sveglia alle otto meno un quarto"), (7, 45, None, vec![]));
+    }
+
+    #[test]
+    fn it_meno_generic_minutes() {
+        // "otto meno venti" = 7:40 ; "otto meno dieci" = 7:50
+        assert_eq!(set("svegliami alle otto meno venti"), (7, 40, None, vec![]));
+        assert_eq!(set("svegliami alle otto meno dieci"), (7, 50, None, vec![]));
+    }
+
+    #[test]
+    fn it_meno_un_quarto_still_wins() {
+        // the specific "meno un quarto" phrase must still yield 7:45, not be
+        // caught by the generic branch (num("un") is None anyway)
+        assert_eq!(set("svegliami alle otto meno un quarto"), (7, 45, None, vec![]));
+    }
+
+    #[test]
+    fn it_e_mezzo_variant() {
+        assert_eq!(set("svegliami alle sei e mezzo"), (6, 30, None, vec![]));
     }
 
     #[test]
