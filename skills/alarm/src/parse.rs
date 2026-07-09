@@ -100,9 +100,27 @@ fn it_num(tok: &str) -> Option<u8> {
     None
 }
 
+/// Split a compact meridian token into digits + meridian: "7am" → ["7","am"],
+/// "12pm" → ["12","pm"], "0030am" left alone only if not all-digits prefix.
+/// The normaliser turns "7:30" into "7 30" but leaves "7am" joined, so users
+/// who type/say "7am" need this split to be understood.
+fn split_meridian(tok: &str) -> Vec<&str> {
+    for suffix in ["am", "pm"] {
+        if let Some(prefix) = tok.strip_suffix(suffix) {
+            if !prefix.is_empty() && prefix.bytes().all(|b| b.is_ascii_digit()) {
+                return alloc::vec![prefix, suffix];
+            }
+        }
+    }
+    alloc::vec![tok]
+}
+
 pub fn classify(input: &str) -> Intent {
     let text = input.trim();
-    let tokens: Vec<&str> = text.split_whitespace().collect();
+    let tokens: Vec<&str> = text
+        .split_whitespace()
+        .flat_map(split_meridian)
+        .collect();
 
     // Show intent: cancel/list/what-alarms (the platform API can't list/delete,
     // so we just open the Clock app). Bilingual keywords.
@@ -533,5 +551,20 @@ mod tests {
     fn bare_list_query_is_show() {
         // genuine list request (no time) still opens the Clock app
         assert_eq!(classify("list my alarms"), Intent::Show);
+    }
+
+    #[test]
+    fn compact_meridian_no_space() {
+        // "7am"/"7pm" arrive as one joined token — must still parse.
+        assert_eq!(set("set an alarm for 7am"), (7, 0, None, vec![]));
+        assert_eq!(set("set an alarm for 7pm"), (19, 0, None, vec![]));
+        assert_eq!(set("wake me up at 12am"), (0, 0, None, vec![]));
+        assert_eq!(set("set an alarm for 12pm"), (12, 0, None, vec![]));
+    }
+
+    #[test]
+    fn compact_meridian_with_minutes() {
+        // "6:30am" normalises to "6 30am" → split to "6 30 am"
+        assert_eq!(set("set an alarm for 6 30am"), (6, 30, None, vec![]));
     }
 }
