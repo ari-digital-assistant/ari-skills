@@ -1,0 +1,7 @@
+{
+  "set_confirm": "Alarm set for {time}.",
+  "card_title": "Alarm set",
+  "show_hint": "I can't change alarms directly, but here's your clock app.",
+  "need_time": "What time should I set the alarm for?",
+  "unintelligible": "Sorry, I didn't catch a time for that alarm."
+}

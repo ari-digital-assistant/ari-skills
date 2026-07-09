@@ -1,0 +1,7 @@
+{
+  "set_confirm": "Sveglia impostata per le {time}.",
+  "card_title": "Sveglia impostata",
+  "show_hint": "Non posso modificare le sveglie direttamente, ma ecco la tua app Orologio.",
+  "need_time": "Per che ora imposto la sveglia?",
+  "unintelligible": "Scusa, non ho capito l'ora della sveglia."
+}
