@@ -49,6 +49,16 @@ fn num(tok: &str) -> Option<u8> {
 /// (venti/trenta/quaranta/cinquanta) and their compounds with the standard
 /// vowel-elision before uno(1)/otto(8): ventuno, ventotto, trentuno…
 fn it_num(tok: &str) -> Option<u8> {
+    // Accept accented compound forms — Italian writes 23/33/43/53 as
+    // "ventitré"/"trentatré"/… with an accented final "é". De-accent so they
+    // match the unaccented table below (also covers a stray "è").
+    let owned;
+    let tok = if tok.contains('é') || tok.contains('è') {
+        owned = tok.replace('é', "e").replace('è', "e");
+        owned.as_str()
+    } else {
+        tok
+    };
     const UNITS: &[(&str, u8)] = &[
         ("zero", 0), ("uno", 1), ("due", 2), ("tre", 3), ("quattro", 4),
         ("cinque", 5), ("sei", 6), ("sette", 7), ("otto", 8), ("nove", 9),
@@ -90,9 +100,27 @@ fn it_num(tok: &str) -> Option<u8> {
     None
 }
 
+/// Split a compact meridian token into digits + meridian: "7am" → ["7","am"],
+/// "12pm" → ["12","pm"], "0030am" left alone only if not all-digits prefix.
+/// The normaliser turns "7:30" into "7 30" but leaves "7am" joined, so users
+/// who type/say "7am" need this split to be understood.
+fn split_meridian(tok: &str) -> Vec<&str> {
+    for suffix in ["am", "pm"] {
+        if let Some(prefix) = tok.strip_suffix(suffix) {
+            if !prefix.is_empty() && prefix.bytes().all(|b| b.is_ascii_digit()) {
+                return alloc::vec![prefix, suffix];
+            }
+        }
+    }
+    alloc::vec![tok]
+}
+
 pub fn classify(input: &str) -> Intent {
     let text = input.trim();
-    let tokens: Vec<&str> = text.split_whitespace().collect();
+    let tokens: Vec<&str> = text
+        .split_whitespace()
+        .flat_map(split_meridian)
+        .collect();
 
     // Show intent: cancel/list/what-alarms (the platform API can't list/delete,
     // so we just open the Clock app). Bilingual keywords.
@@ -101,17 +129,25 @@ pub fn classify(input: &str) -> Intent {
     });
     let is_cancel = tokens.windows(2).any(|w| w == ["turn", "off"])
         || tokens.iter().any(|t| CANCEL_VERBS.contains(t));
-    let is_list = text.contains("what alarms")
+    // Unambiguous list queries.
+    let is_list_strong = text.contains("what alarms")
         || text.contains("alarms do i")
         || text.contains("che sveglie ho")
-        || text.contains("quali sveglie")
-        || ((text.contains("list") || text.contains("elenca")) && has_alarm);
-    if has_alarm && (is_cancel || is_list) {
-        return Intent::Show;
-    }
+        || text.contains("quali sveglie");
+    // A bare "list"/"elenca" is a weaker signal — it can also be a label word
+    // ("set an alarm for my shopping list at 7"). Only treat it as a list
+    // request when no explicit time was given.
+    let is_list_weak = (text.contains("list") || text.contains("elenca")) && has_alarm;
 
     let days = parse_days(&tokens);
     let time = parse_time(&tokens);
+
+    if has_alarm && is_cancel {
+        return Intent::Show;
+    }
+    if is_list_strong || (is_list_weak && time.is_none()) {
+        return Intent::Show;
+    }
 
     match time {
         Some((hour, minute)) => {
@@ -270,8 +306,8 @@ fn parse_label(tokens: &[&str]) -> Option<String> {
             return Some(parts.join(" "));
         }
     }
-    // Italian noun-adjunct: run of words directly after "sveglia".
-    if let Some(pos) = tokens.iter().position(|t| *t == "sveglia") {
+    // Italian noun-adjunct: run of words directly after "sveglia"/"svegliami".
+    if let Some(pos) = tokens.iter().position(|t| *t == "sveglia" || *t == "svegliami") {
         let mut parts: Vec<&str> = Vec::new();
         for tok in &tokens[pos + 1..] {
             if LABEL_STOPWORDS.contains(tok) || num(tok).is_some() { break; }
@@ -486,5 +522,49 @@ mod tests {
     #[test]
     fn it_list_is_show() {
         assert_eq!(classify("che sveglie ho"), Intent::Show);
+    }
+
+    // --- follow-up fixes ---
+
+    #[test]
+    fn it_accented_ventitre_minutes() {
+        // "sette e ventitré" (accented) = 7:23, same as unaccented "ventitre"
+        assert_eq!(set("svegliami alle sette e ventitré"), (7, 23, None, vec![]));
+        assert_eq!(set("svegliami alle sette e ventitre"), (7, 23, None, vec![]));
+    }
+
+    #[test]
+    fn it_svegliami_verb_form_label() {
+        // "svegliami palestra alle 5" — label after the verb form "svegliami"
+        let (h, m, msg, _) = set("svegliami palestra alle 5");
+        assert_eq!((h, m), (5, 0));
+        assert_eq!(msg, Some("palestra".to_string()));
+    }
+
+    #[test]
+    fn list_word_as_label_is_not_show_when_time_present() {
+        // "list" is a label word here, not a list request — a time is given.
+        assert_eq!(set("set an alarm for my shopping list at 7 am"), (7, 0, None, vec![]));
+    }
+
+    #[test]
+    fn bare_list_query_is_show() {
+        // genuine list request (no time) still opens the Clock app
+        assert_eq!(classify("list my alarms"), Intent::Show);
+    }
+
+    #[test]
+    fn compact_meridian_no_space() {
+        // "7am"/"7pm" arrive as one joined token — must still parse.
+        assert_eq!(set("set an alarm for 7am"), (7, 0, None, vec![]));
+        assert_eq!(set("set an alarm for 7pm"), (19, 0, None, vec![]));
+        assert_eq!(set("wake me up at 12am"), (0, 0, None, vec![]));
+        assert_eq!(set("set an alarm for 12pm"), (12, 0, None, vec![]));
+    }
+
+    #[test]
+    fn compact_meridian_with_minutes() {
+        // "6:30am" normalises to "6 30am" → split to "6 30 am"
+        assert_eq!(set("set an alarm for 6 30am"), (6, 30, None, vec![]));
     }
 }
