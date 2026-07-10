@@ -177,6 +177,26 @@ The frontend maps `set` to its platform alarm mechanism (Android:
 `AlarmClock.ACTION_SET_ALARM`) and `show` to the alarm list
 (`ACTION_SHOW_ALARMS`).
 
+### `navigate`
+
+Starts navigation to a destination. Generic across frontends.
+
+```json
+{ "v": 1,
+  "navigate": { "destination": "mcdonalds", "mode": "default_app" },
+  "speak": "Taking you to mcdonalds." }
+```
+
+- `destination`: free-text place, already lowercased by `normalize_input`. The
+  frontend URL-encodes it.
+- `mode`: `"default_app"` (default; may be omitted) opens the destination in the
+  user's default maps app; `"turn_by_turn"` starts turn-by-turn navigation. A
+  missing `mode` is treated as `"default_app"`.
+
+On Android `default_app` fires `ACTION_VIEW geo:0,0?q=<dest>` (routes to the
+default maps app) and `turn_by_turn` fires `google.navigation:q=<dest>`, falling
+back to `geo:` if no app handles it.
+
 ## Action buttons
 
 Used by cards, alerts, and notifications.
