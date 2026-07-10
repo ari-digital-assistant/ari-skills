@@ -67,6 +67,8 @@ pub struct Envelope {
     #[serde(skip_serializing_if = "Option::is_none")]
     alarm: Option<Alarm>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    navigate: Option<Navigate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     await_reply: Option<AwaitReply>,
     #[serde(skip_serializing_if = "Dismiss::is_empty")]
     dismiss: Dismiss,
@@ -119,6 +121,11 @@ impl Envelope {
 
     pub fn alarm(mut self, alarm: Alarm) -> Self {
         self.alarm = Some(alarm);
+        self
+    }
+
+    pub fn navigate(mut self, navigate: Navigate) -> Self {
+        self.navigate = Some(navigate);
         self
     }
 
@@ -214,6 +221,27 @@ impl Alarm {
 
     pub fn days(mut self, days: &[Day]) -> Self {
         self.days = days.iter().map(|d| d.code()).collect();
+        self
+    }
+}
+
+/// A navigation command. Semantic only — carries no platform intent knowledge.
+/// `mode` is a frontend-neutral hint: `default_app` opens the destination in the
+/// user's default maps app; `turn_by_turn` starts turn-by-turn navigation.
+#[derive(Serialize, Default)]
+pub struct Navigate {
+    destination: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mode: Option<String>,
+}
+
+impl Navigate {
+    pub fn to(destination: impl Into<String>) -> Self {
+        Navigate { destination: destination.into(), mode: None }
+    }
+
+    pub fn mode(mut self, mode: impl Into<String>) -> Self {
+        self.mode = Some(mode.into());
         self
     }
 }
@@ -1135,5 +1163,24 @@ mod tests {
         let v: serde_json::Value = serde_json::from_str(&env.to_json()).unwrap();
         assert_eq!(v["alarm"]["op"], "show");
         assert!(v["alarm"].get("hour").is_none());
+    }
+
+    #[test]
+    fn navigate_serialises_with_mode() {
+        let env = Envelope::new()
+            .speak("Taking you to mcdonalds.")
+            .navigate(Navigate::to("mcdonalds").mode("default_app"));
+        let v: serde_json::Value = serde_json::from_str(&env.to_json()).unwrap();
+        assert_eq!(v["v"], 1);
+        assert_eq!(v["navigate"]["destination"], "mcdonalds");
+        assert_eq!(v["navigate"]["mode"], "default_app");
+    }
+
+    #[test]
+    fn navigate_omits_mode_when_unset() {
+        let env = Envelope::new().navigate(Navigate::to("asda"));
+        let v: serde_json::Value = serde_json::from_str(&env.to_json()).unwrap();
+        assert_eq!(v["navigate"]["destination"], "asda");
+        assert!(v["navigate"].get("mode").is_none());
     }
 }
