@@ -16,11 +16,11 @@ metadata:
       patterns:
         - regex: "\\bindicazioni per\\b"
           weight: 0.95
-        - regex: "\\bportami a\\b|\\bportami al\\b|\\bportami alla\\b"
+        - regex: "\\bportami (a|al|allo|alla|ai|agli|alle|in)\\b"
           weight: 0.9
-        - regex: "\\bcome (ci )?arrivo a\\b"
+        - regex: "\\bcome (ci )?arrivo\\b"
           weight: 0.9
-        - regex: "\\b(vai|andiamo) a\\b"
+        - regex: "\\b(vai|andiamo) (a|al|allo|alla|ai|agli|alle|in)\\b"
           weight: 0.8
       custom_score: false
     examples:

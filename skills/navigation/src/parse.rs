@@ -6,12 +6,11 @@ pub enum Intent {
     NeedDestination,
 }
 
-/// Trigger phrases whose tail (everything after the phrase) is the destination.
-/// Longest-first: a longer phrase that contains a shorter one must be tried
-/// first. Each ends with a trailing space so a bare "take me to" (no
+/// English trigger phrases whose tail (everything after the phrase) is the
+/// destination. Longest-first: a longer phrase that contains a shorter one must
+/// be tried first. Each ends with a trailing space so a bare "take me to" (no
 /// destination) does NOT match.
-const NAV_PREFIXES: &[&str] = &[
-    // English
+const EN_PREFIXES: &[&str] = &[
     "show me the way to ",
     "how do i get to ",
     "take me to ",
@@ -22,17 +21,31 @@ const NAV_PREFIXES: &[&str] = &[
     "directions to ",
     "route to ",
     "the way to ",
-    // Italian (include the common contracted prepositions al/alla/allo/in)
-    "come ci arrivo a ",
-    "come arrivo a ",
-    "indicazioni per ",
-    "portami alla ",
-    "portami allo ",
-    "portami al ",
-    "portami in ",
-    "portami a ",
-    "andiamo a ",
-    "vai a ",
+];
+
+/// Italian trigger verbs. Longest-first so "come ci arrivo" is tried before
+/// "come arrivo". The tail after the verb is the destination, but Italian
+/// contracts the preposition with the article, so a leading connector (below)
+/// must be stripped from that tail before cleaning.
+const IT_VERBS: &[&str] = &[
+    "come ci arrivo",
+    "come arrivo",
+    "indicazioni per",
+    "portami",
+    "andiamo",
+    "vai",
+];
+
+/// Leading Italian prepositions/contractions to strip off the tail after an
+/// IT verb (al = a+il, alla = a+la, allo = a+lo, all' = a+l', ai = a+i,
+/// agli = a+gli, alle = a+le, plus in/per/a and the "nel*" family for "in").
+/// Longest-first so "al " is tried before "a ". Each ends with a trailing space
+/// so we only strip a genuine leading preposition, not a word that starts with
+/// one (e.g. destination "asda" is untouched by "a ").
+const IT_CONNECTORS: &[&str] = &[
+    "allo ", "alla ", "agli ", "alle ", "all ",
+    "nello ", "nella ", "negli ", "nelle ", "nei ",
+    "ai ", "al ", "nel ", "in ", "per ", "a ",
 ];
 
 /// "Take me home" style phrases (no explicit destination token) → "home".
@@ -52,8 +65,7 @@ const POLITE_TAILS: &[&str] = &[" please", " thanks", " grazie", " per favore"];
 pub fn classify(input: &str) -> Intent {
     let text = input.trim();
 
-    if let Some(tail) = extract_destination(text) {
-        let dest = clean(tail);
+    if let Some(dest) = extract_destination(text) {
         if dest.is_empty() {
             return Intent::NeedDestination;
         }
@@ -68,14 +80,34 @@ pub fn classify(input: &str) -> Intent {
     Intent::NeedDestination
 }
 
-/// Find the first trigger prefix present in `text` and return the tail after it.
-fn extract_destination(text: &str) -> Option<&str> {
-    for prefix in NAV_PREFIXES {
+/// Find the first trigger present in `text` and return the cleaned destination.
+/// Returns `None` only when no trigger matched at all; a matched-but-empty tail
+/// yields `Some("")` so the caller can ask for a destination.
+fn extract_destination(text: &str) -> Option<String> {
+    // English: verb + "to " — the tail is the destination directly.
+    for prefix in EN_PREFIXES {
         if let Some(idx) = text.find(prefix) {
-            return Some(&text[idx + prefix.len()..]);
+            return Some(clean(&text[idx + prefix.len()..]));
+        }
+    }
+    // Italian: trigger verb, then strip a leading contracted preposition.
+    for verb in IT_VERBS {
+        if let Some(idx) = text.find(verb) {
+            let tail = text[idx + verb.len()..].trim_start();
+            return Some(clean(strip_connector(tail)));
         }
     }
     None
+}
+
+/// Strip one leading Italian preposition/contraction (longest-first) from a tail.
+fn strip_connector(tail: &str) -> &str {
+    for c in IT_CONNECTORS {
+        if let Some(rest) = tail.strip_prefix(c) {
+            return rest;
+        }
+    }
+    tail
 }
 
 /// Trim leading articles and trailing politeness off a raw destination.
@@ -129,4 +161,11 @@ mod tests {
     #[test] fn it_come_arrivo_a() { assert_eq!(dest("come arrivo a mcdonalds"), "mcdonalds"); }
     #[test] fn it_come_ci_arrivo_a() { assert_eq!(dest("come ci arrivo a asda"), "asda"); }
     #[test] fn it_indicazioni_per_strips_article() { assert_eq!(dest("indicazioni per il museo"), "museo"); }
+
+    // --- Italian contracted prepositions (al/alla/allo/in) ---
+    #[test] fn it_come_arrivo_alla() { assert_eq!(dest("come arrivo alla stazione"), "stazione"); }
+    #[test] fn it_come_arrivo_al() { assert_eq!(dest("come arrivo al museo"), "museo"); }
+    #[test] fn it_vai_alla() { assert_eq!(dest("vai alla stazione"), "stazione"); }
+    #[test] fn it_andiamo_al() { assert_eq!(dest("andiamo al mare"), "mare"); }
+    #[test] fn it_portami_still_works() { assert_eq!(dest("portami al lavoro"), "lavoro"); }
 }
