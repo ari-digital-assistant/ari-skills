@@ -15,7 +15,7 @@ metadata:
       patterns:
         - keywords: [wasm, echo]
           weight: 0.95
-    # NB: "eco" da solo non basta — il pattern richiede entrambe le
+    # NB: "echo" da solo non basta — il pattern richiede entrambe le
     # parole. Le frasi senza "wasm" che iniziano con un verbo tipo
     # "esegui"/"avvia" verrebbero rivendicate dalla skill built-in
     # `open`, quindi qui restano fuori: il router non le vedrebbe mai.
