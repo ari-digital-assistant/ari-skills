@@ -17,15 +17,15 @@ metadata:
     languages: [en, it]
     specificity: high
     matching:
-      # Pattern confrontati con l'input POST-NORMALIZZATO: minuscolo, con
-      # le elisioni sostituite da uno spazio (`l'ora` → `l ora`) prima che
-      # l'engine esegua la regex. L'espansione delle contrazioni riguarda
+      # I pattern vengono confrontati con l'input POST-NORMALIZZATO: in minuscolo,
+      # con le elisioni sostituite da uno spazio (`l'ora` → `l ora`) prima che
+      # il motore applichi la regex. L'espansione delle contrazioni riguarda
       # solo l'inglese: per `it` la normalizzazione usa
       # `strip_italian_elisions`, non `expand_english_contractions`.
-      # La normalizzazione NON rimuove gli accenti (`è`/`à` sopravvivono
-      # al filtro `is_alphanumeric`, che è Unicode-aware). Il motivo di
-      # `piove(ra|rà)?` è un altro: utenti e STT omettono spesso
-      # l'accento digitando o trascrivendo, quindi il pattern copre
+      # La normalizzazione NON rimuove gli accenti (`è`/`à` superano
+      # il filtro `is_alphanumeric`, che riconosce i caratteri Unicode). Il motivo
+      # di `piove(ra|rà)?` è un altro: gli utenti e i sistemi STT spesso omettono
+      # l'accento durante la digitazione o la trascrizione, quindi il pattern copre
       # `piove`, `piovera` e `pioverà`.
       patterns:
         - regex: "\\b(tempo|meteo)\\b"

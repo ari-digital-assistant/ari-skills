@@ -20,7 +20,7 @@ metadata:
           weight: 0.95
     examples:
       - text: "conta"
-      - text: "segna un altro"
+      - text: "aggiungine uno"
       - text: "incrementa il contatore"
       - text: "aumenta il contatore"
       - text: "aggiungi uno al contatore"

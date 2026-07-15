@@ -33,13 +33,13 @@ metadata:
       - text: "puoi lanciare una moneta per me"
       - text: "tira una moneta per favore"
       - text: "facciamo a testa o croce"
-      - text: "mi serve un lancio della moneta"
+      - text: "mi serve un testa o croce"
       - text: "testa o croce per favore"
       - text: "lasciamo decidere al caso"
       - text: "lancio di una monetina"
-      - text: "fai un lancio della moneta"
+      - text: "fai testa o croce"
       - text: "scegli testa o croce"
-      - text: "decida il caso"
+      - text: "che decida il caso"
       - text: "aiutami a decidere con una moneta"
     declarative:
       response_pick: ["coinflip.heads", "coinflip.tails"]

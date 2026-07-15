@@ -4,7 +4,7 @@
 # live in `description` (below) and the markdown body. Don't translate
 # this.
 name: home-assistant
-description: Controlla la tua casa intelligente con Home Assistant — accendi e spegni i dispositivi, imposta luminosità o temperatura, avvia le scene, controlla lo stato e chiedi dove si trovano le persone. Usala per qualsiasi richiesta di domotica o casa intelligente.
+description: Controlla la tua casa intelligente con Home Assistant — accendi e spegni i dispositivi, imposta luminosità o temperatura, avvia le scene, controlla lo stato e chiedi dove si trovano le persone. Usa questa skill per qualsiasi richiesta di domotica o casa intelligente.
 license: MIT
 metadata:
   ari:
@@ -59,7 +59,7 @@ metadata:
       - text: "spegni la lampada della camera"
       - text: "imposta il soggiorno a 21 gradi"
       - text: "abbassa le luci del corridoio al 30 percento"
-      - text: "blocca la porta d'ingresso"
+      - text: "chiudi a chiave la porta d'ingresso"
       - text: "attiva la scena serata film"
       - text: "la porta del garage è aperta"
       - text: "dov'è keith"
@@ -73,7 +73,7 @@ metadata:
         type: action
         depends_on: [base_url]
       - key: agent_id
-        label: "Entità agente conversazionale (vuoto = predefinito/locale di HA)"
+        label: "Entità dell'agente di conversazione (lascia vuoto per usare l'agente predefinito o locale di Home Assistant)"
         type: dynamic_select
         required: false
         depends_on: [base_url]
