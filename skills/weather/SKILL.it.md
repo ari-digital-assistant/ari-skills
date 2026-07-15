@@ -18,9 +18,15 @@ metadata:
     specificity: high
     matching:
       # Pattern confrontati con l'input POST-NORMALIZZATO: minuscolo, con
-      # apostrofi/contrazioni espansi prima che l'engine esegua la regex.
-      # In italiano la normalizzazione può rimuovere l'accento, quindi
-      # `piove(ra|rà)?` copre `piove`, `piovera` e `pioverà`.
+      # le elisioni sostituite da uno spazio (`l'ora` → `l ora`) prima che
+      # l'engine esegua la regex. L'espansione delle contrazioni riguarda
+      # solo l'inglese: per `it` la normalizzazione usa
+      # `strip_italian_elisions`, non `expand_english_contractions`.
+      # La normalizzazione NON rimuove gli accenti (`è`/`à` sopravvivono
+      # al filtro `is_alphanumeric`, che è Unicode-aware). Il motivo di
+      # `piove(ra|rà)?` è un altro: utenti e STT omettono spesso
+      # l'accento digitando o trascrivendo, quindi il pattern copre
+      # `piove`, `piovera` e `pioverà`.
       patterns:
         - regex: "\\b(tempo|meteo)\\b"
           weight: 0.95

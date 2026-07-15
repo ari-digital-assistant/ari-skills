@@ -18,6 +18,12 @@ metadata:
           weight: 0.95
         - keywords: [contatore]
           weight: 0.95
+    examples:
+      - text: "conta"
+      - text: "segna un altro"
+      - text: "incrementa il contatore"
+      - text: "aumenta il contatore"
+      - text: "aggiungi uno al contatore"
     wasm:
       module: skill.wasm
       memory_limit_mb: 1

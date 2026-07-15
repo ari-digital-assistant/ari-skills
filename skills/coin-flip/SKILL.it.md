@@ -20,6 +20,27 @@ metadata:
           weight: 0.95
         - keywords: [testa, croce]
           weight: 0.9
+    # Gli esempi alimentano il router FunctionGemma, che entra in gioco
+    # SOLO quando lo scorer a keyword non trova nulla. Le frasi che i
+    # pattern qui sopra non catturano ("lancio della moneta", "decida il
+    # caso") sono quindi le più utili: sono esattamente i casi per cui il
+    # router esiste.
+    examples:
+      - text: "lancia una moneta"
+      - text: "tira una moneta"
+      - text: "testa o croce"
+      - text: "lancio della moneta"
+      - text: "puoi lanciare una moneta per me"
+      - text: "tira una moneta per favore"
+      - text: "facciamo a testa o croce"
+      - text: "mi serve un lancio della moneta"
+      - text: "testa o croce per favore"
+      - text: "lasciamo decidere al caso"
+      - text: "lancio di una monetina"
+      - text: "fai un lancio della moneta"
+      - text: "scegli testa o croce"
+      - text: "decida il caso"
+      - text: "aiutami a decidere con una moneta"
     declarative:
       response_pick: ["coinflip.heads", "coinflip.tails"]
 ---
