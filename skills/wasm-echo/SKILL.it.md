@@ -13,17 +13,17 @@ metadata:
     specificity: high
     matching:
       patterns:
-        - keywords: [wasm, eco]
+        - keywords: [wasm, echo]
           weight: 0.95
     # NB: "eco" da solo non basta — il pattern richiede entrambe le
     # parole. Le frasi senza "wasm" che iniziano con un verbo tipo
     # "esegui"/"avvia" verrebbero rivendicate dalla skill built-in
     # `open`, quindi qui restano fuori: il router non le vedrebbe mai.
     examples:
-      - text: "eco wasm"
-      - text: "prova l'eco wasm"
+      - text: "wasm echo"
+      - text: "prova wasm echo"
       - text: "prova il loader wasm"
-      - text: "esegui la skill eco wasm"
+      - text: "esegui la skill wasm echo"
       - text: "saluto dal modulo wasm"
     wasm:
       module: skill.wasm
