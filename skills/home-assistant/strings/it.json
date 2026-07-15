@@ -1,0 +1,21 @@
+{
+  "not_configured": "Home Assistant non è ancora configurato. Aggiungi l'URL del tuo server e il token di accesso nelle impostazioni della skill.",
+  "unreachable": "Non riesco a raggiungere Home Assistant.",
+  "unreachable_lan_hint": "Non riesco a raggiungere Home Assistant — sei collegato alla rete di casa?",
+  "unauthorized": "Home Assistant ha rifiutato il token di accesso. Conviene rigenerarlo dal tuo profilo.",
+  "no_match": "Non l'ho trovato in Home Assistant.",
+  "person_unknown": "Non so chi sia {name}.",
+  "person_home": "{name} è a casa.",
+  "person_away": "{name} è fuori.",
+  "person_at": "{name} è a {place}.",
+  "card.person.home": "A casa",
+  "card.person.away": "Fuori",
+  "card.done": "Fatto",
+  "connected": "Connessione a Home Assistant riuscita.",
+  "signed_in": "Accesso a Home Assistant eseguito.",
+  "sign_in_incomplete": "L'accesso non è stato completato. Riprova.",
+  "sign_in_no_browser": "Non riesco ad aprire un browser per l'accesso.",
+  "sign_in_unverified": "Non è stato possibile verificare l'accesso. Riprova.",
+  "sign_in_no_internet": "Il tuo Home Assistant non ha potuto completare l'accesso — forse non è raggiungibile da internet. Usa invece l'autenticazione con token.",
+  "needs_reauth": "Ho perso la connessione a Home Assistant — accedi di nuovo dalle impostazioni."
+}
