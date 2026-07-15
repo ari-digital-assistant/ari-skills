@@ -20,6 +20,12 @@ metadata:
           weight: 0.9
         - keywords: [github, zen]
           weight: 0.95
+    examples:
+      - text: "zen di github"
+      - text: "dimmi una frase di saggezza"
+      - text: "dammi un po' di zen"
+      - text: "dimmi qualcosa di saggio"
+      - text: "condividi un po' di saggezza"
     wasm:
       module: skill.wasm
       memory_limit_mb: 1
