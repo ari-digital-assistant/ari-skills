@@ -103,10 +103,10 @@ metadata:
         args:
           location: ""
           when: "this week"
-      - text: "quanti gradi ci sono fuori"
+      - text: "quanti gradi faranno domani"
         args:
           location: ""
-          when: "now"
+          when: "tomorrow"
     settings:
       - key: units
         label: Unità

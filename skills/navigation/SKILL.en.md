@@ -58,10 +58,10 @@ metadata:
       - text: "put the hospital in my sat nav"
         args:
           destination: "hospital"
-      - text: "i am heading to the beach"
+      - text: "i need to get to the beach"
         args:
           destination: "beach"
-      - text: "what is the best way of getting to the stadium"
+      - text: "what is the best way to get to the stadium"
         args:
           destination: "stadium"
       - text: "i want to drive over to my mums house"

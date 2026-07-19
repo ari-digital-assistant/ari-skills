@@ -43,7 +43,7 @@ metadata:
       - text: "tirami giù dal letto alle sette"
       - text: "voglio essere svegliato alle sei e un quarto"
       - text: "ho la riunione alle otto svegliami un'ora prima"
-      - text: "domani riposo niente levataccia"
+      - text: "fammi alzare alle cinque domani mattina"
     wasm:
       module: skill.wasm
       memory_limit_mb: 4

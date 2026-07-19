@@ -91,10 +91,10 @@ metadata:
         args:
           location: ""
           when: "this week"
-      - text: "is it chilly out there"
+      - text: "will it be chilly tomorrow morning"
         args:
           location: ""
-          when: "now"
+          when: "tomorrow"
     settings:
       - key: units
         label: Units

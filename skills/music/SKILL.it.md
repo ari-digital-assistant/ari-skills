@@ -94,18 +94,18 @@ metadata:
           action: "mute"
       # Frasi oblique che i pattern qui sopra non intercettano di proposito:
       # sono quelle che il router vede davvero in produzione.
-      - text: "vorrei ascoltare i beatles"
+      - text: "vorrei ascoltare i queen"
         args:
-          query: "beatles"
-      - text: "voglio sentire i pink floyd"
+          query: "queen"
+      - text: "voglio sentire vasco rossi"
         args:
-          query: "pink floyd"
-      - text: "fammi sentire qualcosa di rilassante"
+          query: "vasco rossi"
+      - text: "fammi sentire qualcosa di allegro"
         args:
-          query: "musica rilassante"
-      - text: "un po' di jazz per favore"
+          query: "musica allegra"
+      - text: "un po' di musica classica per favore"
         args:
-          query: "jazz"
+          query: "musica classica"
       - text: "basta musica"
         args:
           action: "stop"

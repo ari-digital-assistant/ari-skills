@@ -48,8 +48,8 @@ metadata:
       - text: "suona tra un quarto d'ora"
       - text: "quanto resta alla pasta"
       - text: "ancora quanto per le uova"
-      - text: "azzera il conto alla rovescia"
-      - text: "che conti alla rovescia sono attivi"
+      - text: "non mi serve più il timer della pasta"
+      - text: "che timer ho attivi"
     wasm:
       module: skill.wasm
       memory_limit_mb: 4
