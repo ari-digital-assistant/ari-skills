@@ -34,6 +34,16 @@ metadata:
       - text: "cancella la mia sveglia delle 7"
       - text: "che sveglie ho"
       - text: "disattiva la sveglia"
+      # Frasi oblique che i pattern qui sopra non intercettano di proposito:
+      # sono quelle che il router vede davvero in produzione.
+      - text: "domani devo alzarmi alle sei"
+      - text: "non farmi dormire oltre le otto"
+      - text: "devo essere in piedi alle cinque e mezza"
+      - text: "mi devo alzare prestissimo per il treno delle sei"
+      - text: "tirami giù dal letto alle sette"
+      - text: "voglio essere svegliato alle sei e un quarto"
+      - text: "ho la riunione alle otto svegliami un'ora prima"
+      - text: "fammi alzare alle cinque domani mattina"
     wasm:
       module: skill.wasm
       memory_limit_mb: 4

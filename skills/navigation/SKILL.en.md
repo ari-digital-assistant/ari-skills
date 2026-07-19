@@ -47,6 +47,32 @@ metadata:
       - text: "take me to work"
         args:
           destination: "work"
+      # Oblique phrasings the keyword patterns above deliberately miss —
+      # these are the ones the router actually sees in production.
+      - text: "fastest route home"
+        args:
+          destination: "home"
+      - text: "guide me to the nearest pharmacy"
+        args:
+          destination: "nearest pharmacy"
+      - text: "put the hospital in my sat nav"
+        args:
+          destination: "hospital"
+      - text: "i need to get to the beach"
+        args:
+          destination: "beach"
+      - text: "what is the best way to get to the stadium"
+        args:
+          destination: "stadium"
+      - text: "i want to drive over to my mums house"
+        args:
+          destination: "mums house"
+      - text: "can you map out a journey to bristol"
+        args:
+          destination: "bristol"
+      - text: "fire up the sat nav for home"
+        args:
+          destination: "home"
     settings:
       - key: navigation_mode
         label: Navigation style
