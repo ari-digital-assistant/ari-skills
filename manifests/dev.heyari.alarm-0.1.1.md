@@ -34,6 +34,16 @@ metadata:
       - text: "cancel my 7am alarm"
       - text: "what alarms do i have"
       - text: "turn off my alarm"
+      # Oblique phrasings the keyword patterns above deliberately miss —
+      # these are the ones the router actually sees in production.
+      - text: "i need to be up by six tomorrow"
+      - text: "make sure i am awake at five thirty"
+      - text: "do not let me sleep past eight"
+      - text: "i have an early flight so buzz me at four am"
+      - text: "get me out of bed at seven tomorrow"
+      - text: "i want to be woken at quarter to seven"
+      - text: "when am i being woken tomorrow"
+      - text: "no need to wake me tomorrow morning"
     wasm:
       module: skill.wasm
       memory_limit_mb: 4

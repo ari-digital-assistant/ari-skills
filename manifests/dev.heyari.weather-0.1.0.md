@@ -61,6 +61,40 @@ metadata:
         args:
           location: ""
           when: "now"
+      # Oblique phrasings the keyword patterns above deliberately miss —
+      # these are the ones the router actually sees in production.
+      - text: "will i need a coat later"
+        args:
+          location: ""
+          when: "today"
+      - text: "how hot is it outside"
+        args:
+          location: ""
+          when: "now"
+      - text: "should i take an umbrella tomorrow"
+        args:
+          location: ""
+          when: "tomorrow"
+      - text: "is it going to be cold in london tomorrow"
+        args:
+          location: "london"
+          when: "tomorrow"
+      - text: "do i need sunscreen today"
+        args:
+          location: ""
+          when: "today"
+      - text: "is the sun out in valletta"
+        args:
+          location: "valletta"
+          when: "now"
+      - text: "any chance of snow this week"
+        args:
+          location: ""
+          when: "this week"
+      - text: "will it be chilly tomorrow morning"
+        args:
+          location: ""
+          when: "tomorrow"
     settings:
       - key: units
         label: Units
