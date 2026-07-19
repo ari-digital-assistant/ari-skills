@@ -92,6 +92,32 @@ metadata:
       - text: "muto"
         args:
           action: "mute"
+      # Frasi oblique che i pattern qui sopra non intercettano di proposito:
+      # sono quelle che il router vede davvero in produzione.
+      - text: "vorrei ascoltare i beatles"
+        args:
+          query: "beatles"
+      - text: "voglio sentire i pink floyd"
+        args:
+          query: "pink floyd"
+      - text: "fammi sentire qualcosa di rilassante"
+        args:
+          query: "musica rilassante"
+      - text: "un po' di jazz per favore"
+        args:
+          query: "jazz"
+      - text: "basta musica"
+        args:
+          action: "stop"
+      - text: "cambia canzone"
+        args:
+          action: "next"
+      - text: "più forte"
+        args:
+          action: "volume_up"
+      - text: "torna alla canzone di prima"
+        args:
+          action: "previous"
     settings:
       - key: default_service
         label: Servizio musicale predefinito

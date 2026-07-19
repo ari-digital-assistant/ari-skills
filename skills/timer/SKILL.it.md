@@ -40,6 +40,16 @@ metadata:
       - text: "annulla il mio timer della pasta"
       - text: "quali timer ho"
       - text: "imposta un timer per 5 minuti e un altro per 15 minuti"
+      # Frasi oblique che i pattern qui sopra non intercettano di proposito:
+      # sono quelle che il router vede davvero in produzione.
+      - text: "avvisami tra dieci minuti"
+      - text: "mettimi otto minuti per la pasta"
+      - text: "fammi sapere quando sono passati venti minuti"
+      - text: "suona tra un quarto d'ora"
+      - text: "quanto resta alla pasta"
+      - text: "ancora quanto per le uova"
+      - text: "azzera il conto alla rovescia"
+      - text: "che conti alla rovescia sono attivi"
     wasm:
       module: skill.wasm
       memory_limit_mb: 4

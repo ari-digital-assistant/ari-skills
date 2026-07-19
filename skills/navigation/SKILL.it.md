@@ -39,6 +39,32 @@ metadata:
       - text: "indicazioni per il museo"
         args:
           destination: "museo"
+      # Frasi oblique che i pattern qui sopra non intercettano di proposito:
+      # sono quelle che il router vede davvero in produzione.
+      - text: "qual è la strada più veloce per la stazione"
+        args:
+          destination: "stazione"
+      - text: "accompagnami all'ospedale"
+        args:
+          destination: "ospedale"
+      - text: "voglio andare al mare"
+        args:
+          destination: "mare"
+      - text: "guidami fino al museo"
+        args:
+          destination: "museo"
+      - text: "quanto ci metto ad arrivare in aeroporto"
+        args:
+          destination: "aeroporto"
+      - text: "devo raggiungere il centro entro un'ora"
+        args:
+          destination: "centro"
+      - text: "fammi strada fino al ristorante"
+        args:
+          destination: "ristorante"
+      - text: "voglio tornare a casa in macchina"
+        args:
+          destination: "casa"
     settings:
       - key: navigation_mode
         label: Stile di navigazione

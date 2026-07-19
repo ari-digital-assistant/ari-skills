@@ -73,6 +73,40 @@ metadata:
         args:
           location: ""
           when: "now"
+      # Frasi oblique che i pattern qui sopra non intercettano di proposito:
+      # sono quelle che il router vede davvero in produzione.
+      - text: "mi serve il cappotto oggi"
+        args:
+          location: ""
+          when: "today"
+      - text: "quanto fa caldo fuori"
+        args:
+          location: ""
+          when: "now"
+      - text: "devo portare l'ombrello domani"
+        args:
+          location: ""
+          when: "tomorrow"
+      - text: "farà freddo a londra domani"
+        args:
+          location: "londra"
+          when: "tomorrow"
+      - text: "serve la crema solare oggi"
+        args:
+          location: ""
+          when: "today"
+      - text: "c'è il sole a valletta"
+        args:
+          location: "valletta"
+          when: "now"
+      - text: "nevicherà questa settimana"
+        args:
+          location: ""
+          when: "this week"
+      - text: "quanti gradi ci sono fuori"
+        args:
+          location: ""
+          when: "now"
     settings:
       - key: units
         label: Unità
