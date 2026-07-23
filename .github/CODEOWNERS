@@ -1,0 +1,41 @@
+# Code owners for the ari-skills registry.
+#
+# Referenced by GOVERNANCE.md as the canonical list of maintainers. Ownership
+# here is about *review responsibility*, not permissions — the actual merge
+# rights live in the repo's collaborator settings.
+#
+# This file only has teeth when branch protection has "Require review from
+# Code Owners" enabled. See GOVERNANCE.md → Branch protection rules.
+
+# Default owner for everything not matched below.
+* @keithvassallomt
+
+# ── High-trust paths ────────────────────────────────────────────────────
+#
+# Everything below is load-bearing for the trust chain. GOVERNANCE.md asks
+# for extra scrutiny on these, and for a second reviewer once there is more
+# than one maintainer.
+
+# Workflows are the trust anchor: they hold the signing key. A typo here can
+# leak it. Always review the diff line by line.
+/.github/                   @keithvassallomt
+
+# The generated catalogue every client reads to decide what to install and
+# whether a bundle's hash is right. CI owns it — a hand-edit here is either a
+# mistake or an attack.
+/index.json                 @keithvassallomt
+
+# Signed release artifacts and their signatures. Also CI-generated.
+/bundles/                   @keithvassallomt
+/manifests/                 @keithvassallomt
+
+# The validator and sideload tooling every contributor runs locally.
+/tools/                     @keithvassallomt
+
+# The SDK every WASM skill compiles against.
+/sdk/                       @keithvassallomt
+
+# The rules themselves.
+/GOVERNANCE.md              @keithvassallomt
+/SECURITY.md                @keithvassallomt
+/.github/CODEOWNERS         @keithvassallomt

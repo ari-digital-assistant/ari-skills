@@ -7,7 +7,7 @@ How the `ari-digital-assistant/ari-skills` registry is run, who can do what, and
 There are two roles that matter for the registry:
 
 - **Contributor** — anyone who opens a PR adding or updating a skill. No persistent role; you become a contributor by submitting a PR and stop being one when it merges (or doesn't).
-- **Maintainer** — has merge rights on `main` and admin rights on the repo. Reviews skill PRs, approves the ones that pass, and is responsible for upholding the trust model. The list of maintainers lives in [`.github/CODEOWNERS`](.github/CODEOWNERS) once that file exists.
+- **Maintainer** — has merge rights on `main` and admin rights on the repo. Reviews skill PRs, approves the ones that pass, and is responsible for upholding the trust model. The list of maintainers lives in [`.github/CODEOWNERS`](.github/CODEOWNERS).
 
 There is no separate "publisher" role. **Merge to `main` *is* publication.** That's by design — the cryptographic signing happens automatically in `sign-and-publish.yml` after merge, with no human in the loop. Keeping these two events fused means you can't accidentally have an "approved but unpublished" or "published but unreviewed" state.
 
@@ -29,7 +29,7 @@ When you (a maintainer) review a skill PR, you are the human gate in the trust c
 6. **No hidden lock-in.** A skill shouldn't hard-code dependencies on a specific proprietary service when a generic API exists. ([antislop rule 3](../antislop.md).)
 7. **License is OSI-approved.** And explicitly stated in the manifest.
 
-The PR template (when it exists) mirrors this checklist so contributors can self-check before submitting.
+The [PR template](.github/PULL_REQUEST_TEMPLATE.md) mirrors this checklist so contributors can self-check before submitting.
 
 ## Branch protection rules
 
@@ -38,7 +38,7 @@ Configured under Settings → Branches → Branch protection rules → `main`:
 - **Require a pull request before merging:** ✓
 - **Require approvals:** 1
 - **Require status checks to pass before merging:** ✓
-  - `validate.yml / validate-skills`
+  - `validate` (the job name in `validate.yml` — GitHub matches on the job, not the file)
 - **Require branches to be up to date before merging:** ✓
 - **Do not allow bypassing the above settings:** ☐ (unchecked — see "Solo maintainer mode" below)
 - **Restrict who can push to matching branches:** ✓ (maintainers + the `github-actions[bot]` only)
@@ -77,7 +77,7 @@ Until then: when you (the solo maintainer) merge your own skill PR, **read the b
 If you find a published skill that's misbehaving, abusing capabilities, or impersonating another author:
 
 1. **Open an issue** with the `bad-skill` label and the skill ID.
-2. For active abuse (data theft, malware, etc.), email the maintainers directly — contact details in [SECURITY.md](SECURITY.md) once that exists.
+2. For active abuse (data theft, malware, etc.), report it privately — [SECURITY.md](SECURITY.md) has the process. Don't open a public issue for active abuse: skills auto-update onto devices, so a public report is a public exploit window.
 3. Maintainers will assess and, if confirmed, **issue a takedown PR** that removes the skill from `skills/` and from `index.json`. The takedown lands the same way any other change does — via PR + signed re-publish.
 
 Note that takedown only stops *future* installs. Users who already have the skill installed will continue to run it until their auto-update cycle picks up the new `index.json`, sees the skill is gone, and removes it locally. (That's a feature for step 7 — auto-update + auto-uninstall.) For acutely dangerous skills, we'd publish a coordinated security advisory alongside the takedown.
