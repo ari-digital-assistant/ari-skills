@@ -5,6 +5,12 @@ name: validate
 # it against the skill dirs changed in the PR. Result is posted back as a
 # bot comment via `gh pr comment`.
 #
+# Also runs ari-engine's no-poaching test against THIS PR's manifests. That
+# test lives in the engine because it needs the built-in skills' examples
+# too, but it grades the registry — so without this step a PR could add an
+# example another skill's keywords win, go green here, and turn up as a red
+# ari-engine CI run on somebody else's commit hours later.
+#
 # We do NOT run on push-to-main — the sign-and-publish workflow covers that
 # path and any failure there is a merge-day incident, not a review gate.
 
@@ -52,7 +58,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             ari-engine-src/target
-          key: ${{ runner.os }}-cargo-validate-${{ hashFiles('ari-engine-src/Cargo.lock', 'ari-engine-src/crates/ari-skill-validate/Cargo.toml') }}
+          key: ${{ runner.os }}-cargo-validate-${{ hashFiles('ari-engine-src/Cargo.lock', 'ari-engine-src/crates/ari-skill-validate/Cargo.toml', 'ari-engine-src/crates/ari-ffi/Cargo.toml') }}
           restore-keys: |
             ${{ runner.os }}-cargo-validate-
 
@@ -72,8 +78,15 @@ jobs:
           # Drop dirs this PR deleted — validating a path that no longer
           # exists in the checkout just errors the run. A pure deletion then
           # falls through to the whole-registry check below.
+          #
+          # `if`, not `[[ … ]] &&`: as the loop body's last command the latter
+          # exits 1 whenever the condition is false, which under `set -e` fails
+          # the assignment and kills the step. Every PR until now happened to
+          # change an existing skill dir, so the final iteration always printed
+          # and the bug stayed hidden — including from the pure-deletion case
+          # the fallback below was written for, which could never be reached.
           changed=$(while IFS= read -r d; do
-            [[ -n "$d" && -d "$d" ]] && printf '%s\n' "$d"
+            if [[ -n "$d" && -d "$d" ]]; then printf '%s\n' "$d"; fi
           done <<< "$changed")
           if [[ -z "$changed" ]]; then
             echo "no skill directories changed — validating the whole registry"
@@ -95,6 +108,49 @@ jobs:
             --format=pr-comment "${paths_arg[@]}" > comment.md && status=0 || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
 
+      # Release profile on purpose: it reuses the dependency artifacts the
+      # validator build just produced, and the test compiles ~11 skill
+      # modules through wasmtime twice (once per locale), which is slow in
+      # debug. --no-default-features drops ari-ffi's `llm` feature, whose
+      # llama-cpp-sys needs libclang the runner doesn't have.
+      - name: Check for router-example poaching
+        id: poaching
+        working-directory: ari-engine-src
+        env:
+          ARI_SKILLS_DIR: ${{ github.workspace }}
+        run: |
+          set -uo pipefail
+          cargo test --release --no-default-features -p ari-ffi --bin keyword-hit \
+            -- --exact tests::no_router_example_is_poached_by_another_skill \
+            > ../poaching.log 2>&1 && rc=0 || rc=$?
+          # A renamed or deleted test "passes" with zero tests run, which is a
+          # silently disabled gate. Require that one actually ran.
+          if [[ $rc -eq 0 ]] && ! grep -q "1 passed" ../poaching.log; then
+            echo "the no-poaching test did not run — has it been renamed in ari-engine?" >&2
+            rc=1
+          fi
+          cat ../poaching.log
+          echo "status=$rc" >> "$GITHUB_OUTPUT"
+
+      - name: Add the poaching result to the comment
+        if: steps.poaching.outputs.status != '0'
+        run: |
+          {
+            echo
+            echo '### ❌ Router-example poaching'
+            echo
+            echo "These examples are won by a **different** skill's keyword patterns."
+            echo "The keyword scorer short-circuits before the router, so the router"
+            echo "never sees them in production — they teach the model the opposite of"
+            echo "what happens, and the skill that declares them can never serve them."
+            echo
+            echo '```'
+            grep -E '^\s+\[(en|it)\]' poaching.log || cat poaching.log
+            echo '```'
+            echo
+            echo "Re-word the example, or tighten the poaching skill's patterns."
+          } >> comment.md
+
       - name: Post PR comment
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -104,5 +160,5 @@ jobs:
             --body-file comment.md
 
       - name: Fail the job if validation failed
-        if: steps.validate.outputs.status != '0'
+        if: steps.validate.outputs.status != '0' || steps.poaching.outputs.status != '0'
         run: exit 1
