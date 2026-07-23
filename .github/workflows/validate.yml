@@ -18,6 +18,8 @@ on:
   pull_request:
     paths:
       - 'skills/**'
+      - 'templates/**'
+      - 'sdk/**'
       - 'tools/**'
       - '.github/workflows/**'
 
@@ -151,6 +153,48 @@ jobs:
             echo "Re-word the example, or tighten the poaching skill's patterns."
           } >> comment.md
 
+      # The templates are the endpoints of the two tutorials in docs/, and the
+      # code blocks in those tutorials are excerpts of these files. Building
+      # and validating them here is what stops the docs drifting away from the
+      # SDK the way the previous doc set did — a manifest schema change or an
+      # SDK break turns this red instead of quietly rotting the tutorials.
+      - name: Build and validate the templates
+        id: templates
+        run: |
+          set -uo pipefail
+          rc=0
+          {
+            rustup target add wasm32-unknown-unknown
+
+            for t in templates/*/; do
+              if [[ -x "$t/build.sh" ]]; then
+                echo "── building $t"
+                (cd "$t" && ./build.sh) || rc=$?
+              fi
+            done
+
+            echo "── validating"
+            ./ari-engine-src/target/release/ari-skill-validate templates/ || rc=$?
+          } > templates.log 2>&1
+          cat templates.log
+          echo "status=$rc" >> "$GITHUB_OUTPUT"
+
+      - name: Add the template result to the comment
+        if: steps.templates.outputs.status != '0'
+        run: |
+          {
+            echo
+            echo '### ❌ Templates'
+            echo
+            echo "The starter templates under \`templates/\` no longer build or validate."
+            echo "They are the endpoints of the tutorials in \`docs/\`, so this usually"
+            echo "means a manifest or SDK change has invalidated the documentation too."
+            echo
+            echo '```'
+            tail -40 templates.log
+            echo '```'
+          } >> comment.md
+
       - name: Post PR comment
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -160,5 +204,8 @@ jobs:
             --body-file comment.md
 
       - name: Fail the job if validation failed
-        if: steps.validate.outputs.status != '0' || steps.poaching.outputs.status != '0'
+        if: >-
+          steps.validate.outputs.status != '0'
+          || steps.poaching.outputs.status != '0'
+          || steps.templates.outputs.status != '0'
         run: exit 1

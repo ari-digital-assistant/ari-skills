@@ -1,0 +1,23 @@
+[package]
+name = "tally-ari-skill"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# `storage` adds the storage_get/storage_set host imports. It must be paired
+# with `capabilities: [storage_kv]` in SKILL.en.md — the loader rejects a
+# module that imports a gated function it didn't declare, and rejects a
+# declaration the host can't satisfy.
+#
+# The default features (`std`, `presentation`, `settings`) give you the
+# envelope builders and the settings-query helpers. Other capability
+# features: http, location, tasks, calendar, media, clock, authorize, crypto.
+ari-skill-sdk = { path = "../../sdk/rust", features = ["storage"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true

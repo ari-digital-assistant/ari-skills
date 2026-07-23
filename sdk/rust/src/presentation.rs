@@ -4,7 +4,7 @@
 //! cards, alerts, notifications, app launches, search queries — and the
 //! frontend decides *how* to render on the current OS. Wire format is versioned
 //! via `v` at the envelope root; `v: 1` is the current schema documented in
-//! `ari-skills/docs/action-responses.md`.
+//! `ari-skills/docs/reference-actions.md`.
 //!
 //! ```rust,ignore
 //! use ari_skill_sdk::presentation as p;

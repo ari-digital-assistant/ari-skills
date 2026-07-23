@@ -15,7 +15,7 @@ There is no separate "publisher" role. **Merge to `main` *is* publication.** Tha
 
 The registry has exactly **one** Ed25519 signing key. The private half lives as a GitHub Actions secret on this repo and is never accessible to any human, including maintainers. The public half is baked into the Ari engine binary at build time. Every bundle the registry publishes is signed with the private key by the `sign-and-publish.yml` workflow on merge to `main`. Every install on every Ari client verifies the signature against the baked-in public key before extracting a single byte. **The trust chain end-to-end is: user trusts the engine binary they installed → engine trusts the baked-in pubkey → pubkey verifies signatures from the registry CI → registry CI only runs on commits already merged to `main` → merges to `main` require maintainer review.** Every link in that chain is auditable.
 
-For the full design, including threat model and what this *doesn't* protect against, read **[docs/skill-system.md](docs/skill-system.md#trust-and-signing)**.
+For the full design, including threat model and what this *doesn't* protect against, read **[docs/internals.md](docs/internals.md#trust-and-signing)**.
 
 ## PR review responsibilities
 

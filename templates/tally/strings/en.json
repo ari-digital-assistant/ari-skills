@@ -1,0 +1,6 @@
+{
+  "tally.title": "Tally",
+  "tally.added": "That's {count}.",
+  "tally.current": "You're on {count}.",
+  "tally.reset": "Tally reset."
+}

@@ -1,12 +1,14 @@
 # Build artifacts
+#
+# `skill.wasm` and `Cargo.lock` are deliberately NOT ignored under templates/:
+# published skills ship their compiled module in the bundle, and the templates
+# match that convention so a fresh clone can run `./tools/validate templates`
+# without a toolchain installed. CI rebuilds them from source before
+# validating, so a source change that breaks the build still fails the run.
 skills/*/target/
 sdk/rust/target/
 sdk/assemblyscript/node_modules/
 sdk/assemblyscript/package-lock.json
-templates/rust/target/
-templates/rust/skill.wasm
-templates/rust-action/target/
-templates/rust-action/skill.wasm
-templates/assemblyscript/node_modules/
-templates/assemblyscript/skill.wasm
-templates/assemblyscript/package-lock.json
+templates/*/target/
+templates/*/node_modules/
+templates/*/package-lock.json

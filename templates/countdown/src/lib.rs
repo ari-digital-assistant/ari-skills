@@ -2,14 +2,16 @@
 
 extern crate alloc;
 
-use alloc::format;
+#[cfg(target_arch = "wasm32")]
 use ari_skill_sdk as ari;
 use ari_skill_sdk::presentation as p;
 
+/// Required export. Never called while `matching.custom_score` is false —
+/// the engine scores this skill from the manifest's keyword patterns.
 #[cfg(target_arch = "wasm32")]
 #[no_mangle]
 pub extern "C" fn score(_ptr: i32, _len: i32) -> f32 {
-    0.95
+    0.0
 }
 
 /// Demo skill that emits a presentation card with a 30-second countdown +
@@ -19,7 +21,7 @@ pub extern "C" fn score(_ptr: i32, _len: i32) -> f32 {
 /// would handle that and dismiss the card.
 ///
 /// Drop your own presentation primitives in here. See
-/// `docs/action-responses.md` for the full envelope shape.
+/// `docs/reference-actions.md` for the full envelope shape.
 #[cfg(target_arch = "wasm32")]
 #[no_mangle]
 pub extern "C" fn execute(ptr: i32, len: i32) -> i64 {
@@ -56,9 +58,9 @@ pub extern "C" fn execute(ptr: i32, len: i32) -> i64 {
     ari::respond_action(&json)
 }
 
-// Keep the dependency referenced when building for the host so cargo check
-// doesn't complain. The wasm32 path above does the real work.
+// The exports above are wasm32-only, so a host-target `cargo check` would
+// otherwise see the SDK as an unused dependency. This keeps it referenced.
 #[cfg(not(target_arch = "wasm32"))]
 fn _ensure_deps_referenced() {
-    let _ = format!("");
+    let _ = p::Envelope::new().to_json();
 }

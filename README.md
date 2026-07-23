@@ -2,54 +2,74 @@
 
 The community skill registry for the [Ari Digital Assistant](https://github.com/ari-digital-assistant/ari).
 
-A **skill** is a unit of behaviour that turns a user utterance into a response — "what time is it?", "flip a coin", "open Spotify". Ari ships a handful of built-in Rust skills out of the box; this repo is where everyone else's skills live.
+A **skill** turns a user utterance into a response — "what time is it?", "flip
+a coin", "open Spotify". Ari ships a handful of built-in skills; this repo is
+where everyone else's live.
 
-Skills come in two flavours:
+## Write one
 
-- **Declarative** — a `SKILL.md` manifest with keyword patterns and response templates. No code, no toolchain, just YAML and Markdown. This is what most skills should be.
-- **WASM** — a sandboxed wasmtime module + manifest. For skills that need HTTP, storage, or non-trivial logic.
+**→ [docs/](docs/) — start here.** The declarative tutorial takes about
+fifteen minutes and needs no toolchain.
 
-The manifest format is [AgentSkills](https://agentskills.io)-compatible, with Ari-specific config tucked under `metadata.ari.*` in the YAML frontmatter. That means every Ari skill is also a valid AgentSkills document and gets first-class support in Claude Code, Cursor, Goose, and other AgentSkills tools — useful while you're authoring.
+Three kinds of skill:
 
-## Documentation
+- **Declarative** — a `SKILL.en.md` manifest with patterns and responses. No
+  code, no build step. This is what most skills should be.
+- **WASM** — a sandboxed wasmtime module plus a manifest. For skills that need
+  logic, state, HTTP or device capabilities.
+- **Assistant** — a manifest describing an LLM API, for providing Ari's
+  general-purpose brain.
 
-Start with **skill-authors.md** if you just want to write a skill; reach for the rest as you need them.
+The manifest format is [AgentSkills](https://agentskills.io)-compatible, with
+Ari's config under `metadata.ari.*`. Every Ari skill is therefore also a valid
+AgentSkills document, which is handy while you're authoring.
 
-- **[docs/skill-authors.md](docs/skill-authors.md)** — Quick guide for skill developers, with a full walkthrough of building and submitting a declarative skill, server-backed settings, and OAuth sign-in. Read this if you just want to write one.
-- **[docs/wasm-sdk.md](docs/wasm-sdk.md)** — Reference for WASM skills: the Rust and AssemblyScript SDKs, the host imports and capabilities (HTTP, storage, `authorize`/OAuth, i18n), and the ABI contract. Read this when a declarative skill isn't enough.
-- **[docs/action-responses.md](docs/action-responses.md)** — The action-envelope vocabulary skills emit for richer responses: cards, alerts, notifications, `launch_app`/`search`/`open_url`/`clipboard`, assets, and lock-screen takeover.
-- **[docs/i18n.md](docs/i18n.md)** — How to add a non-English language to a skill: per-locale `SKILL.{locale}.md` files, `strings/{locale}.json` translation tables, and the SDK helpers (`t`, `get_locale`, `format_*`). Read this when you're ready to ship beyond English.
-- **[docs/skill-system.md](docs/skill-system.md)** — Technical overview of how the entire skill system works: the trait, scoring, the manifest format, capabilities, signing, registry workflow, engine integration. Read this if you want to understand the machinery.
+## Contribute
+
+1. Read [docs/tutorial-declarative.md](docs/tutorial-declarative.md).
+2. Fork, add your skill under `skills/<slug>/`.
+3. `./tools/validate skills/<slug>/`
+4. `./tools/sideload-android skills/<slug>/` to try it on a real device —
+   exercises TTS, cards and alerts that CLI testing can't.
+5. Open a pull request.
+
+CI validates the manifest and checks your router examples don't collide with
+another skill. A maintainer reviews. On merge the bundle is signed and
+published, and every Ari user can install it from Settings → Skills → Browse
+within minutes.
+
+Full checklist and review criteria: [docs/publishing.md](docs/publishing.md).
 
 ## Repo layout
 
 ```
 ari-skills/
-├── docs/                 # the author + reference docs above
-├── tools/                # local validator + helpers
-├── skills/               # one directory per published skill
-└── index.json            # generated catalogue (do not edit by hand)
+├── docs/          # developer documentation
+├── templates/     # starter skills, validated and built in CI
+├── tools/         # validate, sideload-android
+├── sdk/           # the Rust and AssemblyScript SDKs
+├── skills/        # one directory per published skill
+├── bundles/       # generated — signed tarballs
+├── manifests/     # generated
+└── index.json     # generated — the catalogue
 ```
 
-## Contributing a skill
-
-1. Read [docs/skill-authors.md](docs/skill-authors.md).
-2. Fork this repo, add your skill under `skills/<slug>/`.
-3. Run `./tools/validate skills/<slug>/`.
-4. Iterate with `./tools/sideload-android skills/<slug>/` to try it on a real device/emulator before you open a PR — exercises TTS, UI, and action rendering that CLI testing can't.
-5. Open a pull request.
-
-CI validates the manifest. A maintainer reviews. On merge, the bundle is signed and published to the registry — and within minutes, every Ari user can install it from Settings → Skills → Browse.
+Anything marked generated is written by CI. Don't hand-edit it.
 
 ## Governance
 
-Reviewer responsibilities, branch protection, and the trust model are spelled out in **[GOVERNANCE.md](GOVERNANCE.md)**. The short version:
+Reviewer responsibilities, branch protection and the trust model are in
+[GOVERNANCE.md](GOVERNANCE.md). The short version:
 
-- All skill PRs need one maintainer approval and a green `validate.yml` before merge.
-- Workflow file changes (under `.github/`) get extra scrutiny — they're the load-bearing trust anchor.
-- Maintainers can bypass approval requirements for their own skill PRs (this is intentional; the validator + signing chain is the cryptographic safety net, not the second human).
-- The registry signing key is a GitHub Actions secret; nobody, not even maintainers, can read it back out.
+- Skill PRs need one maintainer approval and a green `validate.yml`.
+- Workflow changes under `.github/` get extra scrutiny — they're the
+  load-bearing trust anchor.
+- Maintainers can bypass approval on their own skill PRs. That's intentional:
+  the validator and signing chain are the safety net, not the second human.
+- The registry signing key is a GitHub Actions secret nobody can read back
+  out.
 
 ## License
 
-Each skill carries its own `license` field in `SKILL.md`. The registry tooling and surrounding scaffolding are licensed under the terms in [LICENSE](LICENSE).
+Each skill carries its own `license` field. The registry tooling and
+scaffolding are licensed under [LICENSE](LICENSE).
