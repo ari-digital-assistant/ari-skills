@@ -78,8 +78,15 @@ jobs:
           # Drop dirs this PR deleted — validating a path that no longer
           # exists in the checkout just errors the run. A pure deletion then
           # falls through to the whole-registry check below.
+          #
+          # `if`, not `[[ … ]] &&`: as the loop body's last command the latter
+          # exits 1 whenever the condition is false, which under `set -e` fails
+          # the assignment and kills the step. Every PR until now happened to
+          # change an existing skill dir, so the final iteration always printed
+          # and the bug stayed hidden — including from the pure-deletion case
+          # the fallback below was written for, which could never be reached.
           changed=$(while IFS= read -r d; do
-            [[ -n "$d" && -d "$d" ]] && printf '%s\n' "$d"
+            if [[ -n "$d" && -d "$d" ]]; then printf '%s\n' "$d"; fi
           done <<< "$changed")
           if [[ -z "$changed" ]]; then
             echo "no skill directories changed — validating the whole registry"
