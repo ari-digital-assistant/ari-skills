@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.homeassistant
-    version: "0.3.0"
+    version: "0.3.1"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.4"
