@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-07-23T06:58:55Z",
+  "generated_at": "2026-07-23T08:13:53Z",
   "skills": [
     {
       "id": "dev.heyari.homeassistant",
@@ -22,7 +22,7 @@
       ],
       "bundle": "bundles/dev.heyari.homeassistant-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.homeassistant-0.3.0.tar.gz.sig",
-      "sha256": "4485904ab992d066deff0d756b6961700116e0868c9ad8e52492ac4634144274",
+      "sha256": "d91934bc920daa692fa7d2d5ef1d1ec6e1ec20848cf9e2279840cf3b13778592",
       "manifest": "manifests/dev.heyari.homeassistant-0.3.0.md",
       "localizations": {
         "it": {
@@ -47,7 +47,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.gemini-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.gemini-0.3.0.tar.gz.sig",
-      "sha256": "5cc06c6884891f665d1cfdcb80fc52858bcf73b4f7ca4df9f85c51198d8a00fa",
+      "sha256": "9b7ca41890a9aff5391df34d29e55299ed7074b0b953a6d4ee1996a8fef3bed5",
       "manifest": "manifests/dev.heyari.assistant.gemini-0.3.0.md",
       "localizations": {
         "it": {
@@ -58,7 +58,7 @@
     },
     {
       "id": "dev.heyari.counter",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "name": "counter",
       "description": "Counts how many times you've asked it to count, persisting across calls. Single-digit ASCII counter that wraps from 9 back to 1. Reference WASM skill for the storage_kv host imports.",
       "type": "skill",
@@ -72,10 +72,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.counter-0.1.0.tar.gz",
-      "signature": "bundles/dev.heyari.counter-0.1.0.tar.gz.sig",
-      "sha256": "6a5d51ca9bc644cd62ef88a0de688b7f2bc1b8f070825f471c7b8ba3d81921dd",
-      "manifest": "manifests/dev.heyari.counter-0.1.0.md",
+      "bundle": "bundles/dev.heyari.counter-0.1.1.tar.gz",
+      "signature": "bundles/dev.heyari.counter-0.1.1.tar.gz.sig",
+      "sha256": "a421922d15b1c7af1a3545e04fc483d4b6f35b6063b67852a587ca5a616a8724",
+      "manifest": "manifests/dev.heyari.counter-0.1.1.md",
       "localizations": {
         "it": {
           "name": "counter",
@@ -99,7 +99,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz.sig",
-      "sha256": "d8a7c71c4a96c8098bd801d449ca86cdd6952ceff74bfbdf3d139315b19aa33e",
+      "sha256": "a7bb0f243ea97182aebd871174826dea5365861cc1307df54088d107572d98a6",
       "manifest": "manifests/dev.heyari.assistant.chatgpt-0.3.0.md",
       "localizations": {
         "it": {
@@ -124,7 +124,7 @@
       ],
       "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
-      "sha256": "21450d1fb660ade05b73510baa07abc1426cc5643346863d58e701c6f15d77ee",
+      "sha256": "1311be373cff7261af651e3df91a20ecbe0b80314ac8287ee725c46c2758bec9",
       "manifest": "manifests/dev.heyari.wasmecho-0.1.0.md",
       "localizations": {
         "it": {
@@ -152,7 +152,7 @@
       ],
       "bundle": "bundles/dev.heyari.timer-0.2.0.tar.gz",
       "signature": "bundles/dev.heyari.timer-0.2.0.tar.gz.sig",
-      "sha256": "931204c68aa258c4a0cccddcb4976b8c0bd5bdb26457da7b9c9d3ffb4946d34f",
+      "sha256": "c4e685d85eecc27675baf68a725e5fc918bf5f9e21572fb5e2bbd38db4bf498f",
       "manifest": "manifests/dev.heyari.timer-0.2.0.md",
       "localizations": {
         "it": {
@@ -179,7 +179,7 @@
       ],
       "bundle": "bundles/dev.heyari.githubzen-0.1.1.tar.gz",
       "signature": "bundles/dev.heyari.githubzen-0.1.1.tar.gz.sig",
-      "sha256": "5bf36bbfbd75e7de776a6d5667b71063fbedc229b23f0947114b2d46b0ea8422",
+      "sha256": "bd2c4ee386a685e676ae28743c0c1425630691f31b546be6cf86fad8629d178b",
       "manifest": "manifests/dev.heyari.githubzen-0.1.1.md",
       "localizations": {
         "it": {
@@ -208,7 +208,7 @@
       ],
       "bundle": "bundles/dev.heyari.music-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.music-0.1.0.tar.gz.sig",
-      "sha256": "44eaadb307ca09ec4efaf919a36215fb20c2e46855e66d53ecbac916f3f59418",
+      "sha256": "692beaa9c19bd386a313da28f7ff6feb2d7822eb2dd2fb8c1848181d1196cae9",
       "manifest": "manifests/dev.heyari.music-0.1.0.md",
       "localizations": {
         "it": {
@@ -237,7 +237,7 @@
       ],
       "bundle": "bundles/dev.heyari.weather-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.weather-0.1.0.tar.gz.sig",
-      "sha256": "33aca539e91e762f509fa66a1ff7e2d51ae10b1430036d05eeec7a405504e953",
+      "sha256": "40425bcb47b8342597d464d6bfadeda6775297b808ab14e27625d75d39cc191d",
       "manifest": "manifests/dev.heyari.weather-0.1.0.md",
       "localizations": {
         "it": {
@@ -264,7 +264,7 @@
       ],
       "bundle": "bundles/dev.heyari.alarm-0.1.1.tar.gz",
       "signature": "bundles/dev.heyari.alarm-0.1.1.tar.gz.sig",
-      "sha256": "99177f8acf45ff5a13074d058a109effb860d16032b15e9cf733fefeab7fe00b",
+      "sha256": "47f3baa3210c24dd4b1e08e50f73f9ff2f7285edb2c523d2ca318b5aee11515c",
       "manifest": "manifests/dev.heyari.alarm-0.1.1.md",
       "localizations": {
         "it": {
@@ -291,7 +291,7 @@
       ],
       "bundle": "bundles/dev.heyari.navigation-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.navigation-0.1.0.tar.gz.sig",
-      "sha256": "07e86e0a4b2d8ab37342eade44d52c92923d77fba321016fd4cf943e7a823c39",
+      "sha256": "0ccb0be86eb3fd0f9dc8cb6fa00d715b569f8f3de80e6069176b4ac89f3af395",
       "manifest": "manifests/dev.heyari.navigation-0.1.0.md",
       "localizations": {
         "it": {
@@ -316,7 +316,7 @@
       ],
       "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "903f4502a9fc5776a8ca1af127ddd101936efa192b25d1d551158c9266f1f131",
+      "sha256": "564bcefcc4f95f8d68df0d4a803a3330ca1ed87e0e1204ae95aa982041354e33",
       "manifest": "manifests/dev.heyari.coinflip-0.1.0.md",
       "localizations": {
         "it": {
@@ -341,7 +341,7 @@
       ],
       "bundle": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz.sig",
-      "sha256": "fc45cda38877a11242db61c08fcc3d166837e0129a4b9421570c6f97f16097d8",
+      "sha256": "f3e3b311527f70bf5197f1d3c19ac56b05f6b10a75e4ab76affadfb5b2a3c24d",
       "manifest": "manifests/dev.heyari.assistant.claude-0.3.0.md",
       "localizations": {
         "it": {
@@ -369,7 +369,7 @@
       ],
       "bundle": "bundles/dev.heyari.reminder-0.3.0.tar.gz",
       "signature": "bundles/dev.heyari.reminder-0.3.0.tar.gz.sig",
-      "sha256": "89d04672720eca991b0e0f9b05dd3ccd66ec53fbc8c12e846b2b3f2df05682a9",
+      "sha256": "a7503a7430b32ade794e54bbb35d8481a2ab69a0f9e382f70c00f883ab151981",
       "manifest": "manifests/dev.heyari.reminder-0.3.0.md",
       "localizations": {
         "it": {

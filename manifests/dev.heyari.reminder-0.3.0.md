@@ -109,9 +109,12 @@ metadata:
         args:
           title: "the meeting"
           when: "at 2pm"
-      - text: "wake me up at 7am"
+      # Not "wake me up at X" — that is the alarm skill's job, and its
+      # patterns win the utterance outright, so this example would train
+      # the router to contradict what production actually does.
+      - text: "give me a shout at 7am to take my tablets"
         args:
-          title: "wake up"
+          title: "take my tablets"
           when: "at 7am"
       - text: "let me know to take the bins out tonight"
         args:
