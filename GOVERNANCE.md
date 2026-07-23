@@ -33,17 +33,66 @@ The [PR template](.github/PULL_REQUEST_TEMPLATE.md) mirrors this checklist so co
 
 ## Branch protection rules
 
-Configured under Settings → Branches → Branch protection rules → `main`:
+### What is actually configured
+
+A repository ruleset on `main`, **"main: no force-push, no deletion"**, with no
+bypass actors:
+
+- **Block force pushes:** ✓ (applies to everyone, maintainers included)
+- **Block branch deletion:** ✓
+
+That's it. Both rules leave ordinary fast-forward pushes alone, so they cost
+nobody anything and they close off the two changes that are genuinely
+unrecoverable.
+
+### What is deliberately NOT configured, and why
+
+Requiring pull requests, approvals, or status checks on `main` is **not
+currently possible without breaking publication.**
+
+`sign-and-publish.yml` pushes directly to `main` to update `index.json`,
+`bundles/` and `manifests/` after every merge. It authenticates as
+`github-actions[bot]` using the built-in `GITHUB_TOKEN`. Any of those rules
+would reject that push:
+
+- a pull-request rule rejects all direct pushes from non-bypassing actors;
+- a required-status-check rule rejects a commit the check hasn't run on, and
+  `validate.yml` only triggers on `pull_request` — it would never run on the
+  bot's commit at all.
+
+And the bot **cannot be granted an exemption**: GitHub rulesets only accept
+bypass actors that are repository roles, teams, or apps installed on the
+organisation. The built-in `GITHUB_TOKEN` is none of those, and the API
+rejects it outright.
+
+So enabling the rules below requires first reworking the publish path — either
+giving it a token that holds a bypassing role, or having it open an
+auto-merged PR (which in turn needs `validate.yml` to trigger on the generated
+paths, or the check requirement dropped). Both add moving parts to the one
+workflow that touches the signing key, which is the workflow this document
+says to change least. That trade hasn't been worth making yet.
+
+**The intended end state**, once the publish path can support it:
 
 - **Require a pull request before merging:** ✓
 - **Require approvals:** 1
 - **Require status checks to pass before merging:** ✓
   - `validate` (the job name in `validate.yml` — GitHub matches on the job, not the file)
 - **Require branches to be up to date before merging:** ✓
-- **Do not allow bypassing the above settings:** ☐ (unchecked — see "Solo maintainer mode" below)
-- **Restrict who can push to matching branches:** ✓ (maintainers + the `github-actions[bot]` only)
+- **Allow bypass for:** repository admins (see "Solo maintainer mode" below)
 
-The bot is allowed to push to `main` *only* via the `sign-and-publish.yml` workflow, *only* to update `index.json`, and *only* in response to a merge that already passed review. The bot cannot open PRs, modify skill content, or run with elevated permissions in any other workflow.
+### What is protecting `main` in the meantime
+
+Repository permissions, which is a stronger gate than it sounds. `main` is
+writable only by maintainers and `github-actions[bot]`; a contributor has no
+push access at all, so a pull request is their only route regardless of what
+any ruleset says. The rules above would constrain *maintainers*, and
+solo-maintainer mode has already opted out of that.
+
+The bot pushes to `main` *only* via `sign-and-publish.yml`, *only* to update
+the generated paths, and *only* in response to a merge that already passed
+review. It cannot open PRs, modify skill content, or run with elevated
+permissions in any other workflow.
 
 ### Workflow file changes
 
@@ -67,7 +116,7 @@ When a second maintainer joins:
 
 1. Add them to [`.github/CODEOWNERS`](.github/CODEOWNERS).
 2. Update this document to remove the "solo maintainer mode" section.
-3. **Optionally** turn on "Do not allow bypassing the above settings" so even maintainers go through the normal review flow. Recommended once there are ≥2 active maintainers; not required.
+3. **Optionally** narrow or drop the admin bypass so even maintainers go through the normal review flow. Recommended once there are ≥2 active maintainers; not required. Note this depends on the publish-path rework described under "Branch protection rules".
 4. Consider raising "Require approvals" from 1 to 2 for high-trust paths (workflow files, `index.json` direct edits) using a CODEOWNERS rule.
 
 Until then: when you (the solo maintainer) merge your own skill PR, **read the bot's PR comment** — that's the actually-useful safety net, not the approval requirement. The bot tells you what the skill declares, what its WASM imports require, and whether the capability promises line up. Five seconds of eyeballing that summary catches more real problems than any number of self-approvals ever would.
