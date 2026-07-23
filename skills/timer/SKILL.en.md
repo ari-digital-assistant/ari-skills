@@ -69,4 +69,4 @@ app self-heal.
 
 This skill returns `Response::Action` payloads with an envelope the frontend
 can use to render a live countdown card and/or schedule an expiry alarm. See
-[docs/action-responses.md](../../docs/action-responses.md) for the schema.
+[docs/reference-actions.md](../../docs/reference-actions.md) for the schema.

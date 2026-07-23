@@ -232,7 +232,7 @@ Other fields:
   `{calendar_name}` placeholders the frontend substitutes after resolving
   the destination.
 
-See [docs/action-responses.md](../../docs/action-responses.md) for the
+See [docs/reference-actions.md](../../docs/reference-actions.md) for the
 shared envelope schema.
 
 ## Notes
