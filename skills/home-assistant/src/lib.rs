@@ -161,9 +161,19 @@ fn handle_settings_action(input: &str) -> String {
     let challenge = logic::pkce_challenge(&verifier);
     let state = oauth_state();
     let redirect_uri = ari::oauth_redirect_uri();
-    let auth_url = logic::build_authorize_url(
+    let auth_url = match logic::build_authorize_url(
         &base_url, logic::OAUTH_CLIENT_ID, &redirect_uri, &state, &challenge,
-    );
+    ) {
+        Some(u) => u,
+        None => {
+            return SettingsResult::error(&t_or(
+                "invalid_url",
+                &[],
+                "That doesn't look like a Home Assistant address. Check the server URL in settings.",
+            ))
+            .to_json()
+        }
+    };
 
     let res = ari::authorize(&auth_url, &redirect_uri, logic::OAUTH_TIMEOUT_MS);
     if !res.ok {

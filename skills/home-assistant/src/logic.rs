@@ -44,6 +44,67 @@ mod oauth_tests {
         assert_eq!(pkce_challenge(verifier), "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM");
     }
 
+    /// Users type what they'd type in a browser. A bare host isn't a
+    /// parseable URL, and this used to reach `Url::parse(...).expect(...)`
+    /// — which traps the WASM module rather than failing politely.
+    #[test]
+    fn base_defaults_a_missing_scheme_to_https() {
+        assert_eq!(base("ha.vassallo.cloud"), "https://ha.vassallo.cloud");
+        assert_eq!(base("ha.vassallo.cloud/"), "https://ha.vassallo.cloud");
+        assert_eq!(base("  ha.vassallo.cloud  "), "https://ha.vassallo.cloud");
+        assert_eq!(base("hass.local:8123"), "https://hass.local:8123");
+    }
+
+    #[test]
+    fn base_preserves_an_explicit_scheme() {
+        assert_eq!(base("https://hass.example.com/"), "https://hass.example.com");
+        assert_eq!(base("http://hass.local:8123"), "http://hass.local:8123");
+        assert_eq!(base("http://192.168.1.10:8123/"), "http://192.168.1.10:8123");
+    }
+
+    #[test]
+    fn authorize_url_accepts_a_schemeless_host() {
+        let u = build_authorize_url(
+            "ha.vassallo.cloud",
+            "https://heyari.dev/oauth/client",
+            "https://heyari.dev/oauth/ha/callback",
+            "STATE123",
+            "CHALLENGE456",
+        )
+        .expect("schemeless host should resolve to an https authorize URL");
+        let parsed = url::Url::parse(&u).expect("valid url");
+        assert_eq!(parsed.scheme(), "https");
+        assert_eq!(parsed.host_str(), Some("ha.vassallo.cloud"));
+        assert_eq!(parsed.path(), "/auth/authorize");
+    }
+
+    /// The whole point of the change: garbage in gets `None` out, not a
+    /// trap. A trapping skill currently takes the host process with it.
+    #[test]
+    fn authorize_url_rejects_unparseable_input_without_panicking() {
+        for junk in ["", "   ", "http://", "https://", "::::", "ha .example.com"] {
+            assert_eq!(
+                build_authorize_url(
+                    junk,
+                    "https://heyari.dev/oauth/client",
+                    "https://heyari.dev/oauth/ha/callback",
+                    "STATE",
+                    "CHALLENGE",
+                ),
+                None,
+                "expected None for {junk:?}",
+            );
+        }
+    }
+
+    #[test]
+    fn token_endpoint_defaults_a_missing_scheme_to_https() {
+        assert_eq!(
+            token_endpoint("ha.vassallo.cloud"),
+            "https://ha.vassallo.cloud/auth/token",
+        );
+    }
+
     #[test]
     fn authorize_url_carries_all_params_encoded() {
         let u = build_authorize_url(
@@ -52,7 +113,8 @@ mod oauth_tests {
             "https://heyari.dev/oauth/ha/callback",
             "STATE123",
             "CHALLENGE456",
-        );
+        )
+        .expect("valid base url");
         let parsed = url::Url::parse(&u).expect("valid url");
         assert_eq!(parsed.scheme(), "https");
         assert_eq!(parsed.host_str(), Some("hass.example.com"));
@@ -106,8 +168,24 @@ impl HaRequest {
     }
 }
 
-fn base(base_url: &str) -> &str {
-    base_url.trim_end_matches('/')
+/// Canonical origin to hang endpoint paths off.
+///
+/// Users type what they'd type into a browser — `ha.example.com`,
+/// often with a trailing slash, sometimes with a port. A bare host is
+/// not a parseable URL, so default the scheme to `https` rather than
+/// handing `Url::parse` something it can only reject. An explicitly
+/// typed scheme (including plain `http` for a LAN box) is left alone.
+fn base(base_url: &str) -> String {
+    // Scheme detection has to happen before the trailing slashes come
+    // off: `"http://"` would otherwise strip down to `"http:"`, lose its
+    // `://`, and get a second scheme bolted on the front.
+    let trimmed = base_url.trim();
+    let with_scheme = if trimmed.contains("://") {
+        trimmed.into()
+    } else {
+        alloc::format!("https://{trimmed}")
+    };
+    with_scheme.trim_end_matches('/').into()
 }
 
 /// OAuth/IndieAuth client identity. The shared Ari IndieAuth client; the
@@ -122,15 +200,28 @@ pub fn pkce_challenge(verifier: &str) -> String {
 }
 
 /// Build the IndieAuth authorize URL the browser opens.
+///
+/// `None` when `base_url` can't be parsed even after [`base`] has
+/// defaulted the scheme — i.e. the user typed something that isn't a
+/// server address. The caller turns that into a message; it must never
+/// panic, because a trapping WASM module currently takes the whole host
+/// process down with it.
 pub fn build_authorize_url(
     base_url: &str,
     client_id: &str,
     redirect_uri: &str,
     state: &str,
     code_challenge: &str,
-) -> String {
-    let endpoint = alloc::format!("{}/auth/authorize", base(base_url));
-    let mut u = url::Url::parse(&endpoint).expect("authorize endpoint");
+) -> Option<String> {
+    let origin = base(base_url);
+    // Validate the origin on its own first. Appending the path before
+    // parsing hides an empty authority: `""` normalises to `https://`,
+    // and `https:///auth/authorize` parses happily as the host `auth`.
+    let host = url::Url::parse(&origin).ok()?;
+    if host.host_str().is_none_or(str::is_empty) {
+        return None;
+    }
+    let mut u = url::Url::parse(&alloc::format!("{origin}/auth/authorize")).ok()?;
     u.query_pairs_mut()
         .append_pair("client_id", client_id)
         .append_pair("redirect_uri", redirect_uri)
@@ -138,7 +229,7 @@ pub fn build_authorize_url(
         .append_pair("state", state)
         .append_pair("code_challenge", code_challenge)
         .append_pair("code_challenge_method", "S256");
-    u.to_string()
+    Some(u.to_string())
 }
 
 pub fn build_conversation_request(
