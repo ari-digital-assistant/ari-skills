@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.counter
-    version: "0.1.0"
+    version: "0.1.1"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.1"
@@ -13,10 +13,15 @@ metadata:
     languages: [en, it]
     specificity: high
     matching:
+      # Anchored, not a bare `count` keyword. As a keyword it claimed any
+      # sentence containing the word — "count down 12 minutes for me" is a
+      # timer, and this skill was answering it with a digit.
       patterns:
-        - keywords: [count]
+        - regex: "^count( up)?$"
           weight: 0.95
-        - keywords: [tick]
+        - regex: "^tick$"
+          weight: 0.95
+        - regex: "\\bcounter\\b"
           weight: 0.95
     examples:
       - text: "count"

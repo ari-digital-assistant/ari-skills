@@ -114,9 +114,12 @@ metadata:
         args:
           title: "chiamare il dentista"
           when: "alle 9 domani"
-      - text: "svegliami alle 7"
+      # Niente "svegliami alle X": è compito della skill `alarm`, i cui
+      # pattern vincono l'utterance prima del router — l'esempio
+      # insegnerebbe il contrario di quello che succede in produzione.
+      - text: "avvisami alle 7 di prendere le pastiglie"
         args:
-          title: "svegliarsi"
+          title: "prendere le pastiglie"
           when: "alle 7"
       - text: "fammi sapere stasera di portare fuori la spazzatura"
         args:
