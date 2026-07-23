@@ -15,12 +15,16 @@ metadata:
       patterns:
         - keywords: [wasm, echo]
           weight: 0.95
+    # NB: `echo` alone isn't enough — the pattern needs both words. Drop
+    # `wasm` and the built-in `open` claims anything starting "run …",
+    # and `greeting` claims anything containing "hello"; the router would
+    # never see either, so both stay out.
     examples:
       - text: "wasm echo"
       - text: "echo test"
       - text: "test the wasm loader"
-      - text: "run the echo skill"
-      - text: "wasm hello"
+      - text: "run the wasm echo skill"
+      - text: "greeting from the wasm module"
     wasm:
       module: skill.wasm
       memory_limit_mb: 1

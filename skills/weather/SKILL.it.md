@@ -65,11 +65,11 @@ metadata:
         args:
           location: ""
           when: "today"
-      - text: "c'e vento"
+      - text: "c'è vento"
         args:
           location: ""
           when: "now"
-      - text: "qual e l'indice uv"
+      - text: "qual è l'indice uv"
         args:
           location: ""
           when: "now"

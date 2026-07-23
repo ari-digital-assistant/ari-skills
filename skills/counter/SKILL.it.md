@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.counter
-    version: "0.1.0"
+    version: "0.1.1"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.1"
@@ -13,10 +13,13 @@ metadata:
     languages: [en, it]
     specificity: high
     matching:
+      # Ancorati, non una keyword `conta` nuda: come keyword rivendicava
+      # qualsiasi frase contenente la parola — "conta 12 minuti per me" è
+      # un timer, e questa skill rispondeva con una cifra.
       patterns:
-        - keywords: [conta]
+        - regex: "^conta$"
           weight: 0.95
-        - keywords: [contatore]
+        - regex: "\\bcontatore\\b"
           weight: 0.95
     examples:
       - text: "conta"
