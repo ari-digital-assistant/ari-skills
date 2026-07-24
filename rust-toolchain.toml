@@ -1,0 +1,11 @@
+# Pin the toolchain so skill wasm rebuilds are byte-reproducible across CI
+# runs. The sign-and-publish pipeline rebuilds every skill from source before
+# packaging (so a stale committed skill.wasm can never ship), and the bundles
+# are content-addressed by sha256 — a floating toolchain would re-churn every
+# bundle on each run and defeat the "nothing to commit" fast path.
+#
+# Bump deliberately, in lockstep with the version used to (re)generate the
+# tracked skill.wasm binaries. Matches the current local toolchain (1.96.1).
+[toolchain]
+channel = "1.96.1"
+targets = ["wasm32-unknown-unknown"]

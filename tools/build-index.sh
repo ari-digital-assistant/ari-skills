@@ -9,7 +9,10 @@
 #   1. Runs ari-skill-validate --format=json to collect (id, version, name,
 #      description, license) from the manifest. Validation failure aborts
 #      the whole run (we never ship an unvalidated skill).
-#   2. Packages skills/<slug>/ into bundles/<id>-<version>.tar.gz.
+#   2. If ARI_REBUILD_SKILLS is set, rebuilds skill.wasm from source first (so
+#      a stale committed binary can never ship), then packages skills/<slug>/
+#      into bundles/<id>-<version>.tar.gz as a deterministic (reproducible)
+#      archive. The tracked skill.wasm is restored afterwards.
 #   3. Signs the bundle with ari-sign-bundle using the key at $ARI_SIGNING_KEY_FILE.
 #   4. Computes sha256.
 #   5. Copies skills/<slug>/SKILL.md to manifests/<id>-<version>.md so clients
@@ -22,6 +25,9 @@
 #                          produced by `ari-sign-bundle gen-key`)
 #   ARI_SKILL_VALIDATE     (optional) path to the ari-skill-validate binary
 #   ARI_SIGN_BUNDLE        (optional) path to the ari-sign-bundle binary
+#   ARI_REBUILD_SKILLS     (optional) if set, rebuild each skill's wasm from
+#                          source before packaging (needs the wasm32 Rust
+#                          toolchain; set by the publish workflow)
 #
 # If ARI_SKILL_VALIDATE / ARI_SIGN_BUNDLE aren't set, the script falls back
 # to a sibling ari-engine checkout and runs the binaries via `cargo run`.
@@ -116,6 +122,23 @@ echo "$SKILL_JSON" | jq -c '.[]' | while read -r SKILL_ROW; do
   manifest_path="manifests/${manifest_name}"
 
   echo "build-index: packaging $id $version ($slug → $bundle_name)"
+
+  # Rebuild the wasm from source before packaging so a bundle can never ship a
+  # stale binary: PR validation runs against the tracked skill.wasm but does
+  # not rebuild it, so a source-only change could otherwise publish the
+  # previous implementation. Gated behind ARI_REBUILD_SKILLS (the
+  # sign-and-publish workflow sets it) so a local dry-run stays fast and does
+  # not need the wasm toolchain. The tracked skill.wasm is backed up and
+  # restored around the build — publishing must not mutate the source tree
+  # (the workflow rebases before pushing) and a local run must stay read-only.
+  wasm_backup=""
+  if [[ -n "${ARI_REBUILD_SKILLS:-}" && -x "${path}/build.sh" ]]; then
+    echo "  rebuilding ${slug}/skill.wasm from source"
+    wasm_backup=$(mktemp)
+    cp "${path}/skill.wasm" "$wasm_backup"
+    ( cd "$path" && ./build.sh >/dev/null )
+  fi
+
   # -C skills puts the archive root at <slug>/, which is what the engine's
   # bundle extractor expects.
   #
@@ -126,8 +149,19 @@ echo "$SKILL_JSON" | jq -c '.[]' | while read -r SKILL_ROW; do
   # was 60 KB, and historically nobody noticed because every other skill's
   # source is tiny. Skipping them keeps bundles lean and avoids leaking
   # source into the signed artifact.
-  tar --exclude="$slug/src" --exclude="$slug/target" \
-    -czf "$bundle_path" -C skills "$slug"
+  #
+  # Deterministic archive: sorted entries, fixed mtime/ownership and `gzip -n`
+  # (no embedded timestamp) so a bundle's bytes depend only on its contents.
+  # Without this, the file mtimes from each fresh CI checkout leaked into the
+  # tar headers and re-churned every bundle — and its signature — on every run.
+  tar --sort=name --mtime='UTC 2020-01-01' --owner=0 --group=0 --numeric-owner \
+    --exclude="$slug/src" --exclude="$slug/target" \
+    -cf - -C skills "$slug" | gzip -n > "$bundle_path"
+
+  if [[ -n "$wasm_backup" ]]; then
+    cp "$wasm_backup" "${path}/skill.wasm"
+    rm -f "$wasm_backup"
+  fi
 
   # shellcheck disable=SC2086
   $SIGN sign "$bundle_path" "$ARI_SIGNING_KEY_FILE" >/dev/null

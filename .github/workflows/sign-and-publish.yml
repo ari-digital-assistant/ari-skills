@@ -105,6 +105,13 @@ jobs:
         env:
           ARI_SKILL_VALIDATE: ${{ github.workspace }}/ari-engine-src/target/release/ari-skill-validate
           ARI_SIGN_BUNDLE: ${{ github.workspace }}/ari-engine-src/target/release/ari-sign-bundle
+          # Rebuild every skill's wasm from source before packaging so a stale
+          # committed skill.wasm can never ship (PR validation doesn't rebuild
+          # it). The wasm32 toolchain is pinned by ari-skills/rust-toolchain.toml
+          # and installed on demand by rustup; build-index.sh restores the
+          # tracked skill.wasm after each build, so the tree stays clean for the
+          # rebase-before-push below.
+          ARI_REBUILD_SKILLS: "1"
         run: ./tools/build-index.sh
 
       - name: Commit updated index and bundles
