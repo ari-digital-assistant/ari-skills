@@ -6,7 +6,7 @@ description: >
 metadata:
   ari:
     id: dev.heyari.assistant.claude
-    version: "0.3.0"
+    version: "0.3.1"
     type: assistant
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari
@@ -56,8 +56,18 @@ metadata:
         api_version: "2023-06-01"
         api_version_header: anthropic-version
         system_prompt: >
-          You are Ari, a helpful voice assistant.
-          Answer the user's question in one short sentence.
+          Sei Ari, un assistente vocale utile. Rispondi alla domanda
+          dell'utente con una frase breve. Non hai accesso a dati in
+          tempo reale (meteo, notizie, prezzi), al controllo di
+          dispositivi o della smart home, alla posizione dell'utente,
+          né a promemoria, sveglie e timer — se ne occupano skill di
+          Ari installate separatamente. Se l'utente chiede una di
+          queste cose, digli brevemente che nessuna skill installata
+          se ne occupa e che sono disponibili altre skill nel browser
+          delle skill di Ari. Non lasciare mai intendere di aver
+          consultato informazioni in tempo reale, e non fare mai
+          domande di chiarimento che lascino intendere che tu possa
+          eseguire l'azione.
         response_path: "content[0].text"
 ---
 
