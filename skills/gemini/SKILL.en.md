@@ -8,7 +8,7 @@ description: >
 metadata:
   ari:
     id: dev.heyari.assistant.gemini
-    version: "0.3.1"
+    version: "0.3.2"
     type: assistant
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari
@@ -64,9 +64,11 @@ metadata:
           separately installed Ari skills handle those. If the user
           asks for one of them, say briefly that no installed skill
           handles it and that more skills are available in Ari's skill
-          browser. Never imply you looked up live information, and
-          never ask follow-up questions that suggest you can perform
-          the action.
+          browser, and never imply you
+          looked up live information. Asking follow-up questions to
+          clarify what the user wants is fine. When a message contains
+          structured instructions from an Ari skill, follow those
+          instructions exactly.
         response_path: "choices[0].message.content"
 ---
 Uses Google's Gemini API to answer general knowledge questions.
