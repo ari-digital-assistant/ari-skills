@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-07-30T13:45:23Z",
+  "generated_at": "2026-07-30T14:02:38Z",
   "skills": [
     {
       "id": "dev.heyari.weather",
@@ -112,7 +112,7 @@
     },
     {
       "id": "dev.heyari.assistant.chatgpt",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "name": "chatgpt",
       "description": "Use OpenAI's ChatGPT to answer general questions. Requires an API key from platform.openai.com. Your questions are sent to OpenAI's servers.\n",
       "type": "assistant",
@@ -124,10 +124,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.assistant.chatgpt-0.3.1.tar.gz",
-      "signature": "bundles/dev.heyari.assistant.chatgpt-0.3.1.tar.gz.sig",
-      "sha256": "891585f753722c80d7e963681c7663e4d7be7e700e63ee75884584a1f0acaf52",
-      "manifest": "manifests/dev.heyari.assistant.chatgpt-0.3.1.md",
+      "bundle": "bundles/dev.heyari.assistant.chatgpt-0.3.2.tar.gz",
+      "signature": "bundles/dev.heyari.assistant.chatgpt-0.3.2.tar.gz.sig",
+      "sha256": "1d1d41600afdc3fbc80e46efa21ac3cb955c8ab83e36e71000ab3cade8d7631b",
+      "manifest": "manifests/dev.heyari.assistant.chatgpt-0.3.2.md",
       "localizations": {
         "it": {
           "name": "chatgpt",
@@ -137,7 +137,7 @@
     },
     {
       "id": "dev.heyari.reminder",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "name": "reminder",
       "description": "Sets timed reminders and untimed list items. Routes to the user's tasks app (default), calendar, or both, with optional voice-named lists like \"add milk to my shopping list\".",
       "type": "skill",
@@ -152,10 +152,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.reminder-0.3.0.tar.gz",
-      "signature": "bundles/dev.heyari.reminder-0.3.0.tar.gz.sig",
-      "sha256": "3c575d642fb67dd9375cace7f28070793d5fad927eface57bb78bc12568dcda5",
-      "manifest": "manifests/dev.heyari.reminder-0.3.0.md",
+      "bundle": "bundles/dev.heyari.reminder-0.4.0.tar.gz",
+      "signature": "bundles/dev.heyari.reminder-0.4.0.tar.gz.sig",
+      "sha256": "8934dade9107b44df0e869b1158350d23f71b6b6ed63bdb20e913cac7145cc30",
+      "manifest": "manifests/dev.heyari.reminder-0.4.0.md",
       "localizations": {
         "it": {
           "name": "reminder",
@@ -247,7 +247,7 @@
     },
     {
       "id": "dev.heyari.assistant.claude",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "name": "claude",
       "description": "Use Anthropic's Claude to answer general questions. Requires an API key from console.anthropic.com. Your questions are sent to Anthropic's servers.\n",
       "type": "assistant",
@@ -259,10 +259,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.assistant.claude-0.3.1.tar.gz",
-      "signature": "bundles/dev.heyari.assistant.claude-0.3.1.tar.gz.sig",
-      "sha256": "1e9151f2d7e0985936402227f72d081404c68ee3765911b25c940e475e939e4b",
-      "manifest": "manifests/dev.heyari.assistant.claude-0.3.1.md",
+      "bundle": "bundles/dev.heyari.assistant.claude-0.3.2.tar.gz",
+      "signature": "bundles/dev.heyari.assistant.claude-0.3.2.tar.gz.sig",
+      "sha256": "e54a6b9308762f960f9f7e5409e309f272d73b259c1908df91f0db4258f968a1",
+      "manifest": "manifests/dev.heyari.assistant.claude-0.3.2.md",
       "localizations": {
         "it": {
           "name": "claude",
@@ -355,7 +355,7 @@
     },
     {
       "id": "dev.heyari.assistant.gemini",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "name": "gemini",
       "description": "Use Google's Gemini to answer general questions. Requires an API key from aistudio.google.com. Your questions are sent to Google's servers.\n",
       "type": "assistant",
@@ -367,10 +367,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.assistant.gemini-0.3.1.tar.gz",
-      "signature": "bundles/dev.heyari.assistant.gemini-0.3.1.tar.gz.sig",
-      "sha256": "cdacc6a9dab914ade8631c63c01061bf426f1ef80ccdcfebdab03612f6a64c12",
-      "manifest": "manifests/dev.heyari.assistant.gemini-0.3.1.md",
+      "bundle": "bundles/dev.heyari.assistant.gemini-0.3.2.tar.gz",
+      "signature": "bundles/dev.heyari.assistant.gemini-0.3.2.tar.gz.sig",
+      "sha256": "1ce19f13c8f03be952db6362686a51b941ef1d633916abac171a563d576d8fc7",
+      "manifest": "manifests/dev.heyari.assistant.gemini-0.3.2.md",
       "localizations": {
         "it": {
           "name": "gemini",
