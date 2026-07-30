@@ -125,14 +125,23 @@ jobs:
             exit 0
           fi
           git commit -m "chore(registry): publish signed bundles + manifests + index.json for ${{ github.sha }}"
-          # The concurrency group keeps other publishes off our back, but a
-          # human merge can still land on main while we were building. Our
-          # commit only touches generated paths, so rebasing onto it is
-          # conflict-free — and that merge triggers its own publish run, which
-          # queues behind this one and supersedes what we push here.
+          # The concurrency group serialises publish runs, but it does NOT
+          # make this rebase conflict-free: a back-to-back publish (two PRs
+          # merged seconds apart, 2026-07-30) means origin/main already
+          # carries the previous run's publish commit rewriting the same
+          # generated files this commit rewrites — a guaranteed index.json
+          # conflict. Our tree was built by build-index.sh from scratch off
+          # the newer merge, so ours strictly supersedes: resolve generated-
+          # path conflicts in our favour (-X theirs — in a pull --rebase the
+          # replayed local commit is "theirs"). A human merge landing during
+          # the build is still fine: it triggers its own publish run, which
+          # queues behind this one and supersedes what we push here. Abort
+          # any half-applied rebase before retrying, or every later attempt
+          # dies on "unmerged files" without ever reaching the network.
           for attempt in 1 2 3; do
-            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            git pull --rebase -X theirs origin main && git push origin HEAD:main && exit 0
             echo "push race (attempt $attempt), retrying..."
+            git rebase --abort 2>/dev/null || true
             sleep $((RANDOM % 10 + 5))
           done
           echo "could not push the signed index after 3 attempts" >&2
