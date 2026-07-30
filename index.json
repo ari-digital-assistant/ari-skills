@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-07-24T18:38:21Z",
+  "generated_at": "2026-07-30T13:45:23Z",
   "skills": [
     {
       "id": "dev.heyari.weather",
@@ -112,7 +112,7 @@
     },
     {
       "id": "dev.heyari.assistant.chatgpt",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "name": "chatgpt",
       "description": "Use OpenAI's ChatGPT to answer general questions. Requires an API key from platform.openai.com. Your questions are sent to OpenAI's servers.\n",
       "type": "assistant",
@@ -124,10 +124,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz",
-      "signature": "bundles/dev.heyari.assistant.chatgpt-0.3.0.tar.gz.sig",
-      "sha256": "083231612eb989d526ea84f433e3bb5a5ff46021a69311671b888e07dd818e6b",
-      "manifest": "manifests/dev.heyari.assistant.chatgpt-0.3.0.md",
+      "bundle": "bundles/dev.heyari.assistant.chatgpt-0.3.1.tar.gz",
+      "signature": "bundles/dev.heyari.assistant.chatgpt-0.3.1.tar.gz.sig",
+      "sha256": "891585f753722c80d7e963681c7663e4d7be7e700e63ee75884584a1f0acaf52",
+      "manifest": "manifests/dev.heyari.assistant.chatgpt-0.3.1.md",
       "localizations": {
         "it": {
           "name": "chatgpt",
@@ -247,7 +247,7 @@
     },
     {
       "id": "dev.heyari.assistant.claude",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "name": "claude",
       "description": "Use Anthropic's Claude to answer general questions. Requires an API key from console.anthropic.com. Your questions are sent to Anthropic's servers.\n",
       "type": "assistant",
@@ -259,10 +259,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz",
-      "signature": "bundles/dev.heyari.assistant.claude-0.3.0.tar.gz.sig",
-      "sha256": "8577d01c21cef46ebc44f5856c9905b9c12b961394d717f377019d4adbcecaa8",
-      "manifest": "manifests/dev.heyari.assistant.claude-0.3.0.md",
+      "bundle": "bundles/dev.heyari.assistant.claude-0.3.1.tar.gz",
+      "signature": "bundles/dev.heyari.assistant.claude-0.3.1.tar.gz.sig",
+      "sha256": "1e9151f2d7e0985936402227f72d081404c68ee3765911b25c940e475e939e4b",
+      "manifest": "manifests/dev.heyari.assistant.claude-0.3.1.md",
       "localizations": {
         "it": {
           "name": "claude",
@@ -355,7 +355,7 @@
     },
     {
       "id": "dev.heyari.assistant.gemini",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "name": "gemini",
       "description": "Use Google's Gemini to answer general questions. Requires an API key from aistudio.google.com. Your questions are sent to Google's servers.\n",
       "type": "assistant",
@@ -367,10 +367,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.assistant.gemini-0.3.0.tar.gz",
-      "signature": "bundles/dev.heyari.assistant.gemini-0.3.0.tar.gz.sig",
-      "sha256": "2406bd7086210be0f51323f1f3ceaa61c41159dea264ca2c469a478d868ee8c2",
-      "manifest": "manifests/dev.heyari.assistant.gemini-0.3.0.md",
+      "bundle": "bundles/dev.heyari.assistant.gemini-0.3.1.tar.gz",
+      "signature": "bundles/dev.heyari.assistant.gemini-0.3.1.tar.gz.sig",
+      "sha256": "cdacc6a9dab914ade8631c63c01061bf426f1ef80ccdcfebdab03612f6a64c12",
+      "manifest": "manifests/dev.heyari.assistant.gemini-0.3.1.md",
       "localizations": {
         "it": {
           "name": "gemini",
