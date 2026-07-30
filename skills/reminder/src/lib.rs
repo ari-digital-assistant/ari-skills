@@ -179,8 +179,9 @@ pub fn dispatch(input: &str) -> String {
 /// 3pm", "in 30 minutes", or an ISO datetime) is fed to parse.rs's
 /// scanner just on that fragment so we get the existing date/time
 /// machinery without reimplementing it. Confidence reports `Partial`
-/// when `when` was supplied but couldn't be parsed cleanly, so Layer
-/// C can step in to disambiguate.
+/// when the args left us without a usable time anchor — `when`
+/// supplied but not parsed cleanly, or no `when` at all on a create
+/// that isn't a list add — so Layer C can step in to disambiguate.
 #[cfg(target_arch = "wasm32")]
 fn parsed_from_args() -> Option<parse::Parsed> {
     let args_json = ari::args()?;
@@ -209,7 +210,7 @@ fn parsed_from_args() -> Option<parse::Parsed> {
     // crack it into a `When` variant. We deliberately don't reparse
     // the full input — the model's title extraction is what we
     // wanted, and parse.rs would just re-derive it.
-    let (when, when_confidence) = match when_str {
+    let (when, mut confidence) = match when_str {
         None => (parse::When::None, parse::Confidence::High),
         Some(w) => {
             // Synthesize a minimal "remind me at <when>" so the
@@ -228,12 +229,26 @@ fn parsed_from_args() -> Option<parse::Parsed> {
         }
     };
 
+    // Same rule parse() applies: a create with no usable time anchor
+    // is semantically incomplete, so route it through Layer C rather
+    // than filing an untimed task silently (2026-07-29 field failure).
+    // Catches both an absent `when` slot and a `when` string the date
+    // scanner couldn't crack. A list add is a different animal —
+    // untimed is its normal shape — so args carrying a list_hint keep
+    // whatever confidence the `when` parse earned.
+    if matches!(when, parse::When::None)
+        && list_hint.is_none()
+        && confidence == parse::Confidence::High
+    {
+        confidence = parse::Confidence::Partial;
+    }
+
     Some(parse::Parsed {
         title,
         when,
         list_hint,
         speak_template: String::new(),
-        confidence: when_confidence,
+        confidence,
         unparsed: None,
     })
 }
