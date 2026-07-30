@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.reminder
-    version: "0.3.0"
+    version: "0.4.0"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
@@ -182,6 +182,13 @@ If no time is given the reminder is created as an untimed task. If a time
 is given, it's emitted as an absolute ISO-8601 timestamp; the frontend
 handles writing it as a VTODO with a due date and/or a VEVENT with an
 alarm depending on the destination setting.
+
+Creating a reminder with no time is never a high-confidence parse (since
+v0.4.0): it goes through the assistant round-trip, so you get either a
+confirmation question or a card you can cancel, instead of an untimed
+task filed silently. Speech recognition clipping a trailing "in one
+hour" used to do exactly that. Named-list adds are unaffected — untimed
+is their normal shape.
 
 ## Settings
 

@@ -9,7 +9,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.reminder
-    version: "0.3.0"
+    version: "0.4.0"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
@@ -181,6 +181,14 @@ senza orario. Se viene fornito un orario, viene emesso come timestamp
 ISO-8601 assoluto; il frontend si occupa di scriverlo come VTODO con
 data di scadenza e/o come VEVENT con un avviso a seconda dell'impostazione
 di destinazione.
+
+Creare un promemoria senza orario non è mai un'analisi ad alta
+affidabilità (dalla v0.4.0): passa dal giro di consultazione
+dell'assistente, quindi si ottiene una domanda di conferma o una scheda
+annullabile, invece di un'attività senza orario registrata in silenzio.
+Il riconoscimento vocale che tronca un "tra un'ora" finale faceva
+esattamente questo. Le aggiunte alle liste personalizzate non sono
+interessate — per loro l'assenza di orario è la norma.
 
 ## Impostazioni
 

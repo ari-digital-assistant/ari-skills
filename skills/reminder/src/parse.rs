@@ -214,7 +214,21 @@ pub fn parse(input: &str) -> Parsed {
 
     let (when, payload_after_when) = extract_when(payload);
     let title = clean_title(&payload_after_when);
-    let (confidence, unparsed) = assess_confidence(&title, &when);
+    let (mut confidence, unparsed) = assess_confidence(&title, &when);
+
+    // A reminder with no time anchor is semantically incomplete no
+    // matter how clean the title parsed. 2026-07-29: STT dropped "in
+    // one hour" from "remind me about business" and the residue scan
+    // had nothing to flag, so the skill reported High and filed an
+    // untimed task with no card — the user thought nothing happened.
+    // Partial routes it through Layer C, where the assistant either
+    // recovers a time, asks for one via a clarification card, or the
+    // warn-and-commit fallback shows what was (not) captured. Named-
+    // list adds never reach here — parse_named_list returned earlier —
+    // so untimed list adds stay High.
+    if matches!(when, When::None) && confidence == Confidence::High {
+        confidence = Confidence::Partial;
+    }
 
     Parsed {
         title,
@@ -1532,6 +1546,39 @@ mod tests {
         let p = parse("remind me to buy 3 apples at 5pm");
         assert_eq!(p.confidence, Confidence::High, "title={:?}", p.title);
         assert_eq!(p.unparsed, None);
+    }
+
+    #[test]
+    fn create_with_no_time_is_partial_confidence() {
+        // Field failure 2026-07-29: STT dropped "in one hour" from
+        // "remind me about business in one hour". The title parsed
+        // clean, so the skill reported High and committed an untimed
+        // task without a card — the user thought nothing happened.
+        // No-time creates route through Layer C instead.
+        let p = parse("remind me about business");
+        assert_eq!(p.title, "business");
+        assert_eq!(p.when, When::None);
+        assert_eq!(p.confidence, Confidence::Partial);
+    }
+
+    #[test]
+    fn create_with_time_stays_high_confidence() {
+        // The same utterance with the time intact. "one hour" reaches
+        // the skill as "1 hour" — the engine's words_to_number
+        // normaliser runs before dispatch.
+        let p = parse("remind me about business in 1 hour");
+        assert_eq!(p.title, "business");
+        assert_eq!(p.when, When::InSeconds(3600));
+        assert_eq!(p.confidence, Confidence::High);
+    }
+
+    #[test]
+    fn named_list_add_stays_high_without_time() {
+        // Untimed is the NORMAL case for list adds — must not regress.
+        let p = parse("add milk to my shopping list");
+        assert_eq!(p.confidence, Confidence::High);
+        assert_eq!(p.when, When::None);
+        assert_eq!(p.list_hint.as_deref(), Some("shopping"));
     }
 
     #[test]
