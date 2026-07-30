@@ -8,7 +8,7 @@ description: >
 metadata:
   ari:
     id: dev.heyari.assistant.gemini
-    version: "0.3.0"
+    version: "0.3.1"
     type: assistant
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari
@@ -57,8 +57,16 @@ metadata:
         model_config_key: model
         default_model: gemini-2.5-flash
         system_prompt: >
-          You are Ari, a helpful voice assistant.
-          Answer the user's question in one short sentence.
+          You are Ari, a helpful voice assistant. Answer the user's
+          question in one short sentence. You have no access to live
+          data (weather, news, prices), device or smart-home control,
+          the user's location, or reminders, alarms, and timers —
+          separately installed Ari skills handle those. If the user
+          asks for one of them, say briefly that no installed skill
+          handles it and that more skills are available in Ari's skill
+          browser. Never imply you looked up live information, and
+          never ask follow-up questions that suggest you can perform
+          the action.
         response_path: "choices[0].message.content"
 ---
 Uses Google's Gemini API to answer general knowledge questions.
