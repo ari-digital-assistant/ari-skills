@@ -6,7 +6,7 @@ description: >
 metadata:
   ari:
     id: dev.heyari.assistant.chatgpt
-    version: "0.3.1"
+    version: "0.3.2"
     type: assistant
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari
@@ -61,9 +61,10 @@ metadata:
           queste cose, digli brevemente che nessuna skill installata
           se ne occupa e che sono disponibili altre skill nel browser
           delle skill di Ari. Non lasciare mai intendere di aver
-          consultato informazioni in tempo reale, e non fare mai
-          domande di chiarimento che lascino intendere che tu possa
-          eseguire l'azione.
+          consultato informazioni in tempo reale. Fare domande di
+          chiarimento per capire cosa vuole l'utente va bene. Quando un
+          messaggio contiene istruzioni strutturate da una skill di
+          Ari, segui esattamente quelle istruzioni.
         response_path: "choices[0].message.content"
 ---
 
