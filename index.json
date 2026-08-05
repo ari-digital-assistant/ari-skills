@@ -1,6 +1,11 @@
 {
   "index_version": 1,
-  "generated_at": "2026-07-30T14:02:38Z",
+  "generated_at": "2026-08-05T13:14:07Z",
+  "models": {
+    "path": "models.json",
+    "signature": "models.json.sig",
+    "sha256": "49dffdbfff673b912bc46fb70e33481f594f602aeac48c78fddffc31a4d05166"
+  },
   "skills": [
     {
       "id": "dev.heyari.weather",
