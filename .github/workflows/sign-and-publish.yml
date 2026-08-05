@@ -2,7 +2,11 @@ name: sign-and-publish
 
 # Runs on every push to main that touches the skill set. Rebuilds all
 # bundles, re-signs them with the registry signing key (an Actions secret),
-# regenerates index.json, and commits the lot back to main.
+# signs models.json, regenerates index.json, and commits the lot back to main.
+#
+# models.json is in the trigger paths because refresh-models.yml lands its
+# nightly model refresh as an ordinary PR — the merge has to come back through
+# here to get the new file signed, since this workflow holds the key.
 #
 # Signing every bundle every time is deliberate: it means the on-disk state
 # of main always matches the signed state, no partial updates, no stale
@@ -19,6 +23,7 @@ on:
     paths:
       - 'skills/**'
       - 'tools/**'
+      - 'models.json'
       - '.github/workflows/sign-and-publish.yml'
   workflow_dispatch: {}
 
@@ -119,9 +124,9 @@ jobs:
           set -euo pipefail
           git config user.name "ari-skills-bot"
           git config user.email "ari-skills-bot@users.noreply.github.com"
-          git add index.json bundles/ manifests/
+          git add index.json bundles/ manifests/ models.json.sig models.json.sha256
           if git diff --cached --quiet; then
-            echo "nothing to commit — index, bundles, and manifests are already up to date"
+            echo "nothing to commit — index, bundles, manifests, and model signatures are already up to date"
             exit 0
           fi
           git commit -m "chore(registry): publish signed bundles + manifests + index.json for ${{ github.sha }}"

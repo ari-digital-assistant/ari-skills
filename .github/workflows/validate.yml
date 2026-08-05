@@ -21,6 +21,7 @@ on:
       - 'templates/**'
       - 'sdk/**'
       - 'tools/**'
+      - 'models.json'
       - '.github/workflows/**'
 
 permissions:

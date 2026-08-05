@@ -208,11 +208,37 @@ echo "$SKILL_JSON" | jq -c '.[]' | while read -r SKILL_ROW; do
     >>"$INDEX_TMP"
 done
 
+# Sign models.json alongside the bundles. It decides which model the cloud
+# assistant skills actually call, so it needs the same Ed25519 guarantee they
+# get — index.json itself is unsigned, and its sha256 is only a "the index
+# lied" cross-check. Refreshed nightly by tools/build-models.sh via
+# refresh-models.yml; signing stays here because this is the only place that
+# holds the key.
+if [[ ! -f models.json ]]; then
+  echo "build-index: models.json is missing — run ./tools/build-models.sh" >&2
+  exit 1
+fi
+
+echo "build-index: signing models.json"
+# shellcheck disable=SC2086
+$SIGN sign models.json "$ARI_SIGNING_KEY_FILE" >/dev/null
+MODELS_SHA=$(cut -c1-64 <models.json.sha256)
+
 # Assemble index.json. generated_at is a UTC ISO-8601 timestamp; index_version
 # lets us evolve the format without a flag-day migration.
 jq -s --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  '{index_version: 1, generated_at: $ts, skills: .}' \
+  --arg models_sha "$MODELS_SHA" \
+  '{
+    index_version: 1,
+    generated_at: $ts,
+    models: {
+      path: "models.json",
+      signature: "models.json.sig",
+      sha256: $models_sha
+    },
+    skills: .
+  }' \
   "$INDEX_TMP" >index.json
 
 COUNT=$(jq '.skills | length' index.json)
-echo "build-index: wrote index.json with $COUNT skill(s)"
+echo "build-index: wrote index.json with $COUNT skill(s) + signed models.json"

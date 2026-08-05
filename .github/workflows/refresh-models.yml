@@ -1,0 +1,148 @@
+name: refresh-models
+
+# Nightly refresh of models.json — the fast/balanced/smartest model each cloud
+# assistant skill resolves to. Runs tools/build-models.sh against models.dev,
+# and if the picks changed, opens a PR armed with the `auto-merge` label.
+#
+# Why a PR and not a direct push: this file decides which model every user's
+# requests go to, and what they cost. A PR gives a reviewable diff and a clean
+# revert point for the morning a provider renames its lineup and the tier hints
+# pick something daft. Merging it comes back through sign-and-publish, which
+# holds the signing key and re-signs models.json.
+#
+# TOKEN NOTE
+#   Pushes and PRs made with GITHUB_TOKEN deliberately don't trigger other
+#   workflows, so a PR opened by the default token gets no `validate` run — and
+#   auto-merge waits on a green `validate` that will never arrive. The PR is
+#   still correct and mergeable by hand. To get end-to-end automation, add a
+#   repo secret ARI_BOT_TOKEN (a PAT with contents+PR write); the expression
+#   below picks it up automatically and validate then fires as normal.
+
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# One refresh at a time — two runs would race on the shared branch below.
+concurrency:
+  group: refresh-models
+  cancel-in-progress: false
+
+env:
+  REFRESH_BRANCH: chore/refresh-models
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Silence git default-branch hint
+        run: git config --global init.defaultBranch main
+
+      - name: Check out ari-skills
+        uses: actions/checkout@v5
+
+      - name: Rebuild models.json
+        run: ./tools/build-models.sh
+
+      - name: Stop if the picks are unchanged
+        id: diff
+        run: |
+          set -euo pipefail
+          # generated_at changes on every run, so compare the picks themselves
+          # rather than the raw file — otherwise we'd open a PR every night.
+          before=$(git show HEAD:models.json | jq -S '.providers')
+          after=$(jq -S '.providers' models.json)
+          if [[ "$before" == "$after" ]]; then
+            echo "no model changes — nothing to do"
+            echo "changed=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      # `validate` knows nothing about models.json, so this is the real gate on
+      # the file's shape. The engine falls back to each skill's pinned default
+      # per tier, which means a malformed file degrades quietly instead of
+      # failing loudly — worth catching here.
+      - name: Check models.json is usable
+        if: steps.diff.outputs.changed == '1'
+        run: |
+          set -euo pipefail
+          jq -e '
+            .schema_version == 1
+            and (.providers | keys == ["anthropic", "google", "openai"])
+            and (
+              .providers
+              | to_entries
+              | all(
+                  .value
+                  | (keys == ["balanced", "fast", "smartest"])
+                    and all(.[];
+                      (.id | type == "string" and length > 0)
+                      and (.omit_params | type == "array")
+                    )
+                )
+            )
+          ' models.json >/dev/null
+
+      - name: Summarise the change
+        if: steps.diff.outputs.changed == '1'
+        id: summary
+        run: |
+          set -euo pipefail
+          git show HEAD:models.json > /tmp/models-before.json
+          {
+            echo 'body<<PRBODY'
+            echo 'Nightly model refresh from [models.dev](https://models.dev/api.json).'
+            echo
+            echo '| provider / tier | before | after |'
+            echo '| --- | --- | --- |'
+            jq -rn \
+              --slurpfile before /tmp/models-before.json \
+              --slurpfile after models.json '
+              ["openai", "anthropic", "google"][] as $p
+              | ["fast", "balanced", "smartest"][] as $t
+              | ($before[0].providers[$p][$t].id // "—") as $b
+              | ($after[0].providers[$p][$t].id // "—") as $a
+              | select($b != $a)
+              | "| `\($p)` / \($t) | `\($b)` | `\($a)` |"'
+            echo
+            echo 'Tiers whose pick did not change are omitted. Full detail — pricing,'
+            echo 'context window, release date, and which fields the model rejects —'
+            echo 'is in the `models.json` diff.'
+            echo 'PRBODY'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Open or update the refresh PR
+        if: steps.diff.outputs.changed == '1'
+        env:
+          GH_TOKEN: ${{ secrets.ARI_BOT_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_BODY: ${{ steps.summary.outputs.body }}
+        run: |
+          set -euo pipefail
+          git config user.name "ari-skills-bot"
+          git config user.email "ari-skills-bot@users.noreply.github.com"
+
+          # Reuse one branch so consecutive nightlies update a single PR
+          # instead of stacking a new one every day.
+          git checkout -B "$REFRESH_BRANCH"
+          git add models.json
+          git commit -m "chore(models): refresh fast/balanced/smartest picks"
+          git push --force-with-lease origin "$REFRESH_BRANCH"
+
+          existing=$(gh pr list --repo "$GH_REPO" --head "$REFRESH_BRANCH" \
+            --state open --json number --jq '.[0].number // empty')
+          if [[ -n "$existing" ]]; then
+            echo "updating existing PR #$existing"
+            gh pr edit "$existing" --repo "$GH_REPO" --body "$PR_BODY"
+          else
+            gh pr create --repo "$GH_REPO" \
+              --base main --head "$REFRESH_BRANCH" \
+              --title "chore(models): refresh fast/balanced/smartest picks" \
+              --body "$PR_BODY" \
+              --label auto-merge
+          fi
