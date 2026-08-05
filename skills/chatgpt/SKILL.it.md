@@ -6,7 +6,7 @@ description: >
 metadata:
   ari:
     id: dev.heyari.assistant.chatgpt
-    version: "0.3.2"
+    version: "0.4.0"
     type: assistant
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari
@@ -30,17 +30,17 @@ metadata:
         label: API Key
         type: secret
         required: true
-      - key: model
+      - key: tier
         label: Model
         type: select
-        default: gpt-5.4-mini
+        default: balanced
         options:
-          - value: gpt-5.4-nano
-            label: GPT-5.4 Nano (fastest, cheapest)
-          - value: gpt-5.4-mini
-            label: GPT-5.4 Mini (small, cost-efficient)
-          - value: gpt-5.4
-            label: GPT-5.4 (smartest, slower responses)
+          - value: fast
+            label: Veloce (risposte più rapide, costo minore)
+          - value: balanced
+            label: Bilanciato
+          - value: smartest
+            label: Più intelligente (risposte più lente, costo maggiore)
     assistant:
       provider: api
       privacy: cloud
@@ -49,8 +49,16 @@ metadata:
         endpoint: https://api.openai.com/v1/chat/completions
         auth: bearer
         auth_config_key: api_key
-        model_config_key: model
-        default_model: gpt-5.4-mini
+        model_provider: openai
+        tier_config_key: tier
+        default_models:
+          fast: gpt-5.6-luna
+          balanced: gpt-5.6-terra
+          smartest: gpt-5.6-sol
+        # Only read by engines predating `tier_config_key`; those send
+        # `temperature` unconditionally, so this must be a model that
+        # accepts it. Tier-aware engines use `default_models` above.
+        default_model: gpt-4.1-mini
         system_prompt: >
           Sei Ari, un assistente vocale utile. Rispondi alla domanda
           dell'utente con una frase breve. Non hai accesso a dati in

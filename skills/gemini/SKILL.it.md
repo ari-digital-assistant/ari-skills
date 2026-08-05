@@ -6,7 +6,7 @@ description: >
 metadata:
   ari:
     id: dev.heyari.assistant.gemini
-    version: "0.3.2"
+    version: "0.4.0"
     type: assistant
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari
@@ -30,15 +30,17 @@ metadata:
         label: API Key
         type: secret
         required: true
-      - key: model
+      - key: tier
         label: Model
         type: select
-        default: gemini-2.5-flash
+        default: balanced
         options:
-          - value: gemini-2.5-flash
-            label: Gemini 2.5 Flash (fastest, cheapest)
-          - value: gemini-2.5-pro
-            label: Gemini 2.5 Pro (smartest, slower responses)
+          - value: fast
+            label: Veloce (risposte più rapide, costo minore)
+          - value: balanced
+            label: Bilanciato
+          - value: smartest
+            label: Più intelligente (risposte più lente, costo maggiore)
     assistant:
       provider: api
       privacy: cloud
@@ -47,8 +49,13 @@ metadata:
         endpoint: https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
         auth: bearer
         auth_config_key: api_key
-        model_config_key: model
-        default_model: gemini-2.5-flash
+        model_provider: google
+        tier_config_key: tier
+        default_models:
+          fast: gemini-3.5-flash-lite
+          balanced: gemini-3.6-flash
+          smartest: gemini-3.1-pro-preview
+        default_model: gemini-3.6-flash
         system_prompt: >
           Sei Ari, un assistente vocale utile. Rispondi alla domanda
           dell'utente con una frase breve. Non hai accesso a dati in

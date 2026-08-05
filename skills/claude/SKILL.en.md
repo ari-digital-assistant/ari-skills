@@ -8,7 +8,7 @@ description: >
 metadata:
   ari:
     id: dev.heyari.assistant.claude
-    version: "0.3.2"
+    version: "0.4.0"
     type: assistant
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari
@@ -37,17 +37,17 @@ metadata:
         label: API Key
         type: secret
         required: true
-      - key: model
+      - key: tier
         label: Model
         type: select
-        default: claude-sonnet-4-6
+        default: balanced
         options:
-          - value: claude-haiku-4-5-20251001
-            label: Haiku 4.5 (fastest, cheapest)
-          - value: claude-sonnet-4-6
-            label: Sonnet 4.6 (balanced)
-          - value: claude-opus-4-6
-            label: Opus 4.6 (smartest, slower responses)
+          - value: fast
+            label: Fast (quickest replies, lowest cost)
+          - value: balanced
+            label: Balanced
+          - value: smartest
+            label: Smartest (slowest replies, highest cost)
     assistant:
       provider: api
       privacy: cloud
@@ -57,7 +57,15 @@ metadata:
         auth: header
         auth_header: x-api-key
         auth_config_key: api_key
-        model_config_key: model
+        model_provider: anthropic
+        tier_config_key: tier
+        default_models:
+          fast: claude-haiku-4-5
+          balanced: claude-sonnet-5
+          smartest: claude-opus-5
+        # Only read by engines predating `tier_config_key`; those send
+        # `temperature` unconditionally, so this must be a model that
+        # accepts it. Tier-aware engines use `default_models` above.
         default_model: claude-sonnet-4-6
         request_format: anthropic
         api_version: "2023-06-01"
