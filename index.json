@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-08-05T13:25:12Z",
+  "generated_at": "2026-08-06T11:28:22Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -34,6 +34,13 @@
           "name": "weather",
           "description": "Meteo attuale, previsioni e condizioni come vento, pioggia e UV — per la tua posizione attuale o per qualsiasi luogo tu indichi."
         }
+      },
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.weather-0.1.0/android/01-current.webp",
+          "screenshots/dev.heyari.weather-0.1.0/android/02-forecast.webp",
+          "screenshots/dev.heyari.weather-0.1.0/android/03-settings.webp"
+        ]
       }
     },
     {
@@ -59,7 +66,8 @@
           "name": "coin-flip",
           "description": "Lancia una moneta virtuale e restituisce testa o croce. Usalo quando l'utente chiede di lanciare una moneta, tirare una moneta o fare una scelta binaria casuale."
         }
-      }
+      },
+      "screenshots": {}
     },
     {
       "id": "dev.heyari.homeassistant",
@@ -88,7 +96,8 @@
           "name": "home-assistant",
           "description": "Controlla la tua casa intelligente con Home Assistant — accendi e spegni i dispositivi, imposta luminosità o temperatura, avvia le scene, controlla lo stato e chiedi dove si trovano le persone. Usa questa skill per qualsiasi richiesta di domotica o casa intelligente."
         }
-      }
+      },
+      "screenshots": {}
     },
     {
       "id": "dev.heyari.wasmecho",
@@ -113,7 +122,8 @@
           "name": "wasm-echo",
           "description": "Minuscola skill WASM di test. Restituisce un saluto fisso dall'interno del suo modulo sandboxed. Usare solo per testare il loader WASM."
         }
-      }
+      },
+      "screenshots": {}
     },
     {
       "id": "dev.heyari.assistant.chatgpt",
@@ -138,7 +148,8 @@
           "name": "chatgpt",
           "description": "Usa ChatGPT di OpenAI per rispondere a domande generali. Richiede una chiave API da platform.openai.com. Le tue domande vengono inviate ai server di OpenAI.\n"
         }
-      }
+      },
+      "screenshots": {}
     },
     {
       "id": "dev.heyari.reminder",
@@ -166,7 +177,8 @@
           "name": "reminder",
           "description": "Imposta promemoria con orario e voci di lista senza orario. Indirizza all'app delle attività dell'utente (predefinita), al calendario, o a entrambi, con liste personalizzate vocalmente come \"aggiungi latte alla lista della spesa\"."
         }
-      }
+      },
+      "screenshots": {}
     },
     {
       "id": "dev.heyari.alarm",
@@ -193,7 +205,8 @@
           "name": "alarm",
           "description": "Imposta le sveglie del dispositivo passandole alla tua app Orologio. Capisce gli orari (\"imposta una sveglia per le 7\"), le etichette (\"sveglia palestra alle 5 e mezza\") e la ricorrenza (\"svegliami alle 6:30 ogni giorno feriale\"). Apre l'app Orologio per modificare o elencare le sveglie."
         }
-      }
+      },
+      "screenshots": {}
     },
     {
       "id": "dev.heyari.navigation",
@@ -220,7 +233,8 @@
           "name": "navigation",
           "description": "Avvia la navigazione verso un luogo passando all'app mappe. Capisce le destinazioni (\"portami a Asda\", \"come arrivo alla stazione\", \"indicazioni per il museo\") e \"portami a casa\". Un'impostazione sceglie tra l'app mappe predefinita e la navigazione passo-passo."
         }
-      }
+      },
+      "screenshots": {}
     },
     {
       "id": "dev.heyari.timer",
@@ -248,7 +262,8 @@
           "name": "timer",
           "description": "Imposta, interroga e annulla timer con nome. Supporta frasi naturali come \"imposta un timer per la pasta di 8 minuti\". Gestisce più timer contemporaneamente."
         }
-      }
+      },
+      "screenshots": {}
     },
     {
       "id": "dev.heyari.assistant.claude",
@@ -273,7 +288,8 @@
           "name": "claude",
           "description": "Usa Claude di Anthropic per rispondere a domande generali. Richiede una chiave API da console.anthropic.com. Le tue domande vengono inviate ai server di Anthropic.\n"
         }
-      }
+      },
+      "screenshots": {}
     },
     {
       "id": "dev.heyari.music",
@@ -302,7 +318,8 @@
           "name": "music",
           "description": "Riproduce musica per nome in un'app musicale, facoltativamente su un servizio specificato."
         }
-      }
+      },
+      "screenshots": {}
     },
     {
       "id": "dev.heyari.counter",
@@ -329,7 +346,8 @@
           "name": "counter",
           "description": "Conta quante volte gli hai chiesto di contare, mantenendo il valore tra una chiamata e l'altra. Contatore ASCII a una cifra che torna da 9 a 1. Skill WASM di riferimento per gli import host storage_kv."
         }
-      }
+      },
+      "screenshots": {}
     },
     {
       "id": "dev.heyari.githubzen",
@@ -356,7 +374,8 @@
           "name": "github-zen",
           "description": "Recupera una frase di saggezza zen dall'API di GitHub. Usato per testare l'import host http_fetch end-to-end. Richiede accesso a internet."
         }
-      }
+      },
+      "screenshots": {}
     },
     {
       "id": "dev.heyari.assistant.gemini",
@@ -381,7 +400,8 @@
           "name": "gemini",
           "description": "Usa Gemini di Google per rispondere a domande generali. Richiede una chiave API da aistudio.google.com. Le tue domande vengono inviate ai server di Google.\n"
         }
-      }
+      },
+      "screenshots": {}
     }
   ]
 }
