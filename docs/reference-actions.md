@@ -401,6 +401,10 @@ time.
 Keep them small. **The whole bundle is capped at 8 MiB**, and going over it
 fails the install with a misleading "couldn't reach the registry" message.
 
+`assets/` is for files your skill uses at runtime. Store-page images go in
+`screenshots/` instead — those ship outside the bundle and don't count
+against the cap. See [publishing.md](publishing.md#screenshots).
+
 | Sound token | Android | Linux (planned) |
 |---|---|---|
 | `system.alarm` | `RingtoneManager.TYPE_ALARM` | alarm-clock-elapsed |

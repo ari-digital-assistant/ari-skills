@@ -18,7 +18,10 @@
 #   5. Copies skills/<slug>/SKILL.md to manifests/<id>-<version>.md so clients
 #      can fetch the full skill description (frontmatter + body) before
 #      committing to an install, without downloading the whole bundle.
-#   6. Writes index.json with one entry per skill.
+#   6. Copies skills/<slug>/screenshots/<platform>/ to
+#      screenshots/<id>-<version>/<platform>/ so detail pages can show
+#      previews. Deliberately outside the bundle — see the tar step below.
+#   7. Writes index.json with one entry per skill.
 #
 # Required environment:
 #   ARI_SIGNING_KEY_FILE   path to a 32-byte Ed25519 private key file (as
@@ -97,6 +100,14 @@ mkdir -p bundles
 rm -rf manifests
 mkdir -p manifests
 
+# Same treatment for the preview screenshots each skill ships under
+# skills/<slug>/screenshots/<platform>/. They're browse-time decoration —
+# the skill detail page in the app and on the website — so they publish as
+# loose files here rather than going into the bundle, where every user
+# installing the skill would pay to download pictures of it.
+rm -rf screenshots
+mkdir -p screenshots
+
 # Stream each skill through jq rather than a while-read loop this time —
 # the validator JSON now carries arrays (capabilities, languages) which
 # don't round-trip cleanly through TSV. We iterate with `jq -c '.[]'` and
@@ -150,12 +161,17 @@ echo "$SKILL_JSON" | jq -c '.[]' | while read -r SKILL_ROW; do
   # source is tiny. Skipping them keeps bundles lean and avoids leaking
   # source into the signed artifact.
   #
+  # screenshots/ goes the same way, for the same reason: they're published
+  # as loose files below and only ever fetched by a detail page, so putting
+  # them in the bundle would charge every installing user for images they
+  # have already seen — against an 8 MiB bundle ceiling.
+  #
   # Deterministic archive: sorted entries, fixed mtime/ownership and `gzip -n`
   # (no embedded timestamp) so a bundle's bytes depend only on its contents.
   # Without this, the file mtimes from each fresh CI checkout leaked into the
   # tar headers and re-churned every bundle — and its signature — on every run.
   tar --sort=name --mtime='UTC 2020-01-01' --owner=0 --group=0 --numeric-owner \
-    --exclude="$slug/src" --exclude="$slug/target" \
+    --exclude="$slug/src" --exclude="$slug/target" --exclude="$slug/screenshots" \
     -cf - -C skills "$slug" | gzip -n > "$bundle_path"
 
   if [[ -n "$wasm_backup" ]]; then
@@ -179,6 +195,21 @@ echo "$SKILL_JSON" | jq -c '.[]' | while read -r SKILL_ROW; do
     cp "${path}/SKILL.md" "$manifest_path"
   fi
 
+  # Copy the preview screenshots out to screenshots/<id>-<version>/, keeping
+  # the per-platform directories the validator already checked. Versioning
+  # the directory means an update can change its screenshots without a
+  # stale cached image from the previous version being served under the
+  # same URL. The validator emits paths relative to the skill dir, and it
+  # aborts the whole run on anything malformed, so everything listed here
+  # is known-good by the time we copy it.
+  shots_prefix="screenshots/${id}-${version}/"
+  while read -r rel; do
+    [[ -z "$rel" ]] && continue
+    dest="${rel/#screenshots\//$shots_prefix}"
+    mkdir -p "$(dirname "$dest")"
+    cp "${path}/${rel}" "$dest"
+  done < <(echo "$SKILL_ROW" | jq -r '(.screenshots // {}) | to_entries[] | .value[]')
+
   # Build the index entry by augmenting the validator row with the
   # bundle paths we just produced. license / author / homepage come
   # from the validator as JSON-typed values (nullable strings), so we
@@ -188,6 +219,7 @@ echo "$SKILL_JSON" | jq -c '.[]' | while read -r SKILL_ROW; do
     --arg signature "${bundle_path}.sig" \
     --arg sha256 "$sha256_hex" \
     --arg manifest "$manifest_path" \
+    --arg shots_prefix "$shots_prefix" \
     '{
       id: .id,
       version: .version,
@@ -203,7 +235,8 @@ echo "$SKILL_JSON" | jq -c '.[]' | while read -r SKILL_ROW; do
       signature: $signature,
       sha256: $sha256,
       manifest: $manifest,
-      localizations: (.localizations // {})
+      localizations: (.localizations // {}),
+      screenshots: ((.screenshots // {}) | map_values(map(sub("^screenshots/"; $shots_prefix))))
     }' \
     >>"$INDEX_TMP"
 done
