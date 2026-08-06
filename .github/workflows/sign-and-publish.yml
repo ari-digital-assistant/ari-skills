@@ -124,12 +124,18 @@ jobs:
           set -euo pipefail
           git config user.name "ari-skills-bot"
           git config user.email "ari-skills-bot@users.noreply.github.com"
-          git add index.json bundles/ manifests/ models.json.sig models.json.sha256
+          # screenshots/ belongs here for the same reason manifests/ does:
+          # build-index.sh wipes and regenerates it, and index.json points at
+          # the files inside it. Leave it out and the index advertises image
+          # URLs that 404 — which is exactly what shipped in e470cc4.
+          # `git add <dir>` stages deletions too, so a skill dropping its
+          # screenshots removes them from the published tree.
+          git add index.json bundles/ manifests/ screenshots/ models.json.sig models.json.sha256
           if git diff --cached --quiet; then
-            echo "nothing to commit — index, bundles, manifests, and model signatures are already up to date"
+            echo "nothing to commit — index, bundles, manifests, screenshots, and model signatures are already up to date"
             exit 0
           fi
-          git commit -m "chore(registry): publish signed bundles + manifests + index.json for ${{ github.sha }}"
+          git commit -m "chore(registry): publish signed bundles + manifests + screenshots + index.json for ${{ github.sha }}"
           # The concurrency group serialises publish runs, but it does NOT
           # make this rebase conflict-free: a back-to-back publish (two PRs
           # merged seconds apart, 2026-07-30) means origin/main already
