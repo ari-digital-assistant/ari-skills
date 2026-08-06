@@ -10,6 +10,7 @@ From "it works on my machine" to "every Ari user can install it".
 - [ ] You tested on a device if your skill emits cards, alerts or notifications
 - [ ] `capabilities` lists exactly what you use — no more
 - [ ] `metadata.ari.id` is a reverse-DNS id you have a claim to
+- [ ] Screenshots, if any, follow [the layout](#screenshots)
 - [ ] Bundle is under 8 MiB
 - [ ] `version` is bumped if you're updating an existing skill
 - [ ] Any second language is one you actually speak
@@ -40,6 +41,48 @@ response that looks like a strings key but isn't in `strings/en.json`.
 **What it does not check:** that your id is unique in the registry. Nothing
 automated catches a collision — that's a reviewer's job, so pick a namespace
 you actually control.
+
+## Screenshots
+
+Optional, but they're what people actually look at before installing. Drop
+them in a `screenshots/` directory, one subdirectory per platform:
+
+```
+skills/your-skill/
+  SKILL.en.md
+  skill.wasm
+  screenshots/
+    android/
+      01-setting-a-timer.webp
+      02-timer-running.webp
+    linux/
+      01-setting-a-timer.png
+```
+
+Platform directories are `android`, `ios`, `linux`, `macos` or `windows`. A
+name outside that list fails validation — a typo would publish quietly and
+then show up for nobody.
+
+The rules, all enforced by the validator:
+
+| | |
+|---|---|
+| Format | `.png`, `.webp` or `.jpg`, lowercase extension |
+| Size | 1 MiB per image — WebP a phone screenshot and you'll be nowhere near it |
+| Count | 6 per platform |
+| Order | Filename order, so number them: `01-`, `02-`, … |
+
+There are no captions, by design: a caption needs translating into every
+language your skill speaks, and a screenshot that only makes sense with one
+attached isn't earning its place.
+
+You don't need shots for every platform. A client with none for its own
+platform falls back to whichever platform you *did* photograph, so one good
+set beats three rushed ones.
+
+Screenshots are published as loose files next to the bundle rather than
+inside it — they never cost your users download size at install, and they
+don't count toward the 8 MiB bundle ceiling.
 
 ## Test locally
 
@@ -183,9 +226,11 @@ The `sign-and-publish` workflow tarballs the directory, signs it with Ed25519,
 uploads it as a release asset, and patches `index.json` on `main` via a bot
 commit.
 
-**Never hand-edit `index.json`, `bundles/` or `manifests/`.** They're
-generated. A locally-signed copy will be overwritten, and committing one just
-creates a conflict.
+**Never hand-edit `index.json`, `bundles/`, `manifests/` or `screenshots/` at
+the repo root.** They're generated (the root `screenshots/` is the published
+copy of yours; the one inside your skill directory is the source). A
+locally-signed copy will be overwritten, and committing one just creates a
+conflict.
 
 Within minutes your skill is installable from Settings → Skills → Browse.
 

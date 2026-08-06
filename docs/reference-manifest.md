@@ -47,6 +47,9 @@ reserved as input for future routing models. Keep it short and factual.
 | `settings` | No | `[]` | The skill's settings screen. |
 | `fallback` | No | — | `{requires_setting: <key>}` — marks the skill as a fallback tier that's only eligible once that setting has a value. |
 
+Preview screenshots have no field here — they're pure directory convention,
+`screenshots/<platform>/`. See [publishing.md](publishing.md#screenshots).
+
 Several of these are commonly believed to be required and aren't:
 `capabilities`, `languages`, `specificity` and `author` all have defaults. Set
 them anyway — an empty `capabilities: []` says "I checked", an absent one says
