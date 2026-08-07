@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.githubzen
-    version: "0.1.1"
+    version: "0.1.2"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.1"
@@ -33,6 +33,4 @@ metadata:
 
 # GitHub Zen (Italiano)
 
-Skill WASM di riferimento che esercita l'import host `ari::http_fetch`. All'esecuzione, il modulo chiama `http_fetch` con l'URL fisso `https://api.github.com/zen` e restituisce l'envelope JSON come testo di risposta.
-
-Il campo body della risposta è uno dei aforismi "zen di GitHub", come *"Speak like a human."* o *"Approachable is better than simple."*.
+Dice uno degli aforismi "zen di GitHub" — come *"Speak like a human."* o *"Approachable is better than simple."* — recuperato in tempo reale da `https://api.github.com/zen`.

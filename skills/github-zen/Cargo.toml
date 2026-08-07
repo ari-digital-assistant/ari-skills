@@ -1,0 +1,15 @@
+[package]
+name = "ari-github-zen-skill"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ari-skill-sdk = { path = "../../sdk/rust", default-features = false, features = ["http"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true

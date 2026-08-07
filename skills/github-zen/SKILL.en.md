@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.githubzen
-    version: "0.1.1"
+    version: "0.1.2"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.1"
@@ -37,17 +37,13 @@ metadata:
 
 # GitHub Zen
 
-Reference WASM skill that exercises the `ari::http_fetch` host import. On
-`execute`, the module calls `http_fetch` with a hardcoded `https://api.github.com/zen`
-URL and returns the JSON envelope verbatim as the response text.
-
-The body field of the response is one of GitHub's "zen of GitHub" one-liners,
-like *"Speak like a human."* or *"Approachable is better than simple."*.
+Speaks one of GitHub's "zen of GitHub" one-liners — *"Speak like a human."*,
+*"Approachable is better than simple."* — fetched live from
+`https://api.github.com/zen`.
 
 ## Why it exists
 
-This skill is the simplest possible end-to-end test of the WASM ABI's
-`http_fetch` import:
+It's the simplest end-to-end exercise of the WASM ABI's `http_fetch` import:
 
 1. The skill manifest declares `[http]`.
 2. The loader's install-time capability check confirms the host grants `http`.
@@ -58,9 +54,8 @@ This skill is the simplest possible end-to-end test of the WASM ABI's
    `{"status": 200, "body": "..."}` JSON, allocates space in the skill's
    linear memory via `ari_alloc`, copies the JSON in, and returns the packed
    pointer.
-6. The skill's `execute` function does nothing more than return that same
-   packed pointer back to the host. The host reads the JSON out and emits it
-   as the response text.
+6. The skill reads the body out of that envelope and speaks it. Until 0.1.2 it
+   returned the envelope verbatim, which meant users heard raw JSON.
 
 ## Example utterances
 
@@ -71,8 +66,6 @@ This skill is the simplest possible end-to-end test of the WASM ABI's
 
 - Requires `--host-capabilities=http` (or any capability set including http)
   on the CLI. The default `pure_frontend` host won't grant http.
-- Requires internet access at call time. If the network's down, the response
-  will be `{"status": 0, "body": null, "error": "request failed: ..."}`.
-- The output is the raw JSON envelope, not the extracted body. A real skill
-  would parse the JSON inside the WASM and return just the body string. We
-  keep this skill stupid simple to focus on the ABI plumbing.
+- Requires internet access at call time. Anything other than a 2xx with a
+  body — network down, GitHub having a bad day — is logged and answered with
+  the `unavailable` string.
