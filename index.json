@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-08-06T11:41:29Z",
+  "generated_at": "2026-08-07T10:19:09Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -115,7 +115,7 @@
       ],
       "bundle": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.wasmecho-0.1.0.tar.gz.sig",
-      "sha256": "7a23bd7e0163576701f20e6f3e616b070737285c4ed91e47bf22ff1bf44914fd",
+      "sha256": "6d1ce0ef7b2810284f93a4c7c1267720f44ce395e2818ca4057dde1962c9b63c",
       "manifest": "manifests/dev.heyari.wasmecho-0.1.0.md",
       "localizations": {
         "it": {
@@ -153,7 +153,7 @@
     },
     {
       "id": "dev.heyari.reminder",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "name": "reminder",
       "description": "Sets timed reminders and untimed list items. Routes to the user's tasks app (default), calendar, or both, with optional voice-named lists like \"add milk to my shopping list\".",
       "type": "skill",
@@ -168,10 +168,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.reminder-0.4.0.tar.gz",
-      "signature": "bundles/dev.heyari.reminder-0.4.0.tar.gz.sig",
-      "sha256": "8934dade9107b44df0e869b1158350d23f71b6b6ed63bdb20e913cac7145cc30",
-      "manifest": "manifests/dev.heyari.reminder-0.4.0.md",
+      "bundle": "bundles/dev.heyari.reminder-0.4.1.tar.gz",
+      "signature": "bundles/dev.heyari.reminder-0.4.1.tar.gz.sig",
+      "sha256": "a33f451fce8c9ed0c2752b5cda0846fb12e770bfbdc64e78c8de2676a33b3be2",
+      "manifest": "manifests/dev.heyari.reminder-0.4.1.md",
       "localizations": {
         "it": {
           "name": "reminder",
@@ -182,7 +182,7 @@
     },
     {
       "id": "dev.heyari.alarm",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "name": "alarm",
       "description": "Sets device alarms by handing off to your Clock app. Understands times (\"set an alarm for 7am\"), labels (\"gym alarm at half past five\") and recurrence (\"wake me up at 6:30 every weekday\"). Opens the Clock app for changing or listing alarms.",
       "type": "skill",
@@ -196,10 +196,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.alarm-0.1.1.tar.gz",
-      "signature": "bundles/dev.heyari.alarm-0.1.1.tar.gz.sig",
-      "sha256": "33ed2db4a662cb24cf2a6ef16a7a66c442386c910c284817e9910db7525ef8de",
-      "manifest": "manifests/dev.heyari.alarm-0.1.1.md",
+      "bundle": "bundles/dev.heyari.alarm-0.1.2.tar.gz",
+      "signature": "bundles/dev.heyari.alarm-0.1.2.tar.gz.sig",
+      "sha256": "6a6d3e604176a2865d9e3d43a412cf441e2b8c25fc5840639d15e48e951533eb",
+      "manifest": "manifests/dev.heyari.alarm-0.1.2.md",
       "localizations": {
         "it": {
           "name": "alarm",
@@ -351,7 +351,7 @@
     },
     {
       "id": "dev.heyari.githubzen",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "name": "github-zen",
       "description": "Fetches a one-line piece of zen wisdom from the GitHub API. Use to test the WASM http_fetch host import end-to-end. Requires internet access.",
       "type": "skill",
@@ -365,10 +365,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.githubzen-0.1.1.tar.gz",
-      "signature": "bundles/dev.heyari.githubzen-0.1.1.tar.gz.sig",
-      "sha256": "8a7531c88de8fd5275d2444cb0f689b52093aecfcdff43c1a6836409ab53d71d",
-      "manifest": "manifests/dev.heyari.githubzen-0.1.1.md",
+      "bundle": "bundles/dev.heyari.githubzen-0.1.2.tar.gz",
+      "signature": "bundles/dev.heyari.githubzen-0.1.2.tar.gz.sig",
+      "sha256": "eb8f03d192935bba31dcd883da10cf01fba10b74388efa85599766f8979af09a",
+      "manifest": "manifests/dev.heyari.githubzen-0.1.2.md",
       "localizations": {
         "it": {
           "name": "github-zen",

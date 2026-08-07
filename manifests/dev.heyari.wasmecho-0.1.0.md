@@ -41,4 +41,8 @@ ABI v1 surface (`memory`, `ari_alloc`, `score`, `execute`). It returns the
 
 ## Example utterance
 
-- "wasm echo"
+- "wasm echo" — the only keyword trigger, and both words are required.
+  "echo" alone collides with other skills, and "wasm hello" is this skill's
+  *output*, not a way to reach it: `greeting` claims anything containing
+  "hello" and answers instead. The other utterances under `examples:` are
+  there for the router tier and only work with a router model loaded.
