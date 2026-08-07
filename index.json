@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-08-07T11:50:06Z",
+  "generated_at": "2026-08-07T12:20:03Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -316,7 +316,7 @@
     },
     {
       "id": "dev.heyari.assistant.claude",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "name": "claude",
       "description": "Use Anthropic's Claude to answer general questions. Requires an API key from console.anthropic.com. Your questions are sent to Anthropic's servers.\n",
       "type": "assistant",
@@ -328,10 +328,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.assistant.claude-0.4.0.tar.gz",
-      "signature": "bundles/dev.heyari.assistant.claude-0.4.0.tar.gz.sig",
-      "sha256": "6e2a81630c8fd34e51a171814a3eabee442fbffd8a2c1f0d1654b9b8f1abfa9c",
-      "manifest": "manifests/dev.heyari.assistant.claude-0.4.0.md",
+      "bundle": "bundles/dev.heyari.assistant.claude-0.4.1.tar.gz",
+      "signature": "bundles/dev.heyari.assistant.claude-0.4.1.tar.gz.sig",
+      "sha256": "d7eb64e20745dacd86e2a123b7e40b724fbbd7d6db9aac4dd127bd6dde99f61e",
+      "manifest": "manifests/dev.heyari.assistant.claude-0.4.1.md",
       "localizations": {
         "it": {
           "name": "claude",
