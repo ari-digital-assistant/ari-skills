@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.alarm
-    version: "0.1.1"
+    version: "0.1.2"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"

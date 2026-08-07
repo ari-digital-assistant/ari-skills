@@ -6,7 +6,9 @@ pub enum Day { Mon, Tue, Wed, Thu, Fri, Sat, Sun }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Intent {
-    Set { hour: u8, minute: u8, message: Option<String>, days: Vec<Day> },
+    /// `meridian_known` is false when the utterance gave a bare 12h hour
+    /// ("half past five") — the caller resolves it against the clock.
+    Set { hour: u8, minute: u8, meridian_known: bool, message: Option<String>, days: Vec<Day> },
     Show,
     NeedTime,
     Unintelligible,
@@ -150,9 +152,9 @@ pub fn classify(input: &str) -> Intent {
     }
 
     match time {
-        Some((hour, minute)) => {
+        Some((hour, minute, meridian_known)) => {
             let message = parse_label(&tokens);
-            Intent::Set { hour, minute, message, days }
+            Intent::Set { hour, minute, meridian_known, message, days }
         }
         None => {
             // Recognised a set request but no parseable time → ask for it.
@@ -202,23 +204,46 @@ fn parse_days(tokens: &[&str]) -> Vec<Day> {
     ALL_DAYS.iter().copied().filter(|d| found.contains(d)).collect()
 }
 
-/// Parse a time-of-day. Returns (hour 0-23, minute 0-59). Handles English
-/// ("half past 6", "quarter to 7", "6 30 am") and Italian ("le sette e mezza",
-/// "otto meno un quarto", "sette e venticinque", "mezzogiorno").
-fn parse_time(tokens: &[&str]) -> Option<(u8, u8)> {
+/// An am/pm marker in the two tokens starting at `idx`, if any.
+fn meridian_at(tokens: &[&str], idx: usize) -> Option<&'static str> {
+    tokens.get(idx..)?.iter().take(2).find_map(|t| match *t {
+        "am" => Some("am"),
+        "pm" => Some("pm"),
+        _ => None,
+    })
+}
+
+/// Convert a spoken hour to the 24h clock, reporting whether the half of the
+/// day is actually known — either stated ("7pm") or implied by an hour that
+/// can only be one thing ("19", "0"). A bare 1-12 is genuinely ambiguous.
+fn to_24h(hour: u8, meridian: Option<&str>) -> (u8, bool) {
+    match meridian {
+        Some("pm") if hour < 12 => (hour + 12, true),
+        Some("am") if hour == 12 => (0, true),
+        Some(_) => (hour % 24, true),
+        None => (hour % 24, hour == 0 || hour > 12),
+    }
+}
+
+/// Parse a time-of-day. Returns (hour 0-23, minute 0-59, meridian known).
+/// Handles English ("half past 6", "quarter to 7", "6 30 am") and Italian
+/// ("le sette e mezza", "otto meno un quarto", "sette e venticinque",
+/// "mezzogiorno").
+fn parse_time(tokens: &[&str]) -> Option<(u8, u8, bool)> {
     let j = tokens.join(" ");
-    if j.contains("mezzogiorno") || j.contains("noon") { return Some((12, 0)); }
-    if j.contains("mezzanotte") || j.contains("midnight") { return Some((0, 0)); }
+    if j.contains("mezzogiorno") || j.contains("noon") { return Some((12, 0, true)); }
+    if j.contains("mezzanotte") || j.contains("midnight") { return Some((0, 0, true)); }
 
     // English fraction form: "half/quarter past/to <hour>".
     if let Some(pos) = tokens.iter().position(|t| *t == "past" || *t == "to") {
         let frac = if pos >= 1 { tokens[pos - 1] } else { "" };
         if let Some(mins) = match frac { "half" => Some(30u8), "quarter" => Some(15u8), _ => None } {
             if let Some(h) = tokens.get(pos + 1).and_then(|t| num(t)) {
+                let (hour, known) = to_24h(h, meridian_at(tokens, pos + 2));
                 return Some(if tokens[pos] == "to" {
-                    ((h + 23) % 24, 60 - mins)
+                    ((hour + 23) % 24, 60 - mins, known)
                 } else {
-                    (h % 24, mins)
+                    (hour, mins, known)
                 });
             }
         }
@@ -226,26 +251,26 @@ fn parse_time(tokens: &[&str]) -> Option<(u8, u8)> {
 
     // Italian fraction form, relative to the first hour number in the stream.
     if let Some(hidx) = tokens.iter().position(|t| num(t).map(|n| n <= 24).unwrap_or(false)) {
-        let hour = num(tokens[hidx]).unwrap();
+        let (hour, known) = to_24h(num(tokens[hidx]).unwrap(), meridian_at(tokens, hidx + 1));
         let rest = &tokens[hidx + 1..];
         let rj = rest.join(" ");
-        if rj.contains("e mezza") || rj.contains("e mezzo") { return Some((hour % 24, 30)); }
-        if rj.contains("e un quarto") { return Some((hour % 24, 15)); }
-        if rj.contains("meno un quarto") { return Some(((hour + 23) % 24, 45)); }
+        if rj.contains("e mezza") || rj.contains("e mezzo") { return Some((hour, 30, known)); }
+        if rj.contains("e un quarto") { return Some((hour, 15, known)); }
+        if rj.contains("meno un quarto") { return Some(((hour + 23) % 24, 45, known)); }
         // General "meno <N>" — N minutes before the hour (e.g. "otto meno
         // venti" = 7:40). N is a digit or an Italian number-word.
         if let Some(mpos) = rest.iter().position(|t| *t == "meno") {
             if let Some(n) = rest.get(mpos + 1).and_then(|t| num(t)) {
                 if (1..=59).contains(&n) {
-                    return Some(((hour + 23) % 24, 60 - n));
+                    return Some(((hour + 23) % 24, 60 - n, known));
                 }
             }
         }
-        if rj.contains("in punto") { return Some((hour % 24, 0)); }
+        if rj.contains("in punto") { return Some((hour, 0, known)); }
         // "e <minute>" where <minute> is a digit or an Italian number-word.
         if let Some(epos) = rest.iter().position(|t| *t == "e") {
             if let Some(m) = rest.get(epos + 1).and_then(|t| num(t)) {
-                if m <= 59 { return Some((hour % 24, m)); }
+                if m <= 59 { return Some((hour, m, known)); }
             }
         }
         // No fraction/connector → fall through to plain numeric.
@@ -256,7 +281,7 @@ fn parse_time(tokens: &[&str]) -> Option<(u8, u8)> {
 
 /// Plain numeric time: "7", "7 am", "7 pm", "6 30", "6 30 am". `num` covers
 /// digit and Italian-word hours.
-fn numeric_time(tokens: &[&str]) -> Option<(u8, u8)> {
+fn numeric_time(tokens: &[&str]) -> Option<(u8, u8, bool)> {
     let idx = tokens.iter().position(|t| num(t).map(|n| n <= 24).unwrap_or(false))?;
     let hour_raw = num(tokens[idx])?;
 
@@ -267,18 +292,8 @@ fn numeric_time(tokens: &[&str]) -> Option<(u8, u8)> {
         }
     }
 
-    let meridian = tokens[idx + 1..].iter().take(2).find_map(|t| match *t {
-        "am" => Some("am"),
-        "pm" => Some("pm"),
-        _ => None,
-    });
-
-    let hour = match meridian {
-        Some("pm") if hour_raw < 12 => hour_raw + 12,
-        Some("am") if hour_raw == 12 => 0,
-        _ => hour_raw,
-    };
-    Some((hour % 24, minute))
+    let (hour, known) = to_24h(hour_raw, meridian_at(tokens, idx + 1));
+    Some((hour, minute, known))
 }
 
 /// Extract an alarm label. Word order differs by language:
@@ -340,7 +355,14 @@ mod tests {
 
     fn set(i: &str) -> (u8, u8, Option<String>, Vec<Day>) {
         match classify(i) {
-            Intent::Set { hour, minute, message, days } => (hour, minute, message, days),
+            Intent::Set { hour, minute, message, days, .. } => (hour, minute, message, days),
+            other => panic!("expected Set, got {other:?}"),
+        }
+    }
+
+    fn known(i: &str) -> bool {
+        match classify(i) {
+            Intent::Set { meridian_known, .. } => meridian_known,
             other => panic!("expected Set, got {other:?}"),
         }
     }
@@ -566,5 +588,52 @@ mod tests {
     fn compact_meridian_with_minutes() {
         // "6:30am" normalises to "6 30am" → split to "6 30 am"
         assert_eq!(set("set an alarm for 6 30am"), (6, 30, None, vec![]));
+    }
+
+    // --- meridian ambiguity ---
+
+    #[test]
+    fn stated_meridian_is_known() {
+        assert!(known("set an alarm for 7 am"));
+        assert!(known("set an alarm for 7 pm"));
+        assert!(known("set an alarm for 6 30am"));
+    }
+
+    #[test]
+    fn bare_twelve_hour_is_ambiguous() {
+        assert!(!known("set an alarm for 5 30"));
+        assert!(!known("wake me up at half past 5"));
+        assert!(!known("set an alarm for quarter to 7"));
+        assert!(!known("set an alarm for 12"));
+    }
+
+    #[test]
+    fn twenty_four_hour_is_known() {
+        assert!(known("set an alarm for 17 30"));
+        assert!(known("set an alarm for 0 30"));
+        assert_eq!(set("set an alarm for 17 30"), (17, 30, None, vec![]));
+    }
+
+    #[test]
+    fn noon_and_midnight_are_known() {
+        assert!(known("set an alarm for noon"));
+        assert!(known("set an alarm for midnight"));
+    }
+
+    #[test]
+    fn meridian_applies_to_fraction_forms() {
+        // "half past 6 pm" is 18:30, not 6:30 — the fraction branch used to
+        // drop the meridian on the floor.
+        assert_eq!(set("wake me up at half past 6 pm"), (18, 30, None, vec![]));
+        assert_eq!(set("set an alarm for quarter to 7 pm"), (18, 45, None, vec![]));
+        assert_eq!(set("set an alarm for half past 12 am"), (0, 30, None, vec![]));
+    }
+
+    #[test]
+    fn italian_times_are_ambiguous_without_meridian() {
+        // Italian has no am/pm particle in these forms, so the clock decides.
+        assert!(!known("svegliami alle sei e mezza"));
+        assert!(!known("svegliami alle sette"));
+        assert!(known("imposta una sveglia per le 19 e mezza"));
     }
 }
