@@ -126,7 +126,7 @@ pub fn dispatch(input: &str) -> String {
     // scorer dispatches and for cases where the model's args came
     // back missing or ill-shaped. See `parsed_from_args` for the
     // shape contract.
-    let parsed = match parsed_from_args() {
+    let parsed = match parsed_from_args(input) {
         Some(p) => {
             ari::log(
                 ari::LogLevel::Info,
@@ -183,7 +183,7 @@ pub fn dispatch(input: &str) -> String {
 /// supplied but not parsed cleanly, or no `when` at all on a create
 /// that isn't a list add — so Layer C can step in to disambiguate.
 #[cfg(target_arch = "wasm32")]
-fn parsed_from_args() -> Option<parse::Parsed> {
+fn parsed_from_args(input: &str) -> Option<parse::Parsed> {
     let args_json = ari::args()?;
     let value: serde_json::Value = serde_json::from_str(args_json).ok()?;
     let obj = value.as_object()?;
@@ -205,6 +205,28 @@ fn parsed_from_args() -> Option<parse::Parsed> {
         .and_then(|v| v.as_str())
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty());
+
+    // The router only ever saw "…to my/the <name> list" in its examples,
+    // so on the bare form ("add milk to family shopping list") it tends to
+    // drop the slot and hand back a title with the list still attached.
+    // The grammar reads that shape correctly, and it only reports a hint
+    // when it matched the named-list shape outright, so when it finds one
+    // the model's args didn't, its reading wins. Without this the
+    // typed-args fast path silently bypasses the grammar fix and the item
+    // lands in the default list.
+    if list_hint.is_none() {
+        let from_grammar = parse::parse(input);
+        if from_grammar.list_hint.is_some() {
+            ari::log(
+                ari::LogLevel::Info,
+                &format!(
+                    "args carried no list_hint; grammar recovered {:?} from the utterance",
+                    from_grammar.list_hint.as_deref().unwrap_or(""),
+                ),
+            );
+            return Some(from_grammar);
+        }
+    }
 
     // Run parse.rs against the model's `when` fragment (if any) to
     // crack it into a `When` variant. We deliberately don't reparse
