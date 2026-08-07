@@ -84,8 +84,11 @@ pub fn dispatch(input: &str) -> String {
         ari::log(
             ari::LogLevel::Info,
             &format!(
-                "handle_confirm destination={} epoch_ms={} title={:?}",
-                confirm.destination, confirm.epoch_ms, confirm.title
+                "handle_confirm destination={} epoch_ms={} title={:?} list={:?}",
+                confirm.destination,
+                confirm.epoch_ms,
+                confirm.title,
+                confirm.list_hint.as_deref().unwrap_or("(default)")
             ),
         );
         return handle_confirm(confirm);
@@ -496,7 +499,7 @@ fn handle_continuation(cont: layer_c::Continuation) -> String {
                     resp.clarification.as_deref().unwrap_or("")
                 ),
             );
-            build_clarification_envelope(resp)
+            build_clarification_envelope(resp, parsed.list_hint.clone())
         }
         Some(resp) if resp.confidence.eq_ignore_ascii_case("partial") => {
             // AI was partial but didn't give us a usable yes/no
@@ -562,7 +565,7 @@ fn handle_confirm(confirm: layer_c::Confirm) -> String {
     let pseudo_parsed = parse::Parsed {
         title: confirm.title,
         when: parse::When::None,
-        list_hint: None,
+        list_hint: confirm.list_hint,
         speak_template: String::new(),
         confidence: parse::Confidence::High,
         unparsed: None,
@@ -591,7 +594,10 @@ fn handle_confirm(confirm: layer_c::Confirm) -> String {
 /// channel for the clarification, the card is the visible / tappable
 /// backup.
 #[cfg(target_arch = "wasm32")]
-fn build_clarification_envelope(resp: layer_c::AssistantResponse) -> String {
+fn build_clarification_envelope(
+    resp: layer_c::AssistantResponse,
+    list_hint: Option<String>,
+) -> String {
     let clarification = resp.clarification.clone().unwrap_or_default();
     let title = resp.title.clone();
     let epoch_ms = datetime_to_epoch_ms(resp.datetime.as_deref());
@@ -609,7 +615,7 @@ fn build_clarification_envelope(resp: layer_c::AssistantResponse) -> String {
     };
 
     let confirm_utterance =
-        layer_c::encode_confirm(&effective_destination, epoch_ms, &title);
+        layer_c::encode_confirm(&effective_destination, epoch_ms, &title, list_hint.as_deref());
 
     // Unique card id so multiple clarifications in one session don't
     // collide. Epoch ms changes per request, title differs, combined

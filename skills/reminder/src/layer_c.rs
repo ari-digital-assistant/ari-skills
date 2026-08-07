@@ -115,13 +115,21 @@ pub struct Confirm {
     pub epoch_ms: i64,
     /// The reminder title.
     pub title: String,
+    /// The list the user named, when they named one. `None` means
+    /// "use the configured default", which is also what a card emitted
+    /// by a build older than this one decodes to.
+    pub list_hint: Option<String>,
 }
 
-/// Format: `ariconfirmreminder <destination> <epoch_ms_or_0> <title_hex>`
-/// — three alphanumeric tokens after the prefix, all of which survive
-/// `normalize_input`. Hex-encoding the title (UTF-8 bytes) lets titles
-/// containing punctuation, quotes, accented characters, etc. round-trip
-/// through the engine's normaliser unharmed.
+/// Format: `ariconfirmreminder <destination> <epoch_ms_or_0> <title_hex>
+/// [<list_hex>]` — alphanumeric tokens after the prefix, all of which
+/// survive `normalize_input`. Hex-encoding the title and list name
+/// (UTF-8 bytes) lets values containing punctuation, quotes, accented
+/// characters, etc. round-trip through the engine's normaliser unharmed.
+///
+/// The list token is optional and last: a card rendered by an older
+/// build emits four tokens and still commits, it just falls back to the
+/// default list the way it always did.
 pub fn parse_confirm(input: &str) -> Option<Confirm> {
     let mut tokens = input.trim().split_whitespace();
     if tokens.next()? != "ariconfirmreminder" {
@@ -134,19 +142,37 @@ pub fn parse_confirm(input: &str) -> Option<Confirm> {
     let epoch_ms: i64 = tokens.next()?.parse().ok()?;
     let title_hex = tokens.next()?;
     let title = hex_decode_utf8(title_hex)?;
+    // A list token that won't decode means the utterance was mangled in
+    // transit. Losing the list is bad; refusing the whole confirm would
+    // lose the reminder, so we degrade to the default rather than drop
+    // what the user already said Yes to.
+    let list_hint = tokens.next().and_then(hex_decode_utf8);
     Some(Confirm {
         destination: destination.to_string(),
         epoch_ms,
         title,
+        list_hint,
     })
 }
 
 /// Encode a `Confirm` back into the wire format the engine will route
 /// to the skill on the next user turn. Inverse of [`parse_confirm`];
 /// skills call this when composing the Yes button's action utterance.
-pub fn encode_confirm(destination: &str, epoch_ms: i64, title: &str) -> String {
+pub fn encode_confirm(
+    destination: &str,
+    epoch_ms: i64,
+    title: &str,
+    list_hint: Option<&str>,
+) -> String {
     let hex = hex_encode(title.as_bytes());
-    format!("ariconfirmreminder {destination} {epoch_ms} {hex}")
+    let mut out = alloc::format!("ariconfirmreminder {destination} {epoch_ms} {hex}");
+    // Omitted entirely when there's no list, so the common case stays the
+    // exact four-token string earlier builds produced.
+    if let Some(list) = list_hint.map(str::trim).filter(|l| !l.is_empty()) {
+        out.push(' ');
+        out.push_str(&hex_encode(list.as_bytes()));
+    }
+    out
 }
 
 fn hex_encode(bytes: &[u8]) -> String {
@@ -623,7 +649,7 @@ mod tests {
 
     #[test]
     fn confirm_round_trips_simple_title() {
-        let encoded = encode_confirm("tasks", 1777993200000, "call mum");
+        let encoded = encode_confirm("tasks", 1777993200000, "call mum", None);
         assert_eq!(
             encoded,
             "ariconfirmreminder tasks 1777993200000 63616c6c206d756d"
@@ -637,7 +663,7 @@ mod tests {
     #[test]
     fn confirm_round_trips_unicode_title() {
         let title = "café déjeuner";
-        let encoded = encode_confirm("calendar", 0, title);
+        let encoded = encode_confirm("calendar", 0, title, None);
         let decoded = parse_confirm(&encoded).unwrap();
         assert_eq!(decoded.title, title);
         assert_eq!(decoded.destination, "calendar");
@@ -649,9 +675,75 @@ mod tests {
         // Quotes, colons, exclamation marks — all normally mangled by
         // `normalize_input`, but hex-encoded they survive.
         let title = "Remember: \"get milk\"!";
-        let encoded = encode_confirm("tasks", 123, title);
+        let encoded = encode_confirm("tasks", 123, title, None);
         let decoded = parse_confirm(&encoded).unwrap();
         assert_eq!(decoded.title, title);
+    }
+
+    #[test]
+    fn confirm_round_trips_the_named_list() {
+        // The whole point: a list the user spoke has to survive the Yes
+        // button, or the reminder lands in the default list instead.
+        let encoded = encode_confirm("tasks", 0, "milk", Some("family shopping"));
+        let decoded = parse_confirm(&encoded).unwrap();
+        assert_eq!(decoded.title, "milk");
+        assert_eq!(decoded.list_hint.as_deref(), Some("family shopping"));
+    }
+
+    #[test]
+    fn confirm_round_trips_a_unicode_list_name() {
+        let encoded = encode_confirm("tasks", 0, "latte", Some("lista della spesa"));
+        assert_eq!(
+            parse_confirm(&encoded).unwrap().list_hint.as_deref(),
+            Some("lista della spesa"),
+        );
+    }
+
+    #[test]
+    fn confirm_omits_the_list_token_when_there_is_no_list() {
+        // Four tokens exactly — byte-identical to what earlier builds
+        // emitted, so nothing downstream sees a shape it doesn't know.
+        let encoded = encode_confirm("tasks", 1777993200000, "call mum", None);
+        assert_eq!(encoded.split_whitespace().count(), 4);
+        assert_eq!(parse_confirm(&encoded).unwrap().list_hint, None);
+    }
+
+    #[test]
+    fn confirm_treats_a_blank_list_as_none() {
+        let encoded = encode_confirm("tasks", 0, "milk", Some("   "));
+        assert_eq!(encoded.split_whitespace().count(), 4);
+        assert_eq!(parse_confirm(&encoded).unwrap().list_hint, None);
+    }
+
+    #[test]
+    fn confirm_accepts_a_four_token_utterance_from_an_older_card() {
+        // A clarification card rendered before this change is still on
+        // screen when the skill updates. Yes must still commit.
+        let decoded = parse_confirm("ariconfirmreminder tasks 0 6d696c6b").unwrap();
+        assert_eq!(decoded.title, "milk");
+        assert_eq!(decoded.list_hint, None);
+    }
+
+    #[test]
+    fn confirm_survives_a_mangled_list_token() {
+        // Undecodable list: commit the reminder to the default list
+        // rather than dropping what the user already confirmed.
+        let decoded = parse_confirm("ariconfirmreminder tasks 0 6d696c6b zzz").unwrap();
+        assert_eq!(decoded.title, "milk");
+        assert_eq!(decoded.list_hint, None);
+    }
+
+    #[test]
+    fn confirm_with_a_list_stays_normaliser_safe() {
+        let encoded = encode_confirm("tasks", 0, "milk", Some("Family Shopping!"));
+        for ch in encoded.chars() {
+            assert!(ch.is_ascii_alphanumeric() || ch == ' ');
+            assert!(!ch.is_ascii_uppercase());
+        }
+        assert_eq!(
+            parse_confirm(&encoded).unwrap().list_hint.as_deref(),
+            Some("Family Shopping!"),
+        );
     }
 
     #[test]
@@ -683,7 +775,7 @@ mod tests {
         // cases; every token in the encoded form is already lowercase
         // alphanumeric (destination is one of three lowercase words,
         // epoch is digits, title hex is lowercase). No mangling.
-        let encoded = encode_confirm("tasks", 1777993200000, "call mum");
+        let encoded = encode_confirm("tasks", 1777993200000, "call mum", None);
         for ch in encoded.chars() {
             assert!(ch.is_ascii_alphanumeric() || ch == ' ');
             assert!(!ch.is_ascii_uppercase());
