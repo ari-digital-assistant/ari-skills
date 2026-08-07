@@ -41,6 +41,7 @@
   "error.calendar_no_permission": "Mi serve il permesso di scrittura sul calendario per salvarlo.",
   "error.calendar_no_writable": "Non ho trovato calendari scrivibili.",
   "error.calendar_save_failed": "Non è stato possibile aggiungerlo al calendario.",
+  "error.list_not_found": "Non ho trovato nessuna lista chiamata {list}.",
 
   "partial_card.subtitle.untimed": "nessun orario specifico",
   "partial_card.body.unparsed": "Non ho capito \"{unparsed}\". Tocca Annulla se era importante.",

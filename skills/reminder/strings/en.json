@@ -41,6 +41,7 @@
   "error.calendar_no_permission": "I need calendar write access to save that.",
   "error.calendar_no_writable": "I couldn't find any writable calendars.",
   "error.calendar_save_failed": "I couldn't add that to the calendar.",
+  "error.list_not_found": "I couldn't find a list called {list}.",
 
   "partial_card.subtitle.untimed": "no specific time",
   "partial_card.body.unparsed": "I didn't understand \"{unparsed}\". Tap Cancel if that was important.",

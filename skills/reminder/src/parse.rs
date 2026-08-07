@@ -360,11 +360,17 @@ fn parse_named_list(input: &str) -> Option<Parsed> {
         .strip_prefix("add ")
         .or_else(|| input.strip_prefix("put "))
     {
-        // English shape: "<item> to/on my/the <listname> list".
+        // English shape: "<item> to/on [determiner] <listname> list".
+        // The determiner is optional — "add milk to family shopping list"
+        // is as natural as "...to my family shopping list", and requiring
+        // one dropped the list name on the floor. The empty determiner
+        // MUST come last so a real one is consumed in preference to it,
+        // otherwise "my shopping" becomes the list name. Same ordering
+        // rule as the Italian table below.
         if let Some(parsed) = match_named_list_shape(
             rest,
             &[" to ", " on "],
-            &["my ", "the "],
+            &["my ", "the ", "our ", "your ", "their ", ""],
             " list",
         ) {
             return Some(parsed);
@@ -1069,6 +1075,46 @@ mod tests {
     }
 
     #[test]
+    fn named_list_without_determiner() {
+        // "add milk to family shopping list" — no "my"/"the". Requiring a
+        // determiner made this fall through to the reminder parser, which
+        // kept the whole utterance as the title and lost the list entirely.
+        let p = parse("add milk to family shopping list");
+        assert_eq!(p.title, "milk");
+        assert_eq!(p.list_hint.as_deref(), Some("family shopping"));
+        assert_eq!(p.confidence, Confidence::High);
+    }
+
+    #[test]
+    fn named_list_single_word_without_determiner() {
+        let p = parse("add bread to shopping list");
+        assert_eq!(p.title, "bread");
+        assert_eq!(p.list_hint.as_deref(), Some("shopping"));
+    }
+
+    #[test]
+    fn named_list_determiner_is_not_part_of_the_name() {
+        // The empty determiner must lose to a real one, or every hint
+        // arrives with "my "/"our " glued to the front.
+        assert_eq!(
+            parse("add milk to my shopping list").list_hint.as_deref(),
+            Some("shopping"),
+        );
+        assert_eq!(
+            parse("add milk to our family list").list_hint.as_deref(),
+            Some("family"),
+        );
+        assert_eq!(
+            parse("add milk to your shopping list").list_hint.as_deref(),
+            Some("shopping"),
+        );
+        assert_eq!(
+            parse("add milk to their shopping list").list_hint.as_deref(),
+            Some("shopping"),
+        );
+    }
+
+    #[test]
     fn named_list_rejects_non_list_to_phrase() {
         // "to the coffee" is not a list intent — should fall through to
         // the reminder parser, which strips no lead and treats the whole
@@ -1741,5 +1787,22 @@ mod tests {
         // residue → Low confidence.
         assert!(matches!(p.confidence, Confidence::Partial | Confidence::Low));
         assert_eq!(p.unparsed.as_deref(), Some("stasera"));
+    }
+}
+
+#[cfg(test)]
+mod scratch_probe {
+    use super::*;
+    #[test]
+    fn probe_keiths_utterance() {
+        for u in [
+            "add milk to family shopping list",
+            "add milk to my family shopping list",
+            "add milk to the family shopping list",
+            "add milk to shopping list",
+        ] {
+            let p = parse(u);
+            println!("{u:?} -> title={:?} hint={:?} conf={:?}", p.title, p.list_hint, p.confidence);
+        }
     }
 }
