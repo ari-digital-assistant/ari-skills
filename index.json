@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-08-07T11:45:43Z",
+  "generated_at": "2026-08-07T11:50:06Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -67,7 +67,11 @@
           "description": "Lancia una moneta virtuale e restituisce testa o croce. Usalo quando l'utente chiede di lanciare una moneta, tirare una moneta o fare una scelta binaria casuale."
         }
       },
-      "screenshots": {}
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.coinflip-0.1.0/android/01-flip.webp"
+        ]
+      }
     },
     {
       "id": "dev.heyari.homeassistant",
@@ -97,7 +101,14 @@
           "description": "Controlla la tua casa intelligente con Home Assistant — accendi e spegni i dispositivi, imposta luminosità o temperatura, avvia le scene, controlla lo stato e chiedi dove si trovano le persone. Usa questa skill per qualsiasi richiesta di domotica o casa intelligente."
         }
       },
-      "screenshots": {}
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.homeassistant-0.3.1/android/01-light-on.webp",
+          "screenshots/dev.heyari.homeassistant-0.3.1/android/02-brightness-control.webp",
+          "screenshots/dev.heyari.homeassistant-0.3.1/android/03-query.webp",
+          "screenshots/dev.heyari.homeassistant-0.3.1/android/04-settings.webp"
+        ]
+      }
     },
     {
       "id": "dev.heyari.wasmecho",
@@ -123,7 +134,11 @@
           "description": "Minuscola skill WASM di test. Restituisce un saluto fisso dall'interno del suo modulo sandboxed. Usare solo per testare il loader WASM."
         }
       },
-      "screenshots": {}
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.wasmecho-0.1.0/android/01-test.webp"
+        ]
+      }
     },
     {
       "id": "dev.heyari.assistant.chatgpt",
@@ -149,7 +164,13 @@
           "description": "Usa ChatGPT di OpenAI per rispondere a domande generali. Richiede una chiave API da platform.openai.com. Le tue domande vengono inviate ai server di OpenAI.\n"
         }
       },
-      "screenshots": {}
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.assistant.chatgpt-0.4.0/android/01-query.webp",
+          "screenshots/dev.heyari.assistant.chatgpt-0.4.0/android/02-follow-up.webp",
+          "screenshots/dev.heyari.assistant.chatgpt-0.4.0/android/03-settings.webp"
+        ]
+      }
     },
     {
       "id": "dev.heyari.reminder",
@@ -178,7 +199,15 @@
           "description": "Imposta promemoria con orario e voci di lista senza orario. Indirizza all'app delle attività dell'utente (predefinita), al calendario, o a entrambi, con liste personalizzate vocalmente come \"aggiungi latte alla lista della spesa\"."
         }
       },
-      "screenshots": {}
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.reminder-0.4.3/android/01-task-request.webp",
+          "screenshots/dev.heyari.reminder-0.4.3/android/02-tasks-org-integration.webp",
+          "screenshots/dev.heyari.reminder-0.4.3/android/03-shopping-list-request.webp",
+          "screenshots/dev.heyari.reminder-0.4.3/android/04-shopping-list-response.webp",
+          "screenshots/dev.heyari.reminder-0.4.3/android/05-settings.webp"
+        ]
+      }
     },
     {
       "id": "dev.heyari.alarm",
@@ -206,7 +235,13 @@
           "description": "Imposta le sveglie del dispositivo passandole alla tua app Orologio. Capisce gli orari (\"imposta una sveglia per le 7\"), le etichette (\"sveglia palestra alle 5 e mezza\") e la ricorrenza (\"svegliami alle 6:30 ogni giorno feriale\"). Apre l'app Orologio per modificare o elencare le sveglie."
         }
       },
-      "screenshots": {}
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.alarm-0.1.2/android/01-set-alarm.webp",
+          "screenshots/dev.heyari.alarm-0.1.2/android/02-named-alarm.webp",
+          "screenshots/dev.heyari.alarm-0.1.2/android/03-repeating-alarm.webp"
+        ]
+      }
     },
     {
       "id": "dev.heyari.navigation",
@@ -234,7 +269,15 @@
           "description": "Avvia la navigazione verso un luogo passando all'app mappe. Capisce le destinazioni (\"portami a Asda\", \"come arrivo alla stazione\", \"indicazioni per il museo\") e \"portami a casa\". Un'impostazione sceglie tra l'app mappe predefinita e la navigazione passo-passo."
         }
       },
-      "screenshots": {}
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.navigation-0.1.0/android/01-london-query.webp",
+          "screenshots/dev.heyari.navigation-0.1.0/android/02-london-response.webp",
+          "screenshots/dev.heyari.navigation-0.1.0/android/03-mcdonalds-query.webp",
+          "screenshots/dev.heyari.navigation-0.1.0/android/04-mcdonalds-response.webp",
+          "screenshots/dev.heyari.navigation-0.1.0/android/05-settings.webp"
+        ]
+      }
     },
     {
       "id": "dev.heyari.timer",
@@ -263,7 +306,13 @@
           "description": "Imposta, interroga e annulla timer con nome. Supporta frasi naturali come \"imposta un timer per la pasta di 8 minuti\". Gestisce più timer contemporaneamente."
         }
       },
-      "screenshots": {}
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.timer-0.2.0/android/01-timer.webp",
+          "screenshots/dev.heyari.timer-0.2.0/android/02-timer-ringing.webp",
+          "screenshots/dev.heyari.timer-0.2.0/android/03-multiple-timers.webp"
+        ]
+      }
     },
     {
       "id": "dev.heyari.assistant.claude",
@@ -319,7 +368,14 @@
           "description": "Riproduce musica per nome in un'app musicale, facoltativamente su un servizio specificato."
         }
       },
-      "screenshots": {}
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.music-0.1.0/android/01-song-request.webp",
+          "screenshots/dev.heyari.music-0.1.0/android/02-transport-control.webp",
+          "screenshots/dev.heyari.music-0.1.0/android/03-playing-result.webp",
+          "screenshots/dev.heyari.music-0.1.0/android/04-settings.webp"
+        ]
+      }
     },
     {
       "id": "dev.heyari.counter",
@@ -347,7 +403,11 @@
           "description": "Conta quante volte gli hai chiesto di contare, mantenendo il valore tra una chiamata e l'altra. Contatore ASCII a una cifra che torna da 9 a 1. Skill WASM di riferimento per gli import host storage_kv."
         }
       },
-      "screenshots": {}
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.counter-0.1.1/android/01-count.webp"
+        ]
+      }
     },
     {
       "id": "dev.heyari.githubzen",
@@ -375,7 +435,11 @@
           "description": "Recupera una frase di saggezza zen dall'API di GitHub. Usato per testare l'import host http_fetch end-to-end. Richiede accesso a internet."
         }
       },
-      "screenshots": {}
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.githubzen-0.1.2/android/01-response.webp"
+        ]
+      }
     },
     {
       "id": "dev.heyari.assistant.gemini",
