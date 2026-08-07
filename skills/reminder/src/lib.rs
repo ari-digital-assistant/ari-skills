@@ -460,7 +460,7 @@ fn handle_continuation(cont: layer_c::Continuation) -> String {
                     resp.title, resp.datetime
                 ),
             );
-            commit_per_assistant(resp, parse::Confidence::High)
+            commit_per_assistant(resp, parse::Confidence::High, parsed.list_hint.clone())
         }
         Some(resp) if resp.is_actionable_yes_no_clarification() => {
             // AI flagged partial AND gave us a yes/no question to
@@ -489,7 +489,7 @@ fn handle_continuation(cont: layer_c::Continuation) -> String {
                     resp.title, resp.datetime
                 ),
             );
-            commit_per_assistant(resp, parse::Confidence::Partial)
+            commit_per_assistant(resp, parse::Confidence::Partial, parsed.list_hint.clone())
         }
         Some(resp) => {
             ari::log(
@@ -648,6 +648,7 @@ fn datetime_to_epoch_ms(datetime: Option<&str>) -> i64 {
 fn commit_per_assistant(
     resp: layer_c::AssistantResponse,
     confidence_on_output: parse::Confidence,
+    list_hint: Option<String>,
 ) -> String {
     let resolved = resolved_from_assistant_datetime(resp.datetime.as_deref());
 
@@ -659,10 +660,14 @@ fn commit_per_assistant(
         _ => destination,
     };
 
+    // The AI sharpens the title and the time; it is never asked about the
+    // list, so the on-device parse stays authoritative for that. Dropping
+    // it here sent "add milk to the family shopping list" to whatever list
+    // happened to be first.
     let pseudo_parsed = parse::Parsed {
         title: resp.title,
         when: parse::When::None,
-        list_hint: None,
+        list_hint,
         speak_template: String::new(),
         confidence: confidence_on_output,
         unparsed: None,
@@ -1259,6 +1264,18 @@ enum Outcome {
     },
 }
 
+/// The user named a list we don't have. Name it back to them so they can
+/// see which one we looked for.
+#[cfg(target_arch = "wasm32")]
+fn list_not_found(hint: Option<&str>) -> Outcome {
+    let name = hint.unwrap_or("");
+    let message = match ari::t("error.list_not_found", &[("list", name)]) {
+        Some(s) => s.to_string(),
+        None => format!("I couldn't find a list called {name}."),
+    };
+    Outcome::Failure { message }
+}
+
 #[cfg(target_arch = "wasm32")]
 fn insert_into_tasks(parsed: &parse::Parsed, resolved: &Resolved) -> Outcome {
     if !ari::tasks_provider_installed() {
@@ -1277,13 +1294,16 @@ fn insert_into_tasks(parsed: &parse::Parsed, resolved: &Resolved) -> Outcome {
         };
     }
 
-    let target = resolve_list_target(
+    let target = match resolve_list_target(
         &lists,
         |l: &ari::TaskList| format!("{}", l.id),
         |l: &ari::TaskList| l.display_name.as_str(),
         ari::setting_get("default_task_list"),
         parsed.list_hint.as_deref(),
-    );
+    ) {
+        ListTarget::Matched(t) => t,
+        ListTarget::HintNotFound => return list_not_found(parsed.list_hint.as_deref()),
+    };
     let target_id = target.id;
     let target_name = target.display_name.clone();
 
@@ -1340,13 +1360,16 @@ fn insert_into_calendar(parsed: &parse::Parsed, resolved: &Resolved) -> Outcome 
                 .to_string(),
         };
     }
-    let target = resolve_list_target(
+    let target = match resolve_list_target(
         &cals,
         |c: &ari::Calendar| format!("{}", c.id),
         |c: &ari::Calendar| c.display_name.as_str(),
         ari::setting_get("default_calendar"),
         parsed.list_hint.as_deref(),
-    );
+    ) {
+        ListTarget::Matched(t) => t,
+        ListTarget::HintNotFound => return list_not_found(parsed.list_hint.as_deref()),
+    };
     let target_id = target.id;
     let target_name = target.display_name.clone();
     let tz_id = ari::local_timezone_id();
@@ -1372,36 +1395,46 @@ fn insert_into_calendar(parsed: &parse::Parsed, resolved: &Resolved) -> Outcome 
     }
 }
 
+/// Which list an insert should land in. A hint the user actually spoke is
+/// a requirement, not a preference: if we can't find that list, silently
+/// filing the item somewhere else and reporting success is worse than
+/// saying so — the item is then lost in a list they never look at.
+enum ListTarget<'a, T> {
+    Matched(&'a T),
+    HintNotFound,
+}
+
 fn resolve_list_target<'a, T>(
     available: &'a [T],
     by_id: impl Fn(&T) -> String,
     by_name: impl Fn(&T) -> &str,
     stored_default: Option<&str>,
     hint: Option<&str>,
-) -> &'a T {
+) -> ListTarget<'a, T> {
     if let Some(h) = hint {
         let needle = h.trim().to_lowercase();
         if let Some(t) = available
             .iter()
             .find(|t| by_name(t).to_lowercase() == needle)
         {
-            return t;
+            return ListTarget::Matched(t);
         }
         if let Some(t) = available
             .iter()
             .find(|t| by_name(t).to_lowercase().contains(&needle))
         {
-            return t;
+            return ListTarget::Matched(t);
         }
+        return ListTarget::HintNotFound;
     }
     if let Some(def) = stored_default {
         if !def.is_empty() {
             if let Some(t) = available.iter().find(|t| by_id(t) == def) {
-                return t;
+                return ListTarget::Matched(t);
             }
         }
     }
-    &available[0]
+    ListTarget::Matched(&available[0])
 }
 
 // ── Envelope construction ─────────────────────────────────────────
@@ -1660,6 +1693,84 @@ fn push_json_string(out: &mut String, s: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // ── List resolution ───────────────────────────────────────────
+    //
+    // The reported failure: "add milk to family shopping list" with a
+    // "Family Shopping" list present landed the item in a list called
+    // "Family" and reported success. Two things had to go wrong — the
+    // hint never reached here (parse.rs), and an unmatched hint fell
+    // through to available[0] instead of saying so.
+
+    struct L(u64, &'static str);
+
+    fn resolve<'a>(
+        lists: &'a [L],
+        stored_default: Option<&str>,
+        hint: Option<&str>,
+    ) -> ListTarget<'a, L> {
+        resolve_list_target(
+            lists,
+            |l: &L| alloc::format!("{}", l.0),
+            |l: &L| l.1,
+            stored_default,
+            hint,
+        )
+    }
+
+    fn matched_name(t: ListTarget<'_, L>) -> &str {
+        match t {
+            ListTarget::Matched(l) => l.1,
+            ListTarget::HintNotFound => panic!("expected a match"),
+        }
+    }
+
+    #[test]
+    fn exact_name_beats_a_substring_sibling() {
+        let lists = [L(1, "Family"), L(2, "Family Shopping")];
+        assert_eq!(matched_name(resolve(&lists, None, Some("family shopping"))), "Family Shopping");
+        assert_eq!(matched_name(resolve(&lists, None, Some("family"))), "Family");
+    }
+
+    #[test]
+    fn exact_match_is_case_insensitive() {
+        let lists = [L(1, "Family Shopping")];
+        assert_eq!(matched_name(resolve(&lists, None, Some("FAMILY shopping"))), "Family Shopping");
+    }
+
+    #[test]
+    fn substring_match_when_no_exact_one_exists() {
+        let lists = [L(1, "Tasks"), L(2, "Family Shopping")];
+        assert_eq!(matched_name(resolve(&lists, None, Some("shopping"))), "Family Shopping");
+    }
+
+    #[test]
+    fn unmatched_hint_does_not_fall_back_to_another_list() {
+        // The heart of the bug. "Family" is not the shopping list, and
+        // filing milk there while saying "Added milk to your Family
+        // list" loses the item somewhere the user will never look.
+        let lists = [L(1, "Family"), L(2, "Tasks")];
+        assert!(matches!(
+            resolve(&lists, Some("2"), Some("family shopping")),
+            ListTarget::HintNotFound,
+        ));
+    }
+
+    #[test]
+    fn no_hint_uses_the_stored_default_by_id() {
+        let lists = [L(1, "Family"), L(2, "Tasks")];
+        assert_eq!(matched_name(resolve(&lists, Some("2"), None)), "Tasks");
+    }
+
+    #[test]
+    fn no_hint_and_stale_default_falls_back_to_the_first_list() {
+        // A DAVx5 resync can renumber lists, orphaning the stored id.
+        // Without a hint there's nothing better to do than pick one,
+        // but the spoken confirmation names it, so the user can see.
+        let lists = [L(1, "Family"), L(2, "Tasks")];
+        assert_eq!(matched_name(resolve(&lists, Some("99"), None)), "Family");
+        assert_eq!(matched_name(resolve(&lists, None, None)), "Family");
+    }
 
     #[test]
     fn internal_cancel_parses() {
