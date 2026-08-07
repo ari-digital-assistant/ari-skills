@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.reminder
-    version: "0.4.1"
+    version: "0.4.2"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
@@ -21,6 +21,13 @@ metadata:
         - regex: "\\b(add|put) .+ (to|on) (my |the )?(shopping|grocery|todo|to-do|task|tasks|reminders?) list\\b"
           weight: 0.95
         - regex: "\\b(add|put) .+ (to|on) my \\w+ list\\b"
+          weight: 0.9
+        # Bare form, no determiner: "add milk to family shopping list".
+        # Without this the keyword scorer returns 0 and the utterance
+        # depends entirely on the router, which then dispatches with
+        # typed args that have no list_hint in them. The trailing literal
+        # "list" is what keeps this from grabbing ordinary sentences.
+        - regex: "\\b(add|put) .+ (to|on) (my |the |our |your |their )?[\\w]+( [\\w]+)? list\\b"
           weight: 0.9
         # Read-only queries — list reminders for today/tomorrow, or
         # the next upcoming reminder. Patterns assume the input has
@@ -90,6 +97,17 @@ metadata:
         args:
           title: "deadline review"
           list_hint: "work"
+      # Determiner-less forms. Every list example above says "my"/"the",
+      # which taught the router that the bare form isn't a list add at
+      # all — it dropped list_hint and left the list name in the title.
+      - text: "add milk to family shopping list"
+        args:
+          title: "milk"
+          list_hint: "family shopping"
+      - text: "add bread to shopping list"
+        args:
+          title: "bread"
+          list_hint: "shopping"
       - text: "remind me about the meeting at 4pm"
         args:
           title: "the meeting"

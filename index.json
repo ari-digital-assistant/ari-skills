@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-08-07T10:19:09Z",
+  "generated_at": "2026-08-07T11:13:55Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -153,7 +153,7 @@
     },
     {
       "id": "dev.heyari.reminder",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "name": "reminder",
       "description": "Sets timed reminders and untimed list items. Routes to the user's tasks app (default), calendar, or both, with optional voice-named lists like \"add milk to my shopping list\".",
       "type": "skill",
@@ -168,10 +168,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.reminder-0.4.1.tar.gz",
-      "signature": "bundles/dev.heyari.reminder-0.4.1.tar.gz.sig",
-      "sha256": "a33f451fce8c9ed0c2752b5cda0846fb12e770bfbdc64e78c8de2676a33b3be2",
-      "manifest": "manifests/dev.heyari.reminder-0.4.1.md",
+      "bundle": "bundles/dev.heyari.reminder-0.4.2.tar.gz",
+      "signature": "bundles/dev.heyari.reminder-0.4.2.tar.gz.sig",
+      "sha256": "a2c278c0ef5459af737aba2ea32d88144efbb3e7b4f723a6dffa72c52e6739f1",
+      "manifest": "manifests/dev.heyari.reminder-0.4.2.md",
       "localizations": {
         "it": {
           "name": "reminder",
