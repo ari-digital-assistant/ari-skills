@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-08-07T12:20:03Z",
+  "generated_at": "2026-08-07T12:49:39Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -338,7 +338,13 @@
           "description": "Usa Claude di Anthropic per rispondere a domande generali. Richiede una chiave API da console.anthropic.com. Le tue domande vengono inviate ai server di Anthropic.\n"
         }
       },
-      "screenshots": {}
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.assistant.claude-0.4.1/android/01-query.webp",
+          "screenshots/dev.heyari.assistant.claude-0.4.1/android/02-follow-up.webp",
+          "screenshots/dev.heyari.assistant.claude-0.4.1/android/03-settings.webp"
+        ]
+      }
     },
     {
       "id": "dev.heyari.music",
@@ -465,7 +471,13 @@
           "description": "Usa Gemini di Google per rispondere a domande generali. Richiede una chiave API da aistudio.google.com. Le tue domande vengono inviate ai server di Google.\n"
         }
       },
-      "screenshots": {}
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.assistant.gemini-0.4.0/android/01-query.webp",
+          "screenshots/dev.heyari.assistant.gemini-0.4.0/android/02-follow-up.webp",
+          "screenshots/dev.heyari.assistant.gemini-0.4.0/android/03-settings.webp"
+        ]
+      }
     }
   ]
 }
