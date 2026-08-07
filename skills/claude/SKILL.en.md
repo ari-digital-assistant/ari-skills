@@ -8,7 +8,7 @@ description: >
 metadata:
   ari:
     id: dev.heyari.assistant.claude
-    version: "0.4.0"
+    version: "0.4.1"
     type: assistant
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari
@@ -84,6 +84,11 @@ metadata:
           structured instructions from an Ari skill, follow those
           instructions exactly.
         response_path: "content[0].text"
+        # Adaptive thinking is on by default on every model this skill can
+        # resolve to, and max_tokens caps thinking and answer together — the
+        # engine's 256 default leaves nothing for the answer once the model
+        # reasons at all, and replies arrive truncated mid-sentence.
+        max_tokens: 2048
 ---
 Uses Anthropic's Claude API to answer general knowledge questions.
 
