@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-13T05:50:33Z",
+  "generated_at": "2026-08-14T05:48:19Z",
   "source": "https://models.dev/api.json",
   "include_preview": true,
   "providers": {
@@ -142,16 +142,16 @@
         "confidence": "high"
       },
       "balanced": {
-        "id": "gemini-3.6-flash",
-        "name": "Gemini 3.6 Flash",
+        "id": "gemini-3.7-flash",
+        "name": "Gemini 3.7 Flash",
         "family": "gemini-flash",
-        "release_date": "2026-07-21",
-        "last_updated": "2026-07-21",
+        "release_date": "2026-08-13",
+        "last_updated": "2026-08-13",
         "preview": false,
         "omit_params": [],
         "pricing_per_million_tokens": {
-          "input": 1.5,
-          "output": 7.5
+          "input": 0.75,
+          "output": 3.75
         },
         "context_tokens": 1048576,
         "selection_method": "semantic-name",
