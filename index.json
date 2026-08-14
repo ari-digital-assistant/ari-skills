@@ -1,75 +1,76 @@
 {
   "index_version": 1,
-  "generated_at": "2026-08-13T06:01:38Z",
+  "generated_at": "2026-08-14T05:59:17Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
-    "sha256": "f33b2dda77a55d0a3808788241d2603fdaa22390bc1a9bd3b463ce68781154f3"
+    "sha256": "c41b1fe4692bd17ecba6de8f509ce2dd438212bde139f697b91839f03c6ebae9"
   },
   "skills": [
     {
-      "id": "dev.heyari.weather",
-      "version": "0.1.0",
-      "name": "weather",
-      "description": "Current weather, forecasts, and conditions like wind, rain, and UV — for your current location or any place you name.",
+      "id": "dev.heyari.timer",
+      "version": "0.2.0",
+      "name": "timer",
+      "description": "Sets, queries, and cancels named timers. Supports natural phrasing like \"set a pasta timer for 8 minutes\" or \"set a 4 minute pasta timer\". Handles multiple simultaneous timers.",
       "type": "skill",
       "license": "MIT",
       "author": "Ari core team",
       "homepage": "https://github.com/ari-digital-assistant/ari-skills",
       "capabilities": [
-        "http",
-        "location",
-        "storage_kv"
+        "storage_kv",
+        "critical_alert"
       ],
       "languages": [
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.weather-0.1.0.tar.gz",
-      "signature": "bundles/dev.heyari.weather-0.1.0.tar.gz.sig",
-      "sha256": "870fff39a91b71bcfb874957ac7a529d526cf01525e036d737d9f168210c4cc8",
-      "manifest": "manifests/dev.heyari.weather-0.1.0.md",
+      "bundle": "bundles/dev.heyari.timer-0.2.0.tar.gz",
+      "signature": "bundles/dev.heyari.timer-0.2.0.tar.gz.sig",
+      "sha256": "1cec10209c7c602e59723e50ac35589a0747608f43fc5c73b250550daff24ea4",
+      "manifest": "manifests/dev.heyari.timer-0.2.0.md",
       "localizations": {
         "it": {
-          "name": "weather",
-          "description": "Meteo attuale, previsioni e condizioni come vento, pioggia e UV — per la tua posizione attuale o per qualsiasi luogo tu indichi."
+          "name": "timer",
+          "description": "Imposta, interroga e annulla timer con nome. Supporta frasi naturali come \"imposta un timer per la pasta di 8 minuti\". Gestisce più timer contemporaneamente."
         }
       },
       "screenshots": {
         "android": [
-          "screenshots/dev.heyari.weather-0.1.0/android/01-current.webp",
-          "screenshots/dev.heyari.weather-0.1.0/android/02-forecast.webp",
-          "screenshots/dev.heyari.weather-0.1.0/android/03-settings.webp"
+          "screenshots/dev.heyari.timer-0.2.0/android/01-timer.webp",
+          "screenshots/dev.heyari.timer-0.2.0/android/02-timer-ringing.webp",
+          "screenshots/dev.heyari.timer-0.2.0/android/03-multiple-timers.webp"
         ]
       }
     },
     {
-      "id": "dev.heyari.coinflip",
-      "version": "0.1.0",
-      "name": "coin-flip",
-      "description": "Flips a virtual coin and returns heads or tails. Use when the user asks to flip a coin, toss a coin, or make a random binary choice.",
-      "type": "skill",
+      "id": "dev.heyari.assistant.gemini",
+      "version": "0.4.0",
+      "name": "gemini",
+      "description": "Use Google's Gemini to answer general questions. Requires an API key from aistudio.google.com. Your questions are sent to Google's servers.\n",
+      "type": "assistant",
       "license": "MIT",
-      "author": "Ari core team",
-      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
+      "author": "Ari Project",
+      "homepage": "https://github.com/ari-digital-assistant/ari",
       "capabilities": [],
       "languages": [
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
-      "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "f0efbb9bbdcbe37965711565ab488d51fe04de10abda22ab15cb841a4cf2dc39",
-      "manifest": "manifests/dev.heyari.coinflip-0.1.0.md",
+      "bundle": "bundles/dev.heyari.assistant.gemini-0.4.0.tar.gz",
+      "signature": "bundles/dev.heyari.assistant.gemini-0.4.0.tar.gz.sig",
+      "sha256": "89007cab1185ed0a30462619f8293dabfaeb9d4551531dee89fe56ed96c18cea",
+      "manifest": "manifests/dev.heyari.assistant.gemini-0.4.0.md",
       "localizations": {
         "it": {
-          "name": "coin-flip",
-          "description": "Lancia una moneta virtuale e restituisce testa o croce. Usalo quando l'utente chiede di lanciare una moneta, tirare una moneta o fare una scelta binaria casuale."
+          "name": "gemini",
+          "description": "Usa Gemini di Google per rispondere a domande generali. Richiede una chiave API da aistudio.google.com. Le tue domande vengono inviate ai server di Google.\n"
         }
       },
       "screenshots": {
         "android": [
-          "screenshots/dev.heyari.coinflip-0.1.0/android/01-flip.webp"
+          "screenshots/dev.heyari.assistant.gemini-0.4.0/android/01-query.webp",
+          "screenshots/dev.heyari.assistant.gemini-0.4.0/android/02-follow-up.webp",
+          "screenshots/dev.heyari.assistant.gemini-0.4.0/android/03-settings.webp"
         ]
       }
     },
@@ -107,6 +108,138 @@
           "screenshots/dev.heyari.homeassistant-0.3.1/android/02-brightness-control.webp",
           "screenshots/dev.heyari.homeassistant-0.3.1/android/03-query.webp",
           "screenshots/dev.heyari.homeassistant-0.3.1/android/04-settings.webp"
+        ]
+      }
+    },
+    {
+      "id": "dev.heyari.counter",
+      "version": "0.1.1",
+      "name": "counter",
+      "description": "Counts how many times you've asked it to count, persisting across calls. Single-digit ASCII counter that wraps from 9 back to 1. Reference WASM skill for the storage_kv host imports.",
+      "type": "skill",
+      "license": "MIT",
+      "author": "Ari core team",
+      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
+      "capabilities": [
+        "storage_kv"
+      ],
+      "languages": [
+        "en",
+        "it"
+      ],
+      "bundle": "bundles/dev.heyari.counter-0.1.1.tar.gz",
+      "signature": "bundles/dev.heyari.counter-0.1.1.tar.gz.sig",
+      "sha256": "f08235255209b596a354ab10d34dda9c0236e61e048413c7c47e0875455e1272",
+      "manifest": "manifests/dev.heyari.counter-0.1.1.md",
+      "localizations": {
+        "it": {
+          "name": "counter",
+          "description": "Conta quante volte gli hai chiesto di contare, mantenendo il valore tra una chiamata e l'altra. Contatore ASCII a una cifra che torna da 9 a 1. Skill WASM di riferimento per gli import host storage_kv."
+        }
+      },
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.counter-0.1.1/android/01-count.webp"
+        ]
+      }
+    },
+    {
+      "id": "dev.heyari.navigation",
+      "version": "0.1.0",
+      "name": "navigation",
+      "description": "Starts navigation to a place by handing off to your maps app. Understands destinations (\"take me to McDonald's\", \"navigate to Asda\", \"how do I get to the station\") and \"take me home\". A setting chooses between your default maps app and turn-by-turn navigation.",
+      "type": "skill",
+      "license": "MIT",
+      "author": "Ari core team",
+      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
+      "capabilities": [
+        "navigation"
+      ],
+      "languages": [
+        "en",
+        "it"
+      ],
+      "bundle": "bundles/dev.heyari.navigation-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.navigation-0.1.0.tar.gz.sig",
+      "sha256": "7c010cd6841873cbe990f976e6eba6c928afed58a842b9fea83ee7659906f643",
+      "manifest": "manifests/dev.heyari.navigation-0.1.0.md",
+      "localizations": {
+        "it": {
+          "name": "navigation",
+          "description": "Avvia la navigazione verso un luogo passando all'app mappe. Capisce le destinazioni (\"portami a Asda\", \"come arrivo alla stazione\", \"indicazioni per il museo\") e \"portami a casa\". Un'impostazione sceglie tra l'app mappe predefinita e la navigazione passo-passo."
+        }
+      },
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.navigation-0.1.0/android/01-london-query.webp",
+          "screenshots/dev.heyari.navigation-0.1.0/android/02-london-response.webp",
+          "screenshots/dev.heyari.navigation-0.1.0/android/03-mcdonalds-query.webp",
+          "screenshots/dev.heyari.navigation-0.1.0/android/04-mcdonalds-response.webp",
+          "screenshots/dev.heyari.navigation-0.1.0/android/05-settings.webp"
+        ]
+      }
+    },
+    {
+      "id": "dev.heyari.githubzen",
+      "version": "0.1.2",
+      "name": "github-zen",
+      "description": "Fetches a one-line piece of zen wisdom from the GitHub API. Use to test the WASM http_fetch host import end-to-end. Requires internet access.",
+      "type": "skill",
+      "license": "MIT",
+      "author": "Ari core team",
+      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
+      "capabilities": [
+        "http"
+      ],
+      "languages": [
+        "en",
+        "it"
+      ],
+      "bundle": "bundles/dev.heyari.githubzen-0.1.2.tar.gz",
+      "signature": "bundles/dev.heyari.githubzen-0.1.2.tar.gz.sig",
+      "sha256": "eb8f03d192935bba31dcd883da10cf01fba10b74388efa85599766f8979af09a",
+      "manifest": "manifests/dev.heyari.githubzen-0.1.2.md",
+      "localizations": {
+        "it": {
+          "name": "github-zen",
+          "description": "Recupera una frase di saggezza zen dall'API di GitHub. Usato per testare l'import host http_fetch end-to-end. Richiede accesso a internet."
+        }
+      },
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.githubzen-0.1.2/android/01-response.webp"
+        ]
+      }
+    },
+    {
+      "id": "dev.heyari.assistant.claude",
+      "version": "0.4.1",
+      "name": "claude",
+      "description": "Use Anthropic's Claude to answer general questions. Requires an API key from console.anthropic.com. Your questions are sent to Anthropic's servers.\n",
+      "type": "assistant",
+      "license": "MIT",
+      "author": "Ari Project",
+      "homepage": "https://github.com/ari-digital-assistant/ari",
+      "capabilities": [],
+      "languages": [
+        "en",
+        "it"
+      ],
+      "bundle": "bundles/dev.heyari.assistant.claude-0.4.1.tar.gz",
+      "signature": "bundles/dev.heyari.assistant.claude-0.4.1.tar.gz.sig",
+      "sha256": "d7eb64e20745dacd86e2a123b7e40b724fbbd7d6db9aac4dd127bd6dde99f61e",
+      "manifest": "manifests/dev.heyari.assistant.claude-0.4.1.md",
+      "localizations": {
+        "it": {
+          "name": "claude",
+          "description": "Usa Claude di Anthropic per rispondere a domande generali. Richiede una chiave API da console.anthropic.com. Le tue domande vengono inviate ai server di Anthropic.\n"
+        }
+      },
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.assistant.claude-0.4.1/android/01-query.webp",
+          "screenshots/dev.heyari.assistant.claude-0.4.1/android/02-follow-up.webp",
+          "screenshots/dev.heyari.assistant.claude-0.4.1/android/03-settings.webp"
         ]
       }
     },
@@ -173,43 +306,6 @@
       }
     },
     {
-      "id": "dev.heyari.reminder",
-      "version": "0.4.3",
-      "name": "reminder",
-      "description": "Sets timed reminders and untimed list items. Routes to the user's tasks app (default), calendar, or both, with optional voice-named lists like \"add milk to my shopping list\".",
-      "type": "skill",
-      "license": "MIT",
-      "author": "Ari core team",
-      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
-      "capabilities": [
-        "calendar",
-        "tasks"
-      ],
-      "languages": [
-        "en",
-        "it"
-      ],
-      "bundle": "bundles/dev.heyari.reminder-0.4.3.tar.gz",
-      "signature": "bundles/dev.heyari.reminder-0.4.3.tar.gz.sig",
-      "sha256": "7779c70c900d0c3c17ccf5f42508af29957b9a95b31d662299d2496a24cce830",
-      "manifest": "manifests/dev.heyari.reminder-0.4.3.md",
-      "localizations": {
-        "it": {
-          "name": "reminder",
-          "description": "Imposta promemoria con orario e voci di lista senza orario. Indirizza all'app delle attività dell'utente (predefinita), al calendario, o a entrambi, con liste personalizzate vocalmente come \"aggiungi latte alla lista della spesa\"."
-        }
-      },
-      "screenshots": {
-        "android": [
-          "screenshots/dev.heyari.reminder-0.4.3/android/01-task-request.webp",
-          "screenshots/dev.heyari.reminder-0.4.3/android/02-tasks-org-integration.webp",
-          "screenshots/dev.heyari.reminder-0.4.3/android/03-shopping-list-request.webp",
-          "screenshots/dev.heyari.reminder-0.4.3/android/04-shopping-list-response.webp",
-          "screenshots/dev.heyari.reminder-0.4.3/android/05-settings.webp"
-        ]
-      }
-    },
-    {
       "id": "dev.heyari.alarm",
       "version": "0.1.2",
       "name": "alarm",
@@ -240,109 +336,6 @@
           "screenshots/dev.heyari.alarm-0.1.2/android/01-set-alarm.webp",
           "screenshots/dev.heyari.alarm-0.1.2/android/02-named-alarm.webp",
           "screenshots/dev.heyari.alarm-0.1.2/android/03-repeating-alarm.webp"
-        ]
-      }
-    },
-    {
-      "id": "dev.heyari.navigation",
-      "version": "0.1.0",
-      "name": "navigation",
-      "description": "Starts navigation to a place by handing off to your maps app. Understands destinations (\"take me to McDonald's\", \"navigate to Asda\", \"how do I get to the station\") and \"take me home\". A setting chooses between your default maps app and turn-by-turn navigation.",
-      "type": "skill",
-      "license": "MIT",
-      "author": "Ari core team",
-      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
-      "capabilities": [
-        "navigation"
-      ],
-      "languages": [
-        "en",
-        "it"
-      ],
-      "bundle": "bundles/dev.heyari.navigation-0.1.0.tar.gz",
-      "signature": "bundles/dev.heyari.navigation-0.1.0.tar.gz.sig",
-      "sha256": "7c010cd6841873cbe990f976e6eba6c928afed58a842b9fea83ee7659906f643",
-      "manifest": "manifests/dev.heyari.navigation-0.1.0.md",
-      "localizations": {
-        "it": {
-          "name": "navigation",
-          "description": "Avvia la navigazione verso un luogo passando all'app mappe. Capisce le destinazioni (\"portami a Asda\", \"come arrivo alla stazione\", \"indicazioni per il museo\") e \"portami a casa\". Un'impostazione sceglie tra l'app mappe predefinita e la navigazione passo-passo."
-        }
-      },
-      "screenshots": {
-        "android": [
-          "screenshots/dev.heyari.navigation-0.1.0/android/01-london-query.webp",
-          "screenshots/dev.heyari.navigation-0.1.0/android/02-london-response.webp",
-          "screenshots/dev.heyari.navigation-0.1.0/android/03-mcdonalds-query.webp",
-          "screenshots/dev.heyari.navigation-0.1.0/android/04-mcdonalds-response.webp",
-          "screenshots/dev.heyari.navigation-0.1.0/android/05-settings.webp"
-        ]
-      }
-    },
-    {
-      "id": "dev.heyari.timer",
-      "version": "0.2.0",
-      "name": "timer",
-      "description": "Sets, queries, and cancels named timers. Supports natural phrasing like \"set a pasta timer for 8 minutes\" or \"set a 4 minute pasta timer\". Handles multiple simultaneous timers.",
-      "type": "skill",
-      "license": "MIT",
-      "author": "Ari core team",
-      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
-      "capabilities": [
-        "storage_kv",
-        "critical_alert"
-      ],
-      "languages": [
-        "en",
-        "it"
-      ],
-      "bundle": "bundles/dev.heyari.timer-0.2.0.tar.gz",
-      "signature": "bundles/dev.heyari.timer-0.2.0.tar.gz.sig",
-      "sha256": "1cec10209c7c602e59723e50ac35589a0747608f43fc5c73b250550daff24ea4",
-      "manifest": "manifests/dev.heyari.timer-0.2.0.md",
-      "localizations": {
-        "it": {
-          "name": "timer",
-          "description": "Imposta, interroga e annulla timer con nome. Supporta frasi naturali come \"imposta un timer per la pasta di 8 minuti\". Gestisce più timer contemporaneamente."
-        }
-      },
-      "screenshots": {
-        "android": [
-          "screenshots/dev.heyari.timer-0.2.0/android/01-timer.webp",
-          "screenshots/dev.heyari.timer-0.2.0/android/02-timer-ringing.webp",
-          "screenshots/dev.heyari.timer-0.2.0/android/03-multiple-timers.webp"
-        ]
-      }
-    },
-    {
-      "id": "dev.heyari.assistant.claude",
-      "version": "0.4.1",
-      "name": "claude",
-      "description": "Use Anthropic's Claude to answer general questions. Requires an API key from console.anthropic.com. Your questions are sent to Anthropic's servers.\n",
-      "type": "assistant",
-      "license": "MIT",
-      "author": "Ari Project",
-      "homepage": "https://github.com/ari-digital-assistant/ari",
-      "capabilities": [],
-      "languages": [
-        "en",
-        "it"
-      ],
-      "bundle": "bundles/dev.heyari.assistant.claude-0.4.1.tar.gz",
-      "signature": "bundles/dev.heyari.assistant.claude-0.4.1.tar.gz.sig",
-      "sha256": "d7eb64e20745dacd86e2a123b7e40b724fbbd7d6db9aac4dd127bd6dde99f61e",
-      "manifest": "manifests/dev.heyari.assistant.claude-0.4.1.md",
-      "localizations": {
-        "it": {
-          "name": "claude",
-          "description": "Usa Claude di Anthropic per rispondere a domande generali. Richiede una chiave API da console.anthropic.com. Le tue domande vengono inviate ai server di Anthropic.\n"
-        }
-      },
-      "screenshots": {
-        "android": [
-          "screenshots/dev.heyari.assistant.claude-0.4.1/android/01-query.webp",
-          "screenshots/dev.heyari.assistant.claude-0.4.1/android/02-follow-up.webp",
-          "screenshots/dev.heyari.assistant.claude-0.4.1/android/03-settings.webp"
         ]
       }
     },
@@ -384,98 +377,105 @@
       }
     },
     {
-      "id": "dev.heyari.counter",
-      "version": "0.1.1",
-      "name": "counter",
-      "description": "Counts how many times you've asked it to count, persisting across calls. Single-digit ASCII counter that wraps from 9 back to 1. Reference WASM skill for the storage_kv host imports.",
+      "id": "dev.heyari.coinflip",
+      "version": "0.1.0",
+      "name": "coin-flip",
+      "description": "Flips a virtual coin and returns heads or tails. Use when the user asks to flip a coin, toss a coin, or make a random binary choice.",
+      "type": "skill",
+      "license": "MIT",
+      "author": "Ari core team",
+      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
+      "capabilities": [],
+      "languages": [
+        "en",
+        "it"
+      ],
+      "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
+      "sha256": "f0efbb9bbdcbe37965711565ab488d51fe04de10abda22ab15cb841a4cf2dc39",
+      "manifest": "manifests/dev.heyari.coinflip-0.1.0.md",
+      "localizations": {
+        "it": {
+          "name": "coin-flip",
+          "description": "Lancia una moneta virtuale e restituisce testa o croce. Usalo quando l'utente chiede di lanciare una moneta, tirare una moneta o fare una scelta binaria casuale."
+        }
+      },
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.coinflip-0.1.0/android/01-flip.webp"
+        ]
+      }
+    },
+    {
+      "id": "dev.heyari.weather",
+      "version": "0.1.0",
+      "name": "weather",
+      "description": "Current weather, forecasts, and conditions like wind, rain, and UV — for your current location or any place you name.",
       "type": "skill",
       "license": "MIT",
       "author": "Ari core team",
       "homepage": "https://github.com/ari-digital-assistant/ari-skills",
       "capabilities": [
+        "http",
+        "location",
         "storage_kv"
       ],
       "languages": [
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.counter-0.1.1.tar.gz",
-      "signature": "bundles/dev.heyari.counter-0.1.1.tar.gz.sig",
-      "sha256": "f08235255209b596a354ab10d34dda9c0236e61e048413c7c47e0875455e1272",
-      "manifest": "manifests/dev.heyari.counter-0.1.1.md",
+      "bundle": "bundles/dev.heyari.weather-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.weather-0.1.0.tar.gz.sig",
+      "sha256": "870fff39a91b71bcfb874957ac7a529d526cf01525e036d737d9f168210c4cc8",
+      "manifest": "manifests/dev.heyari.weather-0.1.0.md",
       "localizations": {
         "it": {
-          "name": "counter",
-          "description": "Conta quante volte gli hai chiesto di contare, mantenendo il valore tra una chiamata e l'altra. Contatore ASCII a una cifra che torna da 9 a 1. Skill WASM di riferimento per gli import host storage_kv."
+          "name": "weather",
+          "description": "Meteo attuale, previsioni e condizioni come vento, pioggia e UV — per la tua posizione attuale o per qualsiasi luogo tu indichi."
         }
       },
       "screenshots": {
         "android": [
-          "screenshots/dev.heyari.counter-0.1.1/android/01-count.webp"
+          "screenshots/dev.heyari.weather-0.1.0/android/01-current.webp",
+          "screenshots/dev.heyari.weather-0.1.0/android/02-forecast.webp",
+          "screenshots/dev.heyari.weather-0.1.0/android/03-settings.webp"
         ]
       }
     },
     {
-      "id": "dev.heyari.githubzen",
-      "version": "0.1.2",
-      "name": "github-zen",
-      "description": "Fetches a one-line piece of zen wisdom from the GitHub API. Use to test the WASM http_fetch host import end-to-end. Requires internet access.",
+      "id": "dev.heyari.reminder",
+      "version": "0.4.3",
+      "name": "reminder",
+      "description": "Sets timed reminders and untimed list items. Routes to the user's tasks app (default), calendar, or both, with optional voice-named lists like \"add milk to my shopping list\".",
       "type": "skill",
       "license": "MIT",
       "author": "Ari core team",
       "homepage": "https://github.com/ari-digital-assistant/ari-skills",
       "capabilities": [
-        "http"
+        "calendar",
+        "tasks"
       ],
       "languages": [
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.githubzen-0.1.2.tar.gz",
-      "signature": "bundles/dev.heyari.githubzen-0.1.2.tar.gz.sig",
-      "sha256": "eb8f03d192935bba31dcd883da10cf01fba10b74388efa85599766f8979af09a",
-      "manifest": "manifests/dev.heyari.githubzen-0.1.2.md",
+      "bundle": "bundles/dev.heyari.reminder-0.4.3.tar.gz",
+      "signature": "bundles/dev.heyari.reminder-0.4.3.tar.gz.sig",
+      "sha256": "7779c70c900d0c3c17ccf5f42508af29957b9a95b31d662299d2496a24cce830",
+      "manifest": "manifests/dev.heyari.reminder-0.4.3.md",
       "localizations": {
         "it": {
-          "name": "github-zen",
-          "description": "Recupera una frase di saggezza zen dall'API di GitHub. Usato per testare l'import host http_fetch end-to-end. Richiede accesso a internet."
+          "name": "reminder",
+          "description": "Imposta promemoria con orario e voci di lista senza orario. Indirizza all'app delle attività dell'utente (predefinita), al calendario, o a entrambi, con liste personalizzate vocalmente come \"aggiungi latte alla lista della spesa\"."
         }
       },
       "screenshots": {
         "android": [
-          "screenshots/dev.heyari.githubzen-0.1.2/android/01-response.webp"
-        ]
-      }
-    },
-    {
-      "id": "dev.heyari.assistant.gemini",
-      "version": "0.4.0",
-      "name": "gemini",
-      "description": "Use Google's Gemini to answer general questions. Requires an API key from aistudio.google.com. Your questions are sent to Google's servers.\n",
-      "type": "assistant",
-      "license": "MIT",
-      "author": "Ari Project",
-      "homepage": "https://github.com/ari-digital-assistant/ari",
-      "capabilities": [],
-      "languages": [
-        "en",
-        "it"
-      ],
-      "bundle": "bundles/dev.heyari.assistant.gemini-0.4.0.tar.gz",
-      "signature": "bundles/dev.heyari.assistant.gemini-0.4.0.tar.gz.sig",
-      "sha256": "89007cab1185ed0a30462619f8293dabfaeb9d4551531dee89fe56ed96c18cea",
-      "manifest": "manifests/dev.heyari.assistant.gemini-0.4.0.md",
-      "localizations": {
-        "it": {
-          "name": "gemini",
-          "description": "Usa Gemini di Google per rispondere a domande generali. Richiede una chiave API da aistudio.google.com. Le tue domande vengono inviate ai server di Google.\n"
-        }
-      },
-      "screenshots": {
-        "android": [
-          "screenshots/dev.heyari.assistant.gemini-0.4.0/android/01-query.webp",
-          "screenshots/dev.heyari.assistant.gemini-0.4.0/android/02-follow-up.webp",
-          "screenshots/dev.heyari.assistant.gemini-0.4.0/android/03-settings.webp"
+          "screenshots/dev.heyari.reminder-0.4.3/android/01-task-request.webp",
+          "screenshots/dev.heyari.reminder-0.4.3/android/02-tasks-org-integration.webp",
+          "screenshots/dev.heyari.reminder-0.4.3/android/03-shopping-list-request.webp",
+          "screenshots/dev.heyari.reminder-0.4.3/android/04-shopping-list-response.webp",
+          "screenshots/dev.heyari.reminder-0.4.3/android/05-settings.webp"
         ]
       }
     }
