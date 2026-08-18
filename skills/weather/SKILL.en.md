@@ -1,11 +1,11 @@
 ---
 name: weather
-description: Current weather, forecasts, and conditions like wind, rain, and UV — for your current location or any place you name.
+description: Current weather, forecasts, and conditions like rain chance, wind, humidity, and UV — for your current location or any place you name.
 license: MIT
 metadata:
   ari:
     id: dev.heyari.weather
-    version: "0.1.0"
+    version: "0.2.0"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
@@ -27,6 +27,8 @@ metadata:
         - regex: "\\b(wind|windy)\\b"
           weight: 0.75
         - regex: "\\buv( index)?\\b"
+          weight: 0.8
+        - regex: "\\bhumid(ity)?\\b"
           weight: 0.8
       custom_score: false
     # Examples carry `args` so FunctionGemma learns to extract the two
@@ -61,6 +63,10 @@ metadata:
         args:
           location: ""
           when: "now"
+      - text: "is it humid today"
+        args:
+          location: ""
+          when: "today"
       # Oblique phrasings the keyword patterns above deliberately miss —
       # these are the ones the router actually sees in production.
       - text: "will i need a coat later"
@@ -115,8 +121,14 @@ metadata:
 # Weather
 
 Current conditions and forecasts, plus facet queries like wind, rain
-chance, and UV index. Ask about the weather where you are — the skill
-uses a coarse device location — or name any place ("weather in tokyo").
+chance, humidity, and UV index. Ask about the weather where you are — the
+skill uses a coarse device location — or name any place ("weather in
+tokyo").
+
+Current conditions are answered with a lead sentence plus whatever detail
+earns its place: the day's remaining rain chance (and the hour it peaks,
+when the rain clusters rather than drizzling all day), wind bearing and
+speed, and humidity. A calm, dry day just gets the lead sentence.
 
 ## Supported utterances
 
@@ -125,8 +137,9 @@ uses a coarse device location — or name any place ("weather in tokyo").
 - `weather in valletta tomorrow` — named place, next day
 - `what is the forecast this week` — multi-day outlook
 - `will it rain today` — precipitation facet
-- `is it windy` — wind facet
+- `is it windy` — wind facet, answered for the day asked about
 - `what is the uv index` — UV facet
+- `is it humid today` — humidity facet
 
 ## Extracted arguments
 

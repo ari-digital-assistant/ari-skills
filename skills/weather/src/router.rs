@@ -4,7 +4,7 @@ use alloc::string::{String, ToString};
 pub enum When { Now, Today, Tomorrow, ThisWeek }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Facet { None, Wind, Rain, Uv }
+pub enum Facet { None, Wind, Rain, Uv, Humidity }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Request { pub location: Option<String>, pub when: When, pub facet: Facet }
@@ -19,12 +19,29 @@ fn when_from_str(s: &str) -> When {
     else { When::Now }
 }
 
+/// Whole words of `t`, split on anything that isn't a letter or digit.
+/// Accented letters count as letters, so "pioverà" survives intact.
+fn words(t: &str) -> impl Iterator<Item = &str> {
+    t.split(|c: char| !c.is_alphanumeric()).filter(|w| !w.is_empty())
+}
+
+/// First facet word wins. Matching is per-word, not substring: "will it rain
+/// in Windsor" is about rain, not wind. Italian verb forms ("pioverà",
+/// "piovoso") are matched by stem because they conjugate.
 fn facet_from_text(t: &str) -> Facet {
     let t = t.to_lowercase();
-    if t.contains("uv") { Facet::Uv }
-    else if t.contains("wind") || t.contains("vento") { Facet::Wind }
-    else if t.contains("rain") || t.contains("piov") || t.contains("piogg") { Facet::Rain }
-    else { Facet::None }
+    for w in words(&t) {
+        let facet = match w {
+            "uv" => Facet::Uv,
+            "wind" | "windy" | "vento" | "ventoso" | "ventosa" => Facet::Wind,
+            "rain" | "rains" | "raining" | "rainy" | "umbrella" | "ombrello" => Facet::Rain,
+            "humid" | "humidity" | "umido" | "umida" | "umidità" | "umidita" => Facet::Humidity,
+            _ if w.starts_with("piov") || w.starts_with("piogg") => Facet::Rain,
+            _ => continue,
+        };
+        return facet;
+    }
+    Facet::None
 }
 
 /// Best-effort place extraction from the raw utterance, used as a fallback
@@ -76,14 +93,6 @@ pub fn parse_request(args_json: Option<&str>, raw: &str, locale: &str) -> Reques
     Request { location, when, facet: facet_from_text(raw) }
 }
 
-impl Request {
-    /// True when this should hit MET Norway (GPS + current). Everything else
-    /// goes to Open-Meteo.
-    pub fn use_metno(&self) -> bool {
-        self.location.is_none() && self.when == When::Now
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -116,10 +125,24 @@ mod tests {
         assert_eq!(parse_request(None, "weather", "en").when, When::Now);
     }
     #[test]
-    fn metno_only_for_gps_now() {
-        assert!(parse_request(None, "weather", "en").use_metno());
-        assert!(!parse_request(None, "weather this week", "en").use_metno());
-        assert!(!parse_request(Some(r#"{"location":"rome","when":"now"}"#), "weather in rome", "en").use_metno());
+    fn facet_words_are_matched_whole_not_as_substrings() {
+        // "windsor" contains "wind" but the question is about rain.
+        assert_eq!(parse_request(None, "will it rain in windsor", "en").facet, Facet::Rain);
+        assert_eq!(parse_request(None, "weather in windsor", "en").facet, Facet::None);
+        // "louvre" contains "uv".
+        assert_eq!(parse_request(None, "weather at the louvre", "en").facet, Facet::None);
+    }
+    #[test]
+    fn humidity_facet_detected() {
+        assert_eq!(parse_request(None, "is it humid today", "en").facet, Facet::Humidity);
+        assert_eq!(parse_request(None, "what is the humidity", "en").facet, Facet::Humidity);
+        assert_eq!(parse_request(None, "c'e umidità", "it").facet, Facet::Humidity);
+    }
+    #[test]
+    fn umbrella_asks_about_rain() {
+        let r = parse_request(None, "should i take an umbrella tomorrow", "en");
+        assert_eq!(r.facet, Facet::Rain);
+        assert_eq!(r.when, When::Tomorrow);
     }
     #[test]
     fn italian_when_and_facet_detected() {

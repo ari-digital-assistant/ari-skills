@@ -4,12 +4,12 @@
 # live in `description` (below) and the markdown body. Don't translate
 # this.
 name: weather
-description: Meteo attuale, previsioni e condizioni come vento, pioggia e UV — per la tua posizione attuale o per qualsiasi luogo tu indichi.
+description: Meteo attuale, previsioni e condizioni come probabilità di pioggia, vento, umidità e UV — per la tua posizione attuale o per qualsiasi luogo tu indichi.
 license: MIT
 metadata:
   ari:
     id: dev.heyari.weather
-    version: "0.1.0"
+    version: "0.2.0"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
@@ -37,6 +37,8 @@ metadata:
         - regex: "\\b(vento|ventoso)\\b"
           weight: 0.75
         - regex: "\\b(raggi )?uv\\b"
+          weight: 0.8
+        - regex: "\\bumidit(a|à)\\b"
           weight: 0.8
       custom_score: false
     # Gli esempi portano `args` perché FunctionGemma impari a estrarre i
@@ -73,6 +75,10 @@ metadata:
         args:
           location: ""
           when: "now"
+      - text: "c'è umidità oggi"
+        args:
+          location: ""
+          when: "today"
       # Frasi oblique che i pattern qui sopra non intercettano di proposito:
       # sono quelle che il router vede davvero in produzione.
       - text: "mi serve il cappotto oggi"
@@ -127,9 +133,16 @@ metadata:
 # Meteo
 
 Condizioni attuali e previsioni, oltre a domande puntuali su vento,
-probabilità di pioggia e indice UV. Chiedi che tempo fa dove ti trovi —
-la skill usa una posizione approssimativa del dispositivo — oppure indica
-un luogo qualsiasi ("meteo a tokyo").
+probabilità di pioggia, umidità e indice UV. Chiedi che tempo fa dove ti
+trovi — la skill usa una posizione approssimativa del dispositivo —
+oppure indica un luogo qualsiasi ("meteo a tokyo").
+
+Le condizioni attuali vengono riassunte con una frase principale, seguita
+dai dettagli che meritano di essere detti: la probabilità di pioggia per
+le ore restanti della giornata (con l'ora di punta, quando la pioggia si
+concentra invece di cadere tutto il giorno), direzione e velocità del
+vento, e umidità. In una giornata calma e asciutta resta solo la frase
+principale.
 
 ## Frasi supportate
 
@@ -138,8 +151,9 @@ un luogo qualsiasi ("meteo a tokyo").
 - `meteo a roma domani` — luogo indicato, giorno successivo
 - `previsioni per questa settimana` — panoramica su più giorni
 - `pioverà oggi` — domanda sulle precipitazioni
-- `c'e vento` — domanda sul vento
+- `c'e vento` — domanda sul vento, riferita al giorno richiesto
 - `qual e l'indice uv` — domanda sull'indice UV
+- `c'e umidità oggi` — domanda sull'umidità
 
 ## Argomenti estratti
 
