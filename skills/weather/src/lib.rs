@@ -11,7 +11,6 @@ mod conditions;
 mod dates;
 mod facets;
 mod forecast;
-mod metno;
 mod openmeteo;
 mod present;
 mod router;
@@ -100,13 +99,8 @@ fn resolve_and_fetch(req: &router::Request, locale: &str) -> Result<forecast::Fo
     let loc = ari::location();
     match loc.status {
         ari::LocationStatus::Ok => {
-            if req.use_metno() {
-                let body = http_get(&metno::forecast_url(loc.lat, loc.lon)).ok_or("err.network")?;
-                metno::parse_current(&body).map_err(|_| "err.network")
-            } else {
-                let body = http_get(&openmeteo::forecast_url(loc.lat, loc.lon)).ok_or("err.network")?;
-                openmeteo::parse_forecast(&body, None).map_err(|_| "err.network")
-            }
+            let body = http_get(&openmeteo::forecast_url(loc.lat, loc.lon)).ok_or("err.network")?;
+            openmeteo::parse_forecast(&body, None).map_err(|_| "err.network")
         }
         // Distinct messages per failure so we don't tell someone to "turn it
         // on in Settings" when the real problem is a transient timeout.

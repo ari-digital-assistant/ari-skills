@@ -25,7 +25,7 @@ pub fn condition_from_wmo(code: u16) -> Condition {
         61 => Condition::LightRain,
         63 => Condition::Rain,
         65 => Condition::HeavyRain,
-        66 | 67 => Condition::Rain,    // freezing rain
+        66 | 67 => Condition::Sleet,   // freezing rain — icy, not just wet
         71 => Condition::LightSnow,
         73 => Condition::Snow,
         75 => Condition::HeavySnow,
@@ -37,42 +37,6 @@ pub fn condition_from_wmo(code: u16) -> Condition {
         86 => Condition::HeavySnow,
         95 => Condition::Thunder,
         96 | 99 => Condition::Thunder, // thunder w/ hail
-        _ => Condition::Unknown,
-    }
-}
-
-/// True unless the symbol code is explicitly a `_night` variant.
-pub fn met_is_day(symbol_code: &str) -> bool {
-    !symbol_code.ends_with("_night")
-}
-
-/// Map a MET Norway `symbol_code` to a [`Condition`]. The day/night/
-/// polartwilight suffix is stripped first. Full code list:
-/// https://github.com/metno/weathericons (legend.csv).
-pub fn condition_from_met(symbol_code: &str) -> Condition {
-    let base = symbol_code
-        .trim_end_matches("_day")
-        .trim_end_matches("_night")
-        .trim_end_matches("_polartwilight");
-    // Thunder takes precedence (any `*andthunder` code).
-    if base.contains("thunder") {
-        return Condition::Thunder;
-    }
-    match base {
-        "clearsky" | "fair" => Condition::Clear,
-        "partlycloudy" => Condition::PartlyCloudy,
-        "cloudy" => Condition::Cloudy,
-        "fog" => Condition::Fog,
-        "lightrainshowers" | "rainshowers" | "heavyrainshowers" => Condition::Showers,
-        "lightsnowshowers" | "snowshowers" | "heavysnowshowers" => Condition::Showers,
-        "lightsleetshowers" | "sleetshowers" | "heavysleetshowers" => Condition::Showers,
-        "lightrain" => Condition::LightRain,
-        "rain" => Condition::Rain,
-        "heavyrain" => Condition::HeavyRain,
-        "lightsleet" | "sleet" | "heavysleet" => Condition::Sleet,
-        "lightsnow" => Condition::LightSnow,
-        "snow" => Condition::Snow,
-        "heavysnow" => Condition::HeavySnow,
         _ => Condition::Unknown,
     }
 }
@@ -155,30 +119,8 @@ mod tests {
         assert_eq!(condition_from_wmo(75), Condition::HeavySnow);
         assert_eq!(condition_from_wmo(81), Condition::Showers);
         assert_eq!(condition_from_wmo(95), Condition::Thunder);
+        assert_eq!(condition_from_wmo(66), Condition::Sleet);   // freezing rain
         assert_eq!(condition_from_wmo(999), Condition::Unknown);
-    }
-    #[test]
-    fn met_symbol_codes_map_to_conditions() {
-        assert_eq!(condition_from_met("clearsky_day"), Condition::Clear);
-        assert_eq!(condition_from_met("fair_night"), Condition::Clear);
-        assert_eq!(condition_from_met("partlycloudy_day"), Condition::PartlyCloudy);
-        assert_eq!(condition_from_met("cloudy"), Condition::Cloudy);
-        assert_eq!(condition_from_met("fog"), Condition::Fog);
-        assert_eq!(condition_from_met("lightrain"), Condition::LightRain);
-        assert_eq!(condition_from_met("rain"), Condition::Rain);
-        assert_eq!(condition_from_met("heavyrain"), Condition::HeavyRain);
-        assert_eq!(condition_from_met("lightrainshowers_day"), Condition::Showers);
-        assert_eq!(condition_from_met("sleet"), Condition::Sleet);
-        assert_eq!(condition_from_met("snow"), Condition::Snow);
-        assert_eq!(condition_from_met("heavysnow"), Condition::HeavySnow);
-        assert_eq!(condition_from_met("rainandthunder"), Condition::Thunder);
-        assert_eq!(condition_from_met("nonsense"), Condition::Unknown);
-    }
-    #[test]
-    fn met_is_day_from_suffix() {
-        assert_eq!(met_is_day("clearsky_day"), true);
-        assert_eq!(met_is_day("clearsky_night"), false);
-        assert_eq!(met_is_day("cloudy"), true); // no suffix → treat as day
     }
     #[test]
     fn condition_label_keys() {
