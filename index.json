@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-08-14T05:59:17Z",
+  "generated_at": "2026-08-18T07:42:55Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -408,9 +408,9 @@
     },
     {
       "id": "dev.heyari.weather",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "name": "weather",
-      "description": "Current weather, forecasts, and conditions like wind, rain, and UV — for your current location or any place you name.",
+      "description": "Current weather, forecasts, and conditions like rain chance, wind, humidity, and UV — for your current location or any place you name.",
       "type": "skill",
       "license": "MIT",
       "author": "Ari core team",
@@ -424,21 +424,21 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.weather-0.1.0.tar.gz",
-      "signature": "bundles/dev.heyari.weather-0.1.0.tar.gz.sig",
-      "sha256": "870fff39a91b71bcfb874957ac7a529d526cf01525e036d737d9f168210c4cc8",
-      "manifest": "manifests/dev.heyari.weather-0.1.0.md",
+      "bundle": "bundles/dev.heyari.weather-0.2.0.tar.gz",
+      "signature": "bundles/dev.heyari.weather-0.2.0.tar.gz.sig",
+      "sha256": "34482bd43fed0ce43a09c47e482995c740a0598245e74d4d8400de16bc095522",
+      "manifest": "manifests/dev.heyari.weather-0.2.0.md",
       "localizations": {
         "it": {
           "name": "weather",
-          "description": "Meteo attuale, previsioni e condizioni come vento, pioggia e UV — per la tua posizione attuale o per qualsiasi luogo tu indichi."
+          "description": "Meteo attuale, previsioni e condizioni come probabilità di pioggia, vento, umidità e UV — per la tua posizione attuale o per qualsiasi luogo tu indichi."
         }
       },
       "screenshots": {
         "android": [
-          "screenshots/dev.heyari.weather-0.1.0/android/01-current.webp",
-          "screenshots/dev.heyari.weather-0.1.0/android/02-forecast.webp",
-          "screenshots/dev.heyari.weather-0.1.0/android/03-settings.webp"
+          "screenshots/dev.heyari.weather-0.2.0/android/01-current.webp",
+          "screenshots/dev.heyari.weather-0.2.0/android/02-forecast.webp",
+          "screenshots/dev.heyari.weather-0.2.0/android/03-settings.webp"
         ]
       }
     },
