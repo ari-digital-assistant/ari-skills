@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.music
-    version: "0.1.0"
+    version: "0.1.1"
     author: Ari core team
     engine: ">=0.3"
     capabilities: [media_control, media_services, storage_kv]

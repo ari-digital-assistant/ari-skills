@@ -129,6 +129,23 @@ matching the `args` you declared in `metadata.ari.examples`. `None` means you
 were selected by the keyword matcher instead — so always have a fallback path
 that parses the raw utterance.
 
+### The utterance as spoken
+
+```rust
+let raw: Option<&str> = ari::raw_input();   // "I'll be home soon"
+```
+
+The `input` your `execute` receives has been through `normalize_input` —
+lowercased, contractions expanded, punctuation stripped. That's right for
+parsing and wrong for anything you hand to another person: "I'll be home soon"
+arrives as `i will be home soon`.
+
+Parse the normalised input; quote from `raw_input()`. `None` during `score()`,
+which matches on normalised text by design, and on older hosts — fall back to
+the normalised input rather than refusing to work.
+
+**Ungated.**
+
 ### Internationalisation
 
 ```rust
@@ -205,18 +222,25 @@ p::Envelope::new()
     .clipboard("…")
     .alarm(p::Alarm::set(7, 0))
     .navigate(p::Navigate::to("the airport"))
+    .media(p::Media::play("brian eno").service("spotify"))
+    .message(p::Message::send("…").service("whatsapp").recipient_id("…"))
+    .reply(p::Reply::latest("…"))
     .await_reply("…")
     .dismiss_card("id")
     .to_json();
 ```
 
 Types: `Envelope` `Card` `Stat` `ListCard` `ListRow` `IconText` `Alert`
-`Notification` `Action` `OnComplete` `Alarm` `Navigate` `Asset` `Day`, plus
-the enums `Accent` `Urgency` `Sound` `Importance` `Style`.
+`Notification` `Action` `OnComplete` `Alarm` `Navigate` `Media` `Message`
+`Reply` `Asset` `Day`, plus the enums `Accent` `Urgency` `Sound` `Importance`
+`Style`.
+
+`Media`, `Message` and `Reply` each expose one constructor per shape —
+`Media::play`/`pause`/`volume`/…, `Message::send`/`compose`,
+`Reply::latest`/`to` — rather than a single constructor with the mode as a
+setter, so a command can't be half-specified.
 
 Field-by-field semantics: [reference-actions.md](reference-actions.md).
-
-> No builder exists for the `media` slot. Hand-build that JSON.
 
 ---
 

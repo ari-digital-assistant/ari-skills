@@ -44,6 +44,14 @@ clock = ["dep:serde", "dep:serde_json"]
 # On by default; turn off if you're shipping a text-only skill and want the
 # leanest possible wasm.
 presentation = ["dep:serde", "dep:serde_json"]
+# Address-book lookup (contacts_lookup / contacts_permission_granted).
+# Requires the `contacts` capability in SKILL.md. Pulls serde_json (alloc)
+# to decode the host's JSON array response.
+contacts = ["dep:serde", "dep:serde_json"]
+# Conversations that can be replied into right now (live_conversations).
+# Requires the `reply` capability in SKILL.md. Names only — no notification,
+# no message body, no package ever crosses into the skill.
+reply = ["dep:serde", "dep:serde_json"]
 # OAuth/IndieAuth browser round-trip (ari::authorize). Requires the
 # `authorize` capability in SKILL.md. Pulls serde_json (alloc) to decode
 # the host's `{ok,params,error}` result.

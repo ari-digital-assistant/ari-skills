@@ -1,0 +1,20 @@
+{
+  "ask.body": "What do you want to say?",
+  "ask.which": "I found more than one {recipient}: {names}. Which one?",
+  "send.confirm": "Your message to {recipient} says: {body}. Want me to send it?",
+  "send.done": "Sent your message to {recipient}.",
+  "send.cancelled": "OK, I won't send it.",
+  "reply.confirm": "Your reply to {recipient} says: {body}. Want me to send it?",
+  "reply.confirm_unnamed": "Your reply says: {body}. Want me to send it?",
+  "confirm.yes_words": "yes yeah yep yup sure ok okay send",
+  "error.not_understood": "I didn't catch who that was for.",
+  "error.no_body": "I didn't catch what you wanted to say.",
+  "error.no_contact": "I couldn't find {recipient} in your contacts.",
+  "error.no_channel": "{recipient} isn't on {service}.",
+  "error.no_live_thread": "You don't have a conversation open for me to reply to.",
+  "error.not_configured": "You'll need to set up {service} in Ari's settings first.",
+  "error.ambiguous": "I found more than one {recipient}: {names}. Try their full name.",
+  "error.encrypted": "That chat with {recipient} is encrypted, so I can't write to it.",
+  "error.offline": "I couldn't reach the server. Check your connection.",
+  "error.send_failed": "Something went wrong sending that on {service}."
+}

@@ -1,30 +1,27 @@
 extern crate alloc;
-use alloc::string::{String, ToString};
+use alloc::string::String;
+use ari_skill_sdk::presentation as p;
 
 pub fn play_action_json(query: &str, service: &str) -> String {
-    serde_json::json!({
-        "v": 1,
-        "media": { "action": "play", "query": query, "service": service }
-    })
-    .to_string()
+    p::Envelope::new().media(p::Media::play(query).service(service)).to_json()
 }
 
 use crate::transport::Transport;
 
 pub fn transport_action_json(t: &Transport) -> String {
     let media = match t {
-        Transport::Pause => serde_json::json!({ "action": "pause" }),
-        Transport::Resume => serde_json::json!({ "action": "resume" }),
-        Transport::Next => serde_json::json!({ "action": "next" }),
-        Transport::Previous => serde_json::json!({ "action": "previous" }),
-        Transport::Stop => serde_json::json!({ "action": "stop" }),
-        Transport::VolumeUp => serde_json::json!({ "action": "volume", "direction": "up" }),
-        Transport::VolumeDown => serde_json::json!({ "action": "volume", "direction": "down" }),
-        Transport::VolumeSet(n) => serde_json::json!({ "action": "volume", "level": n }),
-        Transport::Mute => serde_json::json!({ "action": "volume", "mute": true }),
-        Transport::Unmute => serde_json::json!({ "action": "volume", "mute": false }),
+        Transport::Pause => p::Media::pause(),
+        Transport::Resume => p::Media::resume(),
+        Transport::Next => p::Media::next(),
+        Transport::Previous => p::Media::previous(),
+        Transport::Stop => p::Media::stop(),
+        Transport::VolumeUp => p::Media::volume_up(),
+        Transport::VolumeDown => p::Media::volume_down(),
+        Transport::VolumeSet(n) => p::Media::volume(*n),
+        Transport::Mute => p::Media::mute(),
+        Transport::Unmute => p::Media::unmute(),
     };
-    serde_json::json!({ "v": 1, "media": media }).to_string()
+    p::Envelope::new().media(media).to_json()
 }
 
 #[cfg(test)]
@@ -39,6 +36,21 @@ mod tests {
         assert_eq!(v["media"]["query"], "hotel california");
         assert_eq!(v["media"]["service"], "spotify");
         assert!(v.get("speak").is_none());
+    }
+
+    /// The builder replaced a hand-written `json!` here, so pin the wire
+    /// format outright rather than field by field — a reordered or renamed
+    /// key would still satisfy the assertions above.
+    #[test]
+    fn play_action_bytes_are_unchanged_by_the_builder() {
+        assert_eq!(
+            play_action_json("hotel california", "spotify"),
+            r#"{"v":1,"media":{"action":"play","query":"hotel california","service":"spotify"}}"#,
+        );
+        assert_eq!(
+            transport_action_json(&Transport::VolumeSet(50)),
+            r#"{"v":1,"media":{"action":"volume","level":50}}"#,
+        );
     }
 
     use crate::transport::Transport;
