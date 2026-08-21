@@ -241,8 +241,13 @@ pub fn build(f: &Forecast, when: When, facet: Facet, sys: System, _locale: &str,
         return p::Envelope::new().speak(speak).card(current_card(f, &place, sys, l)).to_json();
     }
 
-    // Multi-day forecast.
-    if when != When::Now && !f.daily.is_empty() {
+    // Multi-day forecast. "Today" is deliberately not one of these: "how is
+    // the weather today" is asking what it's like out there, not for a week's
+    // list, so it falls through to current conditions exactly as the bare
+    // question does. The variant still earns its keep in the facet answers
+    // above, where "today" means the day's peak rather than this minute's
+    // reading.
+    if matches!(when, When::Tomorrow | When::ThisWeek) && !f.daily.is_empty() {
         let wk = l.t(when_key(when), &[]);
         // "This week" summarises the whole week (max high, min low, dominant
         // condition) so the spoken line matches the card's summary chip. A
@@ -414,6 +419,31 @@ mod tests {
         f.current.humidity_pct = None;
         let env = build(&f, When::Now, Facet::None, System::Metric, "en", &Fakes);
         assert!(!env.contains("speak.detail_"));
+    }
+
+    #[test]
+    fn today_asks_for_current_conditions_not_the_week_list() {
+        // "How is the weather today" must answer like "how is the weather":
+        // the current-conditions stat card, not the multi-day forecast list.
+        let env = build(&with_daily(), When::Today, Facet::None, System::Metric, "en", &Fakes);
+        assert!(env.contains("weather_current"));
+        assert!(!env.contains("weather_forecast"));
+        assert!(!env.contains("\"list\""));
+        assert_eq!(
+            spoken(&env),
+            spoken(&build(&with_daily(), When::Now, Facet::None, System::Metric, "en", &Fakes)),
+        );
+    }
+
+    #[test]
+    fn today_still_means_the_day_not_this_minute_for_facets() {
+        // The UV facet reads the daily maximum for "today" (7.0) rather than
+        // the current reading (5.0) — narrowing the no-facet case must not
+        // collapse that distinction.
+        let today = build(&with_daily(), When::Today, Facet::Uv, System::Metric, "en", &Fakes);
+        let now = build(&with_daily(), When::Now, Facet::Uv, System::Metric, "en", &Fakes);
+        assert!(today.contains("speak.uv uv.high 7"));
+        assert!(now.contains("speak.uv uv.moderate 5"));
     }
 
     #[test]
