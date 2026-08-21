@@ -258,6 +258,9 @@ extern "C" {
     #[link_name = "args"]
     fn host_args() -> i64;
 
+    #[link_name = "raw_input"]
+    fn host_raw_input() -> i64;
+
     #[link_name = "get_locale"]
     fn host_get_locale() -> i64;
 
@@ -367,6 +370,25 @@ pub fn setting_set(key: &str, value: &str) -> bool {
 /// meaningful inside `execute()` — `score()` is invoked without args.
 pub fn args() -> Option<&'static str> {
     let packed = unsafe { host_args() };
+    unsafe { unpack(packed) }
+}
+
+/// The utterance as the user actually said it, before the engine
+/// normalised it.
+///
+/// Normalisation lowercases, expands contractions and strips
+/// punctuation, which is right for matching and wrong for anything you
+/// hand to another person: "I'll be home soon" reaches `execute` as
+/// "i will be home soon". Use this for a message body, a note, anything
+/// quoted back — and the normalised input for everything you parse.
+///
+/// `None` during `score()`, which runs on normalised text by design, and
+/// on hosts that predate the import. Fall back to the normalised input
+/// rather than refusing to work.
+///
+/// Always available (no capability declaration required).
+pub fn raw_input() -> Option<&'static str> {
+    let packed = unsafe { host_raw_input() };
     unsafe { unpack(packed) }
 }
 
@@ -1474,6 +1496,133 @@ mod media_impl {
 
 #[cfg(feature = "media")]
 pub use media_impl::media_services;
+
+#[cfg(feature = "contacts")]
+mod contacts_impl {
+    extern crate alloc;
+    use alloc::string::String;
+    use alloc::vec::Vec;
+    use serde::Deserialize;
+
+    #[cfg(target_arch = "wasm32")]
+    #[link(wasm_import_module = "ari")]
+    extern "C" {
+        #[link_name = "contacts_permission_granted"]
+        fn host_contacts_permission_granted() -> i32;
+
+        #[link_name = "contacts_lookup"]
+        fn host_contacts_lookup(ptr: i32, len: i32) -> i64;
+    }
+
+    /// One way to reach a contact. `service` is a canonical id — "sms",
+    /// "whatsapp", "telegram" — and `id` is what that service addresses them
+    /// by. Treat `id` as opaque: hand it back to the host, don't parse it.
+    #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+    pub struct ContactChannel {
+        pub service: String,
+        pub id: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+    pub struct Contact {
+        pub display_name: String,
+        pub channels: Vec<ContactChannel>,
+    }
+
+    pub(crate) fn parse_contacts_json(json: &str) -> Vec<Contact> {
+        serde_json::from_str::<Vec<Contact>>(json).unwrap_or_default()
+    }
+
+    /// Whether the host currently holds the address-book permission.
+    ///
+    /// Check this in `score()` and decline rather than matching — a skill
+    /// that wins the round and then can't look anything up has cost the user
+    /// their answer. "I can't look" and "nobody by that name" are different
+    /// answers and should sound different.
+    pub fn contacts_permission_granted() -> bool {
+        #[cfg(target_arch = "wasm32")]
+        {
+            unsafe { host_contacts_permission_granted() != 0 }
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            false
+        }
+    }
+
+    /// Contacts whose name matches `query`.
+    ///
+    /// Lookup only — there is deliberately no way to list the address book.
+    /// An empty or whitespace query returns nothing rather than everything.
+    ///
+    /// More than one result is the normal case, not an error: ask the user
+    /// which one they meant with `await_reply`.
+    pub fn contacts_lookup(query: &str) -> Vec<Contact> {
+        #[cfg(target_arch = "wasm32")]
+        {
+            let bytes = query.as_bytes();
+            let packed =
+                unsafe { host_contacts_lookup(bytes.as_ptr() as i32, bytes.len() as i32) };
+            match unsafe { super::unpack(packed) } {
+                Some(json) => parse_contacts_json(json),
+                None => Vec::new(),
+            }
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let _ = query;
+            Vec::new()
+        }
+    }
+}
+
+#[cfg(feature = "contacts")]
+pub use contacts_impl::{contacts_lookup, contacts_permission_granted, Contact, ContactChannel};
+
+#[cfg(feature = "reply")]
+mod reply_impl {
+    extern crate alloc;
+    use alloc::string::String;
+    use alloc::vec::Vec;
+
+    #[cfg(target_arch = "wasm32")]
+    #[link(wasm_import_module = "ari")]
+    extern "C" {
+        #[link_name = "live_conversations"]
+        fn host_live_conversations() -> i64;
+    }
+
+    pub(crate) fn parse_names_json(json: &str) -> Vec<String> {
+        serde_json::from_str::<Vec<String>>(json).unwrap_or_default()
+    }
+
+    /// Who the user has a live conversation with, newest first.
+    ///
+    /// A live conversation is one with a notification still showing, which is
+    /// the only kind that can be replied into. Empty when there are none, when
+    /// the host has no notification access, or on a host with no notifications
+    /// at all — all of which mean the same thing to a skill: compose instead.
+    ///
+    /// Names only. The frontend reads notifications to know this; nothing it
+    /// learns doing so reaches your skill.
+    pub fn live_conversations() -> Vec<String> {
+        #[cfg(target_arch = "wasm32")]
+        {
+            let packed = unsafe { host_live_conversations() };
+            match unsafe { super::unpack(packed) } {
+                Some(json) => parse_names_json(json),
+                None => Vec::new(),
+            }
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            Vec::new()
+        }
+    }
+}
+
+#[cfg(feature = "reply")]
+pub use reply_impl::live_conversations;
 
 // ---------------------------------------------------------------------------
 // Local clock (feature = "clock")

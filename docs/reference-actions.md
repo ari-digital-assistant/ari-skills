@@ -38,6 +38,8 @@ Declarative skills put a static envelope under `declarative.action`.
   "alarm": { … },
   "navigate": { … },
   "media": { … },
+  "message": { … },
+  "reply": { … },
   "await_reply": { "context": "…" },
   "run_utterance": "…",
   "confidence": "partial",
@@ -54,7 +56,8 @@ Rules:
   and `open_url`, omit it and the frontend phrases it itself ("Opening
   Spotify"). Set it to override.
 - Single-value slots (`launch_app`, `search`, `open_url`, `clipboard`,
-  `alarm`, `navigate`, `media`) take at most one value per envelope.
+  `alarm`, `navigate`, `media`, `message`, `reply`) take at most one value
+  per envelope.
 - `dismiss` is applied **first**, then primitives are upserted by `id`.
   Re-emitting an id replaces what's on screen.
 - Unknown fields are ignored, so new ones can be added without breaking old
@@ -255,6 +258,8 @@ Persistent shade entries.
 | `alarm` | see below | `alarm` | Sets or shows a device alarm. |
 | `navigate` | see below | `navigation` | Starts navigation. |
 | `media` | see below | `media_control` | Plays or controls music. |
+| `message` | see below | `send_message` | Sends a message, or prepares one to send. |
+| `reply` | see below | `reply` | Answers a conversation with a live notification. |
 
 ### `alarm`
 
@@ -287,8 +292,90 @@ free text, already lowercased by normalisation; the frontend URL-encodes it.
 Fields: `action` (required), `query`, `service`, `direction`, `level`, `mute`
 — the last three for transport and volume control.
 
-> The Rust SDK has **no typed builder for `media`** yet. Build the JSON by
-> hand, as [`skills/music`](../skills/music) does.
+Rust SDK (`presentation` feature): one constructor per command, because they
+take different fields and mixing them is the mistake worth preventing.
+
+```rust
+use ari_skill_sdk::presentation as p;
+
+p::Envelope::new().media(p::Media::play("brian eno").service("spotify"))
+p::Envelope::new().media(p::Media::pause())        // resume/next/previous/stop too
+p::Envelope::new().media(p::Media::volume_up())    // volume_down()
+p::Envelope::new().media(p::Media::volume(50))     // absolute, clamped to 0–100
+p::Envelope::new().media(p::Media::mute())         // unmute()
+```
+
+`.service()` only means anything on `play` — transport and volume go to
+whatever is already playing, which is the point of them.
+
+### `message`
+
+```json
+{ "service": "whatsapp", "recipient_id": "35699000000",
+  "recipient_label": "Mario", "text": "I'll be home soon",
+  "delivery": "compose" }
+```
+
+| Field | Notes |
+|---|---|
+| `service` | **Required.** Canonical service id — `whatsapp`, `telegram`, `sms`, `matrix`… |
+| `text` | **Required.** The message body, as the user said it. |
+| `delivery` | `"send"` sends outright; `"compose"` opens the app with it filled in. |
+| `recipient_id` | The service's own identifier. Omit for `compose` when the app will ask. |
+| `recipient_label` | Display only — for your `speak` line. Never used to address anything. |
+
+`delivery` is a request, not a guarantee. Most services have no way to send on
+the user's behalf from another app, so a `send` you asked for may come back as
+a `compose` that the user has to tap. Phrase your `speak` from the result.
+
+**Use `raw_input`, not the normalised input, for `text`.** Normalisation
+lowercases and expands contractions — "I'll be home soon" becomes "i will be
+home soon" — and with `compose` that string is what the recipient reads,
+sitting in their compose box waiting to be sent.
+
+Rust SDK (`presentation` feature):
+
+```rust
+p::Envelope::new().message(
+    p::Message::send(ari::raw_input().unwrap_or(input))   // or ::compose(…)
+        .service("whatsapp")
+        .recipient_id(&channel.id)
+        .recipient_label("Mario"),
+)
+```
+
+`send` and `compose` are separate constructors rather than a `delivery`
+setter, so the choice is made once, at the point where you know which you
+want, and can't be left unset.
+
+### `reply`
+
+```json
+{ "recipient_label": "Gail", "text": "On my way" }
+```
+
+| Field | Notes |
+|---|---|
+| `text` | **Required.** Use `raw_input()`, same as `message`. |
+| `recipient_label` | Who to answer. Omit for the newest live conversation. |
+
+Omitting `recipient_label` is the point rather than a shortcut: "reply, on my
+way" with no name is the hands-free case, and the newest thread is nearly
+always the one that just arrived.
+
+Check [`live_conversations()`](reference-capabilities.md#reply) before emitting
+this. A reply into a thread that has since been dismissed goes nowhere, and the
+frontend reports that rather than pretending.
+
+Rust SDK (`presentation` feature):
+
+```rust
+p::Envelope::new().reply(p::Reply::latest("on my way"))
+p::Envelope::new().reply(p::Reply::to("Gail", "on my way"))
+```
+
+Two constructors, again, rather than an optional name: answering the newest
+thread is the case this slot exists for, not a field somebody forgot.
 
 ## `await_reply` — asking a follow-up
 

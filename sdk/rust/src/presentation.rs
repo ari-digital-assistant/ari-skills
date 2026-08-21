@@ -69,6 +69,12 @@ pub struct Envelope {
     #[serde(skip_serializing_if = "Option::is_none")]
     navigate: Option<Navigate>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    media: Option<Media>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    message: Option<Message>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reply: Option<Reply>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     await_reply: Option<AwaitReply>,
     #[serde(skip_serializing_if = "Dismiss::is_empty")]
     dismiss: Dismiss,
@@ -126,6 +132,21 @@ impl Envelope {
 
     pub fn navigate(mut self, navigate: Navigate) -> Self {
         self.navigate = Some(navigate);
+        self
+    }
+
+    pub fn media(mut self, media: Media) -> Self {
+        self.media = Some(media);
+        self
+    }
+
+    pub fn message(mut self, message: Message) -> Self {
+        self.message = Some(message);
+        self
+    }
+
+    pub fn reply(mut self, reply: Reply) -> Self {
+        self.reply = Some(reply);
         self
     }
 
@@ -243,6 +264,160 @@ impl Navigate {
     pub fn mode(mut self, mode: impl Into<String>) -> Self {
         self.mode = Some(mode.into());
         self
+    }
+}
+
+/// A media command: play something, drive the transport, or move the volume.
+/// Semantic only — carries no platform intent knowledge, and names no app
+/// unless the user did.
+#[derive(Serialize, Default)]
+pub struct Media {
+    action: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    query: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    service: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    direction: Option<&'static str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    level: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mute: Option<bool>,
+}
+
+impl Media {
+    /// Play `query` — a track, artist, album or playlist, as the user said it.
+    pub fn play(query: impl Into<String>) -> Self {
+        Media { action: "play", query: Some(query.into()), ..Default::default() }
+    }
+
+    pub fn pause() -> Self { Media::transport("pause") }
+    pub fn resume() -> Self { Media::transport("resume") }
+    pub fn next() -> Self { Media::transport("next") }
+    pub fn previous() -> Self { Media::transport("previous") }
+    pub fn stop() -> Self { Media::transport("stop") }
+
+    /// One step up, whatever a step means on this device.
+    pub fn volume_up() -> Self {
+        Media { action: "volume", direction: Some("up"), ..Default::default() }
+    }
+
+    pub fn volume_down() -> Self {
+        Media { action: "volume", direction: Some("down"), ..Default::default() }
+    }
+
+    /// Set the volume to an absolute percentage. Clamped to 0–100 here rather
+    /// than left for the frontend to interpret, so "turn it up to 500" means
+    /// the same thing everywhere.
+    pub fn volume(level: u8) -> Self {
+        Media { action: "volume", level: Some(level.min(100)), ..Default::default() }
+    }
+
+    pub fn mute() -> Self {
+        Media { action: "volume", mute: Some(true), ..Default::default() }
+    }
+
+    pub fn unmute() -> Self {
+        Media { action: "volume", mute: Some(false), ..Default::default() }
+    }
+
+    /// The app to play through, as a canonical service id. Only meaningful on
+    /// [`Media::play`] — transport and volume go to whatever is already
+    /// playing, which is the point of them.
+    pub fn service(mut self, service: impl Into<String>) -> Self {
+        self.service = Some(service.into());
+        self
+    }
+
+    fn transport(action: &'static str) -> Self {
+        Media { action, ..Default::default() }
+    }
+}
+
+/// A message to send, or to prepare for the user to send themselves.
+///
+/// The choice between [`Message::send`] and [`Message::compose`] is a request,
+/// not an instruction. Most services offer no way to send on a user's behalf
+/// from another app, so a `send` often arrives as a composed message they
+/// still have to tap. Phrase the `speak` line from what came back, never from
+/// what was asked for.
+#[derive(Serialize, Default)]
+pub struct Message {
+    text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    service: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    recipient_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    recipient_label: Option<String>,
+    delivery: &'static str,
+}
+
+impl Message {
+    /// Ask for `text` to go out as it stands.
+    ///
+    /// Take `text` from `raw_input()`, never the normalised input:
+    /// normalisation lowercases and expands contractions, and this string is
+    /// what another person reads.
+    pub fn send(text: impl Into<String>) -> Self {
+        Message { text: text.into(), delivery: "send", ..Default::default() }
+    }
+
+    /// Ask for the app to open with `text` filled in, for the user to send.
+    /// Same `raw_input()` rule as [`Message::send`], and it matters more here
+    /// — the user reads the string back before it goes.
+    pub fn compose(text: impl Into<String>) -> Self {
+        Message { text: text.into(), delivery: "compose", ..Default::default() }
+    }
+
+    /// The service to go through, as a canonical id ("whatsapp", "sms", …).
+    /// Omit it and the user picks the app as well as the recipient.
+    pub fn service(mut self, service: impl Into<String>) -> Self {
+        self.service = Some(service.into());
+        self
+    }
+
+    /// How that service addresses the recipient, straight from a contacts
+    /// lookup. Opaque — pass it through, don't parse it.
+    pub fn recipient_id(mut self, id: impl Into<String>) -> Self {
+        self.recipient_id = Some(id.into());
+        self
+    }
+
+    /// The recipient's name, for the `speak` line only. It addresses nothing,
+    /// so getting it wrong misspeaks rather than misdelivers.
+    pub fn recipient_label(mut self, label: impl Into<String>) -> Self {
+        self.recipient_label = Some(label.into());
+        self
+    }
+}
+
+/// An answer into a conversation that already has a live notification.
+///
+/// Check the host's live-conversation list before emitting one: a thread
+/// that has since been dismissed can't be answered, and the frontend says so
+/// rather than pretending.
+#[derive(Serialize, Default)]
+pub struct Reply {
+    text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    recipient_label: Option<String>,
+}
+
+impl Reply {
+    /// Answer the newest live conversation.
+    ///
+    /// Two constructors rather than an optional name, because "reply, on my
+    /// way" with nobody named is the hands-free case this whole slot exists
+    /// for — not a field somebody forgot to fill in. Takes `raw_input()`,
+    /// same as [`Message::send`].
+    pub fn latest(text: impl Into<String>) -> Self {
+        Reply { text: text.into(), recipient_label: None }
+    }
+
+    /// Answer the live conversation with `recipient_label`.
+    pub fn to(recipient_label: impl Into<String>, text: impl Into<String>) -> Self {
+        Reply { text: text.into(), recipient_label: Some(recipient_label.into()) }
     }
 }
 
@@ -1011,7 +1186,7 @@ mod tests {
     #[test]
     fn single_shot_slots_elide_when_absent() {
         let v = value(&Envelope::new());
-        for field in ["launch_app", "search", "open_url", "clipboard"] {
+        for field in ["launch_app", "search", "open_url", "clipboard", "media", "message", "reply"] {
             assert!(v.get(field).is_none(), "{field} should be absent");
         }
     }
@@ -1183,4 +1358,114 @@ mod tests {
         assert_eq!(v["navigate"]["destination"], "asda");
         assert!(v["navigate"].get("mode").is_none());
     }
+
+    #[test]
+    fn media_play_carries_query_and_service() {
+        let env = Envelope::new()
+            .speak("Playing hotel california.")
+            .media(Media::play("hotel california").service("spotify"));
+        let v: serde_json::Value = serde_json::from_str(&env.to_json()).unwrap();
+        assert_eq!(v["v"], 1);
+        assert_eq!(v["media"]["action"], "play");
+        assert_eq!(v["media"]["query"], "hotel california");
+        assert_eq!(v["media"]["service"], "spotify");
+        assert!(v["media"].get("direction").is_none());
+        assert!(v["media"].get("level").is_none());
+        assert!(v["media"].get("mute").is_none());
+    }
+
+    #[test]
+    fn media_play_without_service_omits_it() {
+        let v: serde_json::Value =
+            serde_json::from_str(&Envelope::new().media(Media::play("the smiths")).to_json()).unwrap();
+        assert_eq!(v["media"]["query"], "the smiths");
+        assert!(v["media"].get("service").is_none());
+    }
+
+    #[test]
+    fn media_transport_actions_carry_nothing_else() {
+        let action = |m: Media| {
+            serde_json::from_str::<serde_json::Value>(&Envelope::new().media(m).to_json()).unwrap()
+        };
+        assert_eq!(action(Media::pause())["media"]["action"], "pause");
+        assert_eq!(action(Media::resume())["media"]["action"], "resume");
+        assert_eq!(action(Media::next())["media"]["action"], "next");
+        assert_eq!(action(Media::previous())["media"]["action"], "previous");
+        assert_eq!(action(Media::stop())["media"]["action"], "stop");
+        assert!(action(Media::pause())["media"].get("query").is_none());
+    }
+
+    #[test]
+    fn media_volume_variants_serialise() {
+        let action = |m: Media| {
+            serde_json::from_str::<serde_json::Value>(&Envelope::new().media(m).to_json()).unwrap()
+        };
+        let up = action(Media::volume_up());
+        assert_eq!(up["media"]["action"], "volume");
+        assert_eq!(up["media"]["direction"], "up");
+        assert_eq!(action(Media::volume_down())["media"]["direction"], "down");
+
+        let set = action(Media::volume(50));
+        assert_eq!(set["media"]["action"], "volume");
+        assert_eq!(set["media"]["level"], 50);
+        assert!(set["media"].get("direction").is_none());
+
+        assert_eq!(action(Media::mute())["media"]["mute"], true);
+        assert_eq!(action(Media::unmute())["media"]["mute"], false);
+    }
+
+    #[test]
+    fn media_volume_clamps_above_a_hundred() {
+        let v: serde_json::Value =
+            serde_json::from_str(&Envelope::new().media(Media::volume(255)).to_json()).unwrap();
+        assert_eq!(v["media"]["level"], 100);
+    }
+
+    #[test]
+    fn message_send_carries_every_slot() {
+        let env = Envelope::new()
+            .speak("Sent.")
+            .message(
+                Message::send("I'll be home soon")
+                    .service("whatsapp")
+                    .recipient_id("35699000000")
+                    .recipient_label("Mario"),
+            );
+        let v: serde_json::Value = serde_json::from_str(&env.to_json()).unwrap();
+        assert_eq!(v["message"]["text"], "I'll be home soon");
+        assert_eq!(v["message"]["delivery"], "send");
+        assert_eq!(v["message"]["service"], "whatsapp");
+        assert_eq!(v["message"]["recipient_id"], "35699000000");
+        assert_eq!(v["message"]["recipient_label"], "Mario");
+    }
+
+    #[test]
+    fn message_compose_omits_what_was_never_set() {
+        let v: serde_json::Value =
+            serde_json::from_str(&Envelope::new().message(Message::compose("on my way")).to_json())
+                .unwrap();
+        assert_eq!(v["message"]["delivery"], "compose");
+        assert_eq!(v["message"]["text"], "on my way");
+        assert!(v["message"].get("service").is_none());
+        assert!(v["message"].get("recipient_id").is_none());
+        assert!(v["message"].get("recipient_label").is_none());
+    }
+
+    #[test]
+    fn reply_to_latest_names_nobody() {
+        let v: serde_json::Value =
+            serde_json::from_str(&Envelope::new().reply(Reply::latest("On my way")).to_json()).unwrap();
+        assert_eq!(v["reply"]["text"], "On my way");
+        assert!(v["reply"].get("recipient_label").is_none());
+    }
+
+    #[test]
+    fn reply_to_named_conversation() {
+        let v: serde_json::Value =
+            serde_json::from_str(&Envelope::new().reply(Reply::to("Gail", "On my way")).to_json())
+                .unwrap();
+        assert_eq!(v["reply"]["recipient_label"], "Gail");
+        assert_eq!(v["reply"]["text"], "On my way");
+    }
+
 }

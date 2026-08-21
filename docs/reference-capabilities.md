@@ -13,7 +13,7 @@ metadata:
 Declare exactly what you use. An undeclared capability fails at install; an
 unused declaration will be questioned in review.
 
-## The fifteen
+## The eighteen
 
 | Capability | Kind | SDK feature | Android |
 |---|---|---|---|
@@ -24,6 +24,8 @@ unused declaration will be questioned in review.
 | [`media_services`](#media_services) | Host import | `media` | ✅ |
 | [`tasks`](#tasks) | Host import | `tasks` | ✅ |
 | [`calendar`](#calendar) | Host import | `calendar` | ✅ |
+| [`contacts`](#contacts) | Host import | `contacts` | ✅ |
+| [`reply`](#reply) | Host import | `reply` | ✅ |
 | [`notifications`](#notifications) | Frontend | — | ✅ |
 | [`launch_app`](#launch_app) | Frontend | — | ✅ |
 | [`clipboard`](#clipboard) | Frontend | — | ✅ |
@@ -32,6 +34,7 @@ unused declaration will be questioned in review.
 | [`alarm`](#alarm) | Frontend | — | ✅ |
 | [`navigation`](#navigation) | Frontend | — | ✅ |
 | [`media_control`](#media_control) | Frontend | — | ✅ |
+| [`send_message`](#send_message) | Frontend | — | ✅ |
 
 **Kind** is the thing to understand:
 
@@ -42,17 +45,22 @@ unused declaration will be questioned in review.
   particular slot in an [action envelope](reference-actions.md). Declarative
   skills can use these perfectly well.
 
-Android grants all fifteen. The CLI grants `notifications`, `launch_app`,
-`clipboard` and `tts` by default — pass `--host-capabilities` for anything
-else. Linux grants nothing yet, because there's no Linux frontend yet.
+Android grants all eighteen.
+The CLI defaults to the `pure_frontend` set: every **Frontend** row above, plus
+`calendar` and `tasks` — those two are host imports, but the skill only ever
+asks, and the frontend does the provider work behind the runtime permission.
+Pass `--host-capabilities` for the rest. `ari-cli --help` prints both that
+default and the full list of valid names, generated from the capability enum
+rather than written out, so neither can drift from what the loader does. Linux
+grants nothing yet, because there's no Linux frontend yet.
 
 ## What you get for free
 
 These need **no** capability. Every skill can call them:
 
 `log` · `get_capability` · `now_ms` · `rand_u64` · `local_now_components` ·
-`local_timezone_id` · `setting_get` · `setting_set` · `args` · `get_locale` ·
-`t` · `format_date` · `format_number` · `format_currency` ·
+`local_timezone_id` · `setting_get` · `setting_set` · `args` · `raw_input` ·
+`get_locale` · `t` · `format_date` · `format_number` · `format_currency` ·
 `oauth_redirect_uri`
 
 Note `setting_get`/`setting_set` in that list. Reading and writing your own
@@ -206,6 +214,79 @@ permission is the user's to grant and they may not have.
 
 Pair with a `device_calendar` settings field for calendar choice.
 
+### `contacts`
+
+Look somebody up in the user's address book and find out which messaging
+services they can be reached on.
+
+- **Imports:** `contacts_permission_granted`, `contacts_lookup`
+- **SDK:** `features = ["contacts"]`
+
+```rust
+if !ari::contacts_permission_granted() {
+    // Say so. "I can't look" is a different answer to "no such person".
+}
+
+for c in ari::contacts_lookup("gail") {
+    for ch in &c.channels {
+        // ch.service is "sms" / "whatsapp" / "telegram" …
+        // ch.id is opaque — hand it back, never parse it.
+    }
+}
+```
+
+**Lookup only.** There is no way to list the address book, deliberately: you
+ask about a name the user already said aloud and get the matches. An empty
+query returns nothing rather than everything.
+
+Three things to get right:
+
+- **More than one match is normal, not an error.** Ask which one they meant
+  with [`await_reply`](reference-actions.md#await_reply--asking-a-follow-up).
+- **Check the permission separately.** Do it in `score()` and decline rather
+  than winning the round and then failing — an empty result means "nobody by
+  that name", which is a different sentence.
+- **A contact with no channels isn't returned.** Somebody in the address book
+  with no phone number and no messaging rows can't be messaged, so they never
+  appear.
+
+**This is the most sensitive capability on the list** — more so than
+`location`, which is deliberately kept coarse. Declaring it alongside `http`
+puts the address book and arbitrary network egress in one sandbox. That is
+legitimate for a messaging skill and will be looked at hard anywhere else.
+
+### `reply`
+
+Answer a conversation the user has a live notification for.
+
+- **Import:** `live_conversations`
+- **SDK:** `features = ["reply"]`
+- Also permits the `reply` slot in an [action envelope](reference-actions.md).
+
+```rust
+let live: Vec<String> = ari::live_conversations();   // newest first
+```
+
+One capability covering both halves, because a skill that could emit a reply
+without seeing what's live would be guessing which thread it answered.
+
+**This is the only way to send a message with nobody touching the screen.** It
+works on every messenger that supports notification replies — WhatsApp,
+Telegram, Signal, Messenger — with no per-service code, because the reply
+action comes from the notification itself. The bound is that it only reaches
+conversations that currently have a notification showing; anything older is
+gone, and composing is the answer there.
+
+**You never see a notification.** The frontend reads them to know what's
+repliable, and nothing it learns doing so — the message, the app, the pending
+intent — reaches your skill. You get display names.
+
+Empty means the same thing however it arose: no live threads, no notification
+access, or a host without notifications. All of them mean compose instead.
+
+A reply is a true send — the recipient sees it before anybody else does — so
+confirm it the same way you would an SMS.
+
 ---
 
 ## Frontend capabilities
@@ -287,6 +368,37 @@ Emit a `media` action — play a query, or drive transport controls.
 
 Pair with [`media_services`](#media_services) if you need to know what's
 actually installed first.
+
+### `send_message`
+
+Emit a `message` action — the frontend either sends the message outright or
+opens the target app's compose surface with the text already filled in.
+
+```json
+{ "v": 1,
+  "speak": "That's ready for Mario — just tap send.",
+  "message": { "service": "whatsapp", "recipient_id": "35699000000",
+               "recipient_label": "Mario", "text": "I'll be home soon",
+               "delivery": "compose" } }
+```
+
+`delivery` is `"send"` or `"compose"`, and which one you get is not your
+choice alone — the frontend can only truly send where the service allows it.
+Ask for `send` and the frontend will fall back to `compose` if that's all it
+can do, so **read the result rather than assuming**.
+
+**This is the only capability whose action reaches another human and cannot be
+undone.** Two things follow, and reviewers will check both:
+
+- **Confirm before a true send.** Read the message back and ask. There's a
+  `confirm_before_sending` convention for the setting that lets a user turn
+  that off; default it to on.
+- **Don't confirm before a compose.** The user's own tap is already the
+  confirmation, so asking first is a wasted turn.
+
+Emitting `message` without declaring this capability gets the slot **dropped
+entirely** — not degraded — and a warning logged. The rest of your envelope
+still applies.
 
 ---
 
