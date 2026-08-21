@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-08-21T08:37:22Z",
+  "generated_at": "2026-08-21T09:28:05Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -26,7 +26,7 @@
       ],
       "bundle": "bundles/dev.heyari.timer-0.2.0.tar.gz",
       "signature": "bundles/dev.heyari.timer-0.2.0.tar.gz.sig",
-      "sha256": "1cec10209c7c602e59723e50ac35589a0747608f43fc5c73b250550daff24ea4",
+      "sha256": "5213180d1429c7d50ac165272079984ed8ab9c5dace0af195514bed33af88271",
       "manifest": "manifests/dev.heyari.timer-0.2.0.md",
       "localizations": {
         "it": {
@@ -94,7 +94,7 @@
       ],
       "bundle": "bundles/dev.heyari.homeassistant-0.3.1.tar.gz",
       "signature": "bundles/dev.heyari.homeassistant-0.3.1.tar.gz.sig",
-      "sha256": "7869b1a09dca446acffa32459172a95f8c30b225d3c0dddfb4df5a9631a22424",
+      "sha256": "f45eddeed68a68846de30c16e7609775a3725c85471ee18606be950272f7a8fd",
       "manifest": "manifests/dev.heyari.homeassistant-0.3.1.md",
       "localizations": {
         "it": {
@@ -161,7 +161,7 @@
       ],
       "bundle": "bundles/dev.heyari.navigation-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.navigation-0.1.0.tar.gz.sig",
-      "sha256": "7c010cd6841873cbe990f976e6eba6c928afed58a842b9fea83ee7659906f643",
+      "sha256": "3fcda8776fe621c8107ee7b86b9938628c4d8275f955ffa2bbc51856f6121f61",
       "manifest": "manifests/dev.heyari.navigation-0.1.0.md",
       "localizations": {
         "it": {
@@ -323,7 +323,7 @@
       ],
       "bundle": "bundles/dev.heyari.alarm-0.1.2.tar.gz",
       "signature": "bundles/dev.heyari.alarm-0.1.2.tar.gz.sig",
-      "sha256": "6a6d3e604176a2865d9e3d43a412cf441e2b8c25fc5840639d15e48e951533eb",
+      "sha256": "a257ff3ddea4bfd55f1a3833e9e02b4dc2ca23221631a463b19ea7cf980617e2",
       "manifest": "manifests/dev.heyari.alarm-0.1.2.md",
       "localizations": {
         "it": {
@@ -341,7 +341,7 @@
     },
     {
       "id": "dev.heyari.music",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "name": "music",
       "description": "Plays music by name in a music app, optionally on a named service.",
       "type": "skill",
@@ -357,10 +357,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.music-0.1.0.tar.gz",
-      "signature": "bundles/dev.heyari.music-0.1.0.tar.gz.sig",
-      "sha256": "73f44c67ead421c39e8b2ff8977c13461cb05b0cfbf528ddc26171fbadc0463e",
-      "manifest": "manifests/dev.heyari.music-0.1.0.md",
+      "bundle": "bundles/dev.heyari.music-0.1.1.tar.gz",
+      "signature": "bundles/dev.heyari.music-0.1.1.tar.gz.sig",
+      "sha256": "7ede7ac067c35881420c39fdacf9dab12c46de8c76b2bf6c09ec2c5e20133cb7",
+      "manifest": "manifests/dev.heyari.music-0.1.1.md",
       "localizations": {
         "it": {
           "name": "music",
@@ -369,10 +369,10 @@
       },
       "screenshots": {
         "android": [
-          "screenshots/dev.heyari.music-0.1.0/android/01-song-request.webp",
-          "screenshots/dev.heyari.music-0.1.0/android/02-transport-control.webp",
-          "screenshots/dev.heyari.music-0.1.0/android/03-playing-result.webp",
-          "screenshots/dev.heyari.music-0.1.0/android/04-settings.webp"
+          "screenshots/dev.heyari.music-0.1.1/android/01-song-request.webp",
+          "screenshots/dev.heyari.music-0.1.1/android/02-transport-control.webp",
+          "screenshots/dev.heyari.music-0.1.1/android/03-playing-result.webp",
+          "screenshots/dev.heyari.music-0.1.1/android/04-settings.webp"
         ]
       }
     },
@@ -407,6 +407,31 @@
       }
     },
     {
+      "id": "dev.heyari.message",
+      "version": "0.1.0",
+      "name": "message",
+      "description": "Send a message to someone through SMS, WhatsApp, Telegram, Signal, Messenger, Slack, Matrix or email. Say who and what, and Ari either sends it or opens the app with your message ready to go.\n",
+      "type": "skill",
+      "license": null,
+      "author": "Ari Project",
+      "homepage": "https://github.com/ari-digital-assistant/ari-skills",
+      "capabilities": [
+        "send_message",
+        "contacts",
+        "http",
+        "reply"
+      ],
+      "languages": [
+        "en"
+      ],
+      "bundle": "bundles/dev.heyari.message-0.1.0.tar.gz",
+      "signature": "bundles/dev.heyari.message-0.1.0.tar.gz.sig",
+      "sha256": "1d2dc3fb566ec3415dc00376a210728ae94d390ca9c74cbbb59d434896c710d8",
+      "manifest": "manifests/dev.heyari.message-0.1.0.md",
+      "localizations": {},
+      "screenshots": {}
+    },
+    {
       "id": "dev.heyari.weather",
       "version": "0.2.1",
       "name": "weather",
@@ -426,7 +451,7 @@
       ],
       "bundle": "bundles/dev.heyari.weather-0.2.1.tar.gz",
       "signature": "bundles/dev.heyari.weather-0.2.1.tar.gz.sig",
-      "sha256": "1b373501ddfc25dbc4835fd9d454f29e121de2458a812656879ae62a72a34bae",
+      "sha256": "92345e9e1d31015f6221df57d480ddad1c9ead632c6d10a8ea27d0391f896bde",
       "manifest": "manifests/dev.heyari.weather-0.2.1.md",
       "localizations": {
         "it": {
