@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-08-18T07:42:55Z",
+  "generated_at": "2026-08-21T08:37:22Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -408,7 +408,7 @@
     },
     {
       "id": "dev.heyari.weather",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "name": "weather",
       "description": "Current weather, forecasts, and conditions like rain chance, wind, humidity, and UV — for your current location or any place you name.",
       "type": "skill",
@@ -424,10 +424,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.weather-0.2.0.tar.gz",
-      "signature": "bundles/dev.heyari.weather-0.2.0.tar.gz.sig",
-      "sha256": "34482bd43fed0ce43a09c47e482995c740a0598245e74d4d8400de16bc095522",
-      "manifest": "manifests/dev.heyari.weather-0.2.0.md",
+      "bundle": "bundles/dev.heyari.weather-0.2.1.tar.gz",
+      "signature": "bundles/dev.heyari.weather-0.2.1.tar.gz.sig",
+      "sha256": "1b373501ddfc25dbc4835fd9d454f29e121de2458a812656879ae62a72a34bae",
+      "manifest": "manifests/dev.heyari.weather-0.2.1.md",
       "localizations": {
         "it": {
           "name": "weather",
@@ -436,9 +436,9 @@
       },
       "screenshots": {
         "android": [
-          "screenshots/dev.heyari.weather-0.2.0/android/01-current.webp",
-          "screenshots/dev.heyari.weather-0.2.0/android/02-forecast.webp",
-          "screenshots/dev.heyari.weather-0.2.0/android/03-settings.webp"
+          "screenshots/dev.heyari.weather-0.2.1/android/01-current.webp",
+          "screenshots/dev.heyari.weather-0.2.1/android/02-forecast.webp",
+          "screenshots/dev.heyari.weather-0.2.1/android/03-settings.webp"
         ]
       }
     },
