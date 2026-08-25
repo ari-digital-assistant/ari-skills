@@ -1,0 +1,20 @@
+{
+  "ask.body": "Cosa vuoi dire?",
+  "ask.which": "Ho trovato più di un {recipient}: {names}. Quale?",
+  "send.confirm": "Il messaggio per {recipient} dice: {body}. Lo mando?",
+  "send.done": "Messaggio inviato a {recipient}.",
+  "send.cancelled": "Va bene, non lo mando.",
+  "reply.confirm": "La risposta per {recipient} dice: {body}. La mando?",
+  "reply.confirm_unnamed": "La risposta dice: {body}. La mando?",
+  "confirm.yes_words": "sì si certo va bene ok okay manda invia procedi",
+  "error.not_understood": "Non ho capito a chi era destinato.",
+  "error.no_body": "Non ho capito cosa volevi dire.",
+  "error.no_contact": "Non ho trovato {recipient} nei tuoi contatti.",
+  "error.no_channel": "{recipient} non è su {service}.",
+  "error.no_live_thread": "Non hai nessuna conversazione aperta a cui rispondere.",
+  "error.not_configured": "Devi prima configurare {service} nelle impostazioni di Ari.",
+  "error.ambiguous": "Ho trovato più di un {recipient}: {names}. Prova con il nome completo.",
+  "error.encrypted": "La chat con {recipient} è cifrata, quindi non posso scriverci.",
+  "error.offline": "Non sono riuscito a raggiungere il server. Controlla la connessione.",
+  "error.send_failed": "Qualcosa è andato storto nell'invio su {service}."
+}

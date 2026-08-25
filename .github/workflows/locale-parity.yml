@@ -1,0 +1,48 @@
+name: locale-parity
+
+# Validate that every skill implements the locales it declares: a
+# SKILL.<locale>.md for each entry in `metadata.ari.languages`, a matching
+# strings/<locale>.json where the skill has a strings table at all, and the
+# same key set in both. docs/i18n.md states the invariant this enforces —
+# implemented == declared.
+#
+# A missing key falls back to English at runtime, which produces mixed-
+# language output that reads worse than plain English would have, and
+# nothing else in CI surfaces it. Same reasoning (and same shape) as
+# ari-android's translation-parity workflow.
+#
+# English-only skills are reported as a WARNING and never fail the run.
+# Contributing a skill in one language is a legal, welcome thing to do.
+#
+# Self-contained — no cargo, no engine build, no Android SDK. Python plus
+# PyYAML, under 5 seconds.
+
+on:
+  pull_request:
+    paths:
+      - 'skills/**/SKILL.*.md'
+      - 'skills/**/strings/*.json'
+      - 'tools/check_locale_parity.py'
+      - '.github/workflows/locale-parity.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**/SKILL.*.md'
+      - 'skills/**/strings/*.json'
+
+permissions:
+  contents: read
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install PyYAML
+        run: pip install pyyaml
+      - name: Run parity check
+        run: python3 tools/check_locale_parity.py

@@ -62,6 +62,19 @@ const NOT_A_RECIPIENT: &[&str] = &[
     // for every skill on every utterance, and reading contacts that often
     // would be both slow and creepy.
     "the", "a", "an", "my", "your", "our", "their", "his",
+    // Italian pronouns — "dimmi" is clitic and never reaches here, but the
+    // detached forms do: "di a lui che ...", "scrivi a tutti".
+    "mi", "ti", "ci", "vi", "gli", "li", "ne", "te", "lui", "lei", "noi",
+    "voi", "loro", "tutti", "tutte", "qualcuno", "nessuno", "chiunque",
+    // Italian determiners. "lo", "la", "le" and "gli" are articles as well
+    // as pronouns; one entry covers both readings.
+    "il", "lo", "la", "i", "le", "un", "uno", "una", "mio", "mia", "tuo",
+    "tua", "suo", "sua", "nostro", "nostra", "vostro", "vostra",
+    // Italian interrogatives. These are the guard that stops a bare "di "
+    // opener stealing questions: "di che colore è il cielo" parses its
+    // recipient as "che" and dies here.
+    "che", "cosa", "chi", "quando", "come", "dove", "quanto", "quale",
+    "perche", "perché",
 ];
 
 /// How many words a name may run to when the address book is doing the
@@ -71,7 +84,14 @@ const MAX_NAME_WORDS: usize = 4;
 
 /// Phrases that separate a recipient from the message body. Longest first —
 /// "that i am" must not match before " that ".
-const BODY_MARKERS: &[&str] = &[" saying that ", " to say that ", " saying ", " to say ", " that "];
+///
+/// Italian shares the list rather than getting its own: the markers are
+/// disjoint across the two languages, so a union match keeps every call site
+/// locale-free. Same reasoning as the reminder skill's parser.
+const BODY_MARKERS: &[&str] = &[
+    " saying that ", " to say that ", " saying ", " to say ", " that ",
+    " dicendo che ", " dicendo ", " che ",
+];
 
 /// Verbs that name their own service. "text gail" is an SMS, always, whatever
 /// the default service setting says.
@@ -100,6 +120,81 @@ const DIRECT_VERBS: &[&str] = &[
     "message ",
     "tell ",
 ];
+
+// ── Italian ───────────────────────────────────────────────────────────────
+//
+// Italian gets its own tables rather than joining the English ones, for one
+// reason: it puts a preposition between the verb and the name — "scrivi *a*
+// Mario", "scrivi *alla* mamma". Stripping a leading preposition is what
+// makes that work, and the English tables must never do it: "tell a story"
+// would strip the "a" and send a message to "story".
+//
+// Requiring the preposition is also the poaching guard. `custom_score` means
+// this parser scores every utterance for every locale, so a bare "di " or
+// "scrivi " opener with no preposition slot would claim "di che colore è il
+// cielo" and "scrivi una poesia". No preposition, no match.
+
+/// Prepositions that can introduce the recipient, including the article
+/// contractions. `all` is `all'` after the engine's elision strip turns the
+/// apostrophe into a space ("all'avvocato" → "all avvocato").
+const IT_PREPS: &[&str] = &["a", "ad", "al", "allo", "alla", "ai", "agli", "alle", "all"];
+
+/// Italian openers that name their own service, e.g. "manda un sms a Gail".
+/// Longest first so "manda un messaggio" can't swallow "manda un sms".
+const IT_SERVICE_VERBS: &[(&str, &str)] = &[
+    ("manda una email ", "email"),
+    ("invia una email ", "email"),
+    ("scrivi una email ", "email"),
+    ("manda un email ", "email"),
+    ("manda una mail ", "email"),
+    ("invia una mail ", "email"),
+    ("scrivi una mail ", "email"),
+    ("manda un whatsapp ", "whatsapp"),
+    ("invia un whatsapp ", "whatsapp"),
+    ("manda un telegram ", "telegram"),
+    ("manda un sms ", "sms"),
+    ("invia un sms ", "sms"),
+    ("scrivi un sms ", "sms"),
+];
+
+/// Italian openers that take a preposition and leave the service unsaid.
+const IT_PREP_VERBS: &[&str] = &[
+    "manda un messaggio ",
+    "invia un messaggio ",
+    "scrivi un messaggio ",
+    "fai sapere ",
+    "far sapere ",
+    "scrivi ",
+    "dici ",
+    // "di' a Mario che ..." and "dì a Mario che ...". The engine's elision
+    // strip flattens the first to "di a"; the accented form survives whole.
+    "di ",
+    "dì ",
+];
+
+/// Italian openers that take a direct object — "avvisa Gail", no preposition.
+/// Kept apart from [`IT_PREP_VERBS`] because these verbs are specific enough
+/// to stand without one; "scrivi" and "di" are not.
+const IT_DIRECT_VERBS: &[&str] = &["avvisa ", "avverti ", "contatta "];
+
+/// Strip a leading Italian preposition and return what follows. `None` when
+/// the phrase doesn't start with one, which is how the Italian openers stay
+/// off utterances that merely share their verb.
+fn strip_it_prep(rest: &str) -> Option<&str> {
+    for prep in IT_PREPS {
+        if let Some(tail) = rest.strip_prefix(prep) {
+            // The preposition must be a whole word: "alle" must not match
+            // inside "allegato", and "a" must not match inside "andrea".
+            if let Some(tail) = tail.strip_prefix(' ') {
+                let tail = tail.trim_start();
+                if !tail.is_empty() {
+                    return Some(tail);
+                }
+            }
+        }
+    }
+    None
+}
 
 /// Parse without an address book. Used by `score()`, which runs for every
 /// skill on every utterance and must stay cheap — the recipient is taken as
@@ -142,7 +237,17 @@ pub fn parse_with(
             return Some(req);
         }
     }
-    for verb in ["reply ", "reply, "] {
+    // "rispondi a Gail che arrivo". The preposition is required for the same
+    // reason it is on every other Italian opener — without it "rispondi alla
+    // domanda" and "rispondi che ore sono" would both land here.
+    if let Some(rest) = norm.strip_prefix("rispondi ") {
+        if let Some(rest) = strip_it_prep(rest) {
+            let mut req = build_from_rest(rest, service_from_suffix, raw, 0.95, is_contact)?;
+            req.explicit_reply = true;
+            return Some(req);
+        }
+    }
+    for verb in ["reply ", "reply, ", "rispondi ", "rispondi, "] {
         if norm.starts_with(verb) {
             let body = body_after(raw, verb.trim_end_matches([' ', ',']));
             return Some(Request {
@@ -185,6 +290,45 @@ pub fn parse_with(
             // "tell" is the loose one — "tell me the time" must not land here.
             let confidence = if *verb == "tell " { 0.9 } else { 0.95 };
             return build_from_rest(rest, service_from_suffix, raw, confidence, is_contact);
+        }
+    }
+
+    // ── Italian ──
+    // Service-naming openers first: "manda un sms a Gail" must not fall
+    // through to the service-less "manda un messaggio" family and lose it.
+    for (verb, service) in IT_SERVICE_VERBS {
+        if let Some(rest) = norm.strip_prefix(verb) {
+            if let Some(rest) = strip_it_prep(rest) {
+                let explicit = service_from_suffix.or(Some((*service).to_string()));
+                return build_from_rest(rest, explicit, raw, 0.95, is_contact);
+            }
+            // The verb matched but the preposition didn't. Stop here rather
+            // than falling through: "manda un sms" with no recipient is this
+            // skill's problem to report, not another skill's to claim.
+            return None;
+        }
+    }
+
+    for verb in IT_PREP_VERBS {
+        if let Some(rest) = norm.strip_prefix(verb) {
+            if let Some(rest) = strip_it_prep(rest) {
+                // "di" and "scrivi" are the loose ones, the way "tell" is in
+                // English: they carry a message often enough to earn a match
+                // and other things often enough not to win outright.
+                let confidence = if *verb == "di " || *verb == "dì " || *verb == "scrivi " {
+                    0.9
+                } else {
+                    0.95
+                };
+                return build_from_rest(rest, service_from_suffix, raw, confidence, is_contact);
+            }
+            return None;
+        }
+    }
+
+    for verb in IT_DIRECT_VERBS {
+        if let Some(rest) = norm.strip_prefix(verb) {
+            return build_from_rest(rest, service_from_suffix, raw, 0.95, is_contact);
         }
     }
 
@@ -346,7 +490,13 @@ fn strip_trailing_service(s: &str) -> (String, Option<String>) {
     let lower = s.to_lowercase();
     for (id, words) in SERVICES {
         for word in *words {
-            for prefix in [" on ", " over ", " via ", " through ", " using "] {
+            // Italian: " su ", " con ", " tramite ", " per ". Each is only
+            // ever consulted immediately before a known service word, so
+            // even the loose ones can't eat an ordinary tail.
+            for prefix in [
+                " on ", " over ", " via ", " through ", " using ",
+                " su ", " con ", " tramite ", " per ",
+            ] {
                 let mut suffix = String::from(prefix);
                 suffix.push_str(word);
                 if lower.ends_with(suffix.as_str()) {
@@ -646,5 +796,219 @@ mod tests {
         let r = p("Tell Mario hello on KakaoTalk", "tell mario hello on kakaotalk").unwrap();
         assert_eq!(r.recipient, "Mario");
         assert_eq!(r.service, None);
+    }
+
+    // ── Italian ──────────────────────────────────────────────────────────
+    //
+    // The normalised text in each of these is what the engine's Italian
+    // pipeline actually produces: lowercased, apostrophes turned into
+    // spaces by the elision strip ("di'" → "di", "all'" → "all").
+
+    #[test]
+    fn it_scrivi_with_a_preposition_is_a_message() {
+        let r = p("Scrivi a Mario che arrivo tardi", "scrivi a mario che arrivo tardi").unwrap();
+        assert_eq!(r.recipient, "Mario");
+        assert_eq!(r.body.as_deref(), Some("arrivo tardi"));
+        assert_eq!(r.service, None);
+    }
+
+    #[test]
+    fn it_article_contractions_introduce_the_recipient() {
+        // "alla mamma", not "a mamma" — the contracted preposition is the
+        // normal Italian form and has to reach the same place.
+        let r = p("Scrivi alla mamma che torno presto", "scrivi alla mamma che torno presto").unwrap();
+        assert_eq!(r.recipient, "mamma");
+        assert_eq!(r.body.as_deref(), Some("torno presto"));
+    }
+
+    #[test]
+    fn it_elided_preposition_survives_the_normaliser() {
+        // "all'avvocato" reaches the parser as "all avvocato".
+        let r = p("Scrivi all'avvocato che richiamo", "scrivi all avvocato che richiamo").unwrap();
+        assert_eq!(r.recipient, "avvocato");
+        assert_eq!(r.body.as_deref(), Some("richiamo"));
+    }
+
+    #[test]
+    fn it_manda_un_messaggio_form() {
+        let r = p(
+            "Manda un messaggio a Gail dicendo che sono in ritardo",
+            "manda un messaggio a gail dicendo che sono in ritardo",
+        )
+        .unwrap();
+        assert_eq!(r.recipient, "Gail");
+        assert_eq!(r.body.as_deref(), Some("sono in ritardo"));
+    }
+
+    #[test]
+    fn it_service_verb_names_the_service() {
+        let r = p("Manda un sms a Gail ci vediamo alle 8", "manda un sms a gail ci vediamo alle 8").unwrap();
+        assert_eq!(r.service.as_deref(), Some("sms"));
+        assert_eq!(r.recipient, "Gail");
+        assert_eq!(r.body.as_deref(), Some("ci vediamo alle 8"));
+    }
+
+    #[test]
+    fn it_email_verb_names_the_service() {
+        let r = p(
+            "Manda una mail a Gail ricordati del latte",
+            "manda una mail a gail ricordati del latte",
+        )
+        .unwrap();
+        assert_eq!(r.service.as_deref(), Some("email"));
+        assert_eq!(r.body.as_deref(), Some("ricordati del latte"));
+    }
+
+    #[test]
+    fn it_service_verb_beats_the_generic_messaggio_form() {
+        // "manda un sms" must not fall through to "manda un messaggio" and
+        // arrive with no service at all.
+        let r = p("Manda un sms a Mario ciao", "manda un sms a mario ciao").unwrap();
+        assert_eq!(r.service.as_deref(), Some("sms"));
+    }
+
+    #[test]
+    fn it_avvisa_takes_a_direct_object() {
+        // "avvisare qualcuno" — no preposition, unlike every other opener.
+        let r = p("Avvisa Gail che faccio tardi", "avvisa gail che faccio tardi").unwrap();
+        assert_eq!(r.recipient, "Gail");
+        assert_eq!(r.body.as_deref(), Some("faccio tardi"));
+    }
+
+    #[test]
+    fn it_fai_sapere_form() {
+        let r = p(
+            "Fai sapere a Gail che sono sull'autobus",
+            "fai sapere a gail che sono sull autobus",
+        )
+        .unwrap();
+        assert_eq!(r.recipient, "Gail");
+        assert_eq!(r.body.as_deref(), Some("sono sull'autobus"));
+    }
+
+    #[test]
+    fn it_di_with_an_apostrophe_is_a_message() {
+        // "Di' a Mario ..." — the elision strip flattens it to "di a mario".
+        let r = p("Di' a Mario che esco ora", "di a mario che esco ora").unwrap();
+        assert_eq!(r.recipient, "Mario");
+        assert_eq!(r.body.as_deref(), Some("esco ora"));
+    }
+
+    #[test]
+    fn it_accented_di_is_a_message() {
+        let r = p("Dì a Mario che esco ora", "dì a mario che esco ora").unwrap();
+        assert_eq!(r.recipient, "Mario");
+        assert_eq!(r.body.as_deref(), Some("esco ora"));
+    }
+
+    #[test]
+    fn it_a_verb_without_its_preposition_never_matches() {
+        // The poaching guard. `custom_score` runs this parser on every
+        // utterance in every locale, so these must all come back empty.
+        assert!(p("Di che colore è il cielo", "di che colore è il cielo").is_none());
+        assert!(p("Dimmi che ore sono", "dimmi che ore sono").is_none());
+        assert!(p("Scrivi una poesia", "scrivi una poesia").is_none());
+        assert!(p("Scrivi un promemoria", "scrivi un promemoria").is_none());
+    }
+
+    #[test]
+    fn it_the_preposition_must_be_a_whole_word() {
+        // "a" must not match inside "andrea", "alle" not inside "allegato".
+        assert!(p("Scrivi andrea ciao", "scrivi andrea ciao").is_none());
+    }
+
+    #[test]
+    fn it_trailing_service_is_stripped_from_the_body() {
+        let r = p(
+            "Scrivi a Mario che sono fuori su Telegram",
+            "scrivi a mario che sono fuori su telegram",
+        )
+        .unwrap();
+        assert_eq!(r.service.as_deref(), Some("telegram"));
+        assert_eq!(
+            r.body.as_deref(),
+            Some("sono fuori"),
+            "the service must not survive inside the message",
+        );
+    }
+
+    #[test]
+    fn it_tramite_also_names_a_service() {
+        let r = p(
+            "Manda un messaggio a Gail buon compleanno tramite WhatsApp",
+            "manda un messaggio a gail buon compleanno tramite whatsapp",
+        )
+        .unwrap();
+        assert_eq!(r.service.as_deref(), Some("whatsapp"));
+        assert_eq!(r.body.as_deref(), Some("buon compleanno"));
+    }
+
+    #[test]
+    fn it_explicit_service_beats_the_verbs_own_service() {
+        let r = p(
+            "Manda un sms a Gail ciao su Telegram",
+            "manda un sms a gail ciao su telegram",
+        )
+        .unwrap();
+        assert_eq!(r.service.as_deref(), Some("telegram"));
+    }
+
+    #[test]
+    fn it_rispondi_with_a_name_is_a_reply() {
+        let r = p("Rispondi a Gail arrivo", "rispondi a gail arrivo").unwrap();
+        assert!(r.explicit_reply);
+        assert_eq!(r.recipient, "Gail");
+        assert_eq!(r.body.as_deref(), Some("arrivo"));
+    }
+
+    #[test]
+    fn it_bare_rispondi_names_nobody() {
+        let r = p("Rispondi sto arrivando", "rispondi sto arrivando").unwrap();
+        assert!(r.explicit_reply);
+        assert_eq!(r.recipient, "");
+        assert_eq!(r.body.as_deref(), Some("sto arrivando"));
+    }
+
+    #[test]
+    fn it_no_body_is_allowed_so_the_skill_can_ask() {
+        let r = p("Scrivi a Gail", "scrivi a gail").unwrap();
+        assert_eq!(r.recipient, "Gail");
+        assert_eq!(r.body, None);
+    }
+
+    #[test]
+    fn it_body_keeps_capitals_and_accents_from_the_raw_utterance() {
+        let r = p(
+            "Scrivi a Mario che è già partito",
+            "scrivi a mario che è già partito",
+        )
+        .unwrap();
+        assert_eq!(r.body.as_deref(), Some("è già partito"));
+    }
+
+    #[test]
+    fn it_pronouns_are_never_a_recipient() {
+        // The Italian half of "tell me a joke".
+        assert!(p("Di a tutti che ho finito", "di a tutti che ho finito").is_none());
+        assert!(p("Scrivi a chiunque", "scrivi a chiunque").is_none());
+    }
+
+    #[test]
+    fn it_a_known_multi_word_name_beats_the_first_word() {
+        let r = parse_with(
+            "scrivi a gail marie arrivo tardi",
+            "Scrivi a Gail Marie arrivo tardi",
+            |name| name == "gail marie",
+        )
+        .unwrap();
+        assert_eq!(r.recipient, "Gail Marie");
+        assert_eq!(r.body.as_deref(), Some("arrivo tardi"));
+    }
+
+    #[test]
+    fn it_loose_verbs_score_lower_than_the_unambiguous_ones() {
+        let loose = p("Scrivi a Mario ciao", "scrivi a mario ciao").unwrap();
+        let tight = p("Manda un messaggio a Mario ciao", "manda un messaggio a mario ciao").unwrap();
+        assert!(loose.confidence < tight.confidence);
     }
 }

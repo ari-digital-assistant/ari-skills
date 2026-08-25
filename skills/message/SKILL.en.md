@@ -7,13 +7,13 @@ description: >
 metadata:
   ari:
     id: dev.heyari.message
-    version: "0.1.0"
+    version: "0.2.0"
     type: skill
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari-skills
     license: MIT
     engine: ">=0.3"
-    languages: [en]
+    languages: [en, it]
     capabilities: [send_message, contacts, http, reply]
     specificity: high
     matching:

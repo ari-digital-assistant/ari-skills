@@ -154,6 +154,58 @@ jobs:
             echo "Re-word the example, or tighten the poaching skill's patterns."
           } >> comment.md
 
+      # A skill's keyword patterns don't only decide what that skill wins —
+      # they decide what reaches the router at all. Widen them and the
+      # already-committed router eval banks in ari-tools quietly stop being
+      # keyword-MISSES, which is the one thing a router promotion gate may
+      # not contain. That is not hypothetical: weather 0.2.0 added
+      # `\bhumid(ity)?\b` on 2026-08-18 and swallowed
+      # routing-eval.gen.jsonl:286, and every FunctionGemma nightly from the
+      # 19th onward trained for two hours and then refused to grade itself.
+      #
+      # The poaching test above asks the same question of this repo's own
+      # manifest examples. This asks it of the eval banks, which live in
+      # another repo and so had nobody asking. Cheap here: the cargo build
+      # the validator and the poaching test already paid for is reused, and
+      # no model is loaded.
+      - name: Check the eval banks still miss the keyword scorer
+        id: banks
+        env:
+          ARI_ENGINE_DIR: ${{ github.workspace }}/ari-engine-src
+          ARI_SKILLS_DIR: ${{ github.workspace }}
+        run: |
+          set -uo pipefail
+          rc=0
+          {
+            pip install pyyaml
+            git clone --depth 1 https://github.com/ari-digital-assistant/ari-tools.git ari-tools-src
+            python3 ari-tools-src/functiongemma/check_eval_hygiene.py --all || rc=$?
+          } > banks.log 2>&1
+          cat banks.log
+          echo "status=$rc" >> "$GITHUB_OUTPUT"
+
+      - name: Add the eval-bank result to the comment
+        if: steps.banks.outputs.status != '0'
+        run: |
+          {
+            echo
+            echo '### ❌ Router eval banks'
+            echo
+            echo "This PR's keyword patterns now win cases that ari-tools'"
+            echo "committed routing-eval banks expect the **router** to answer."
+            echo "The keyword scorer short-circuits before the router, so"
+            echo "\`route-eval\` refuses to grade a bank containing them — which"
+            echo "means the next FunctionGemma nightly trains for two hours and"
+            echo "then throws the model away."
+            echo
+            echo '```'
+            grep -E '^(✗|    routing-eval)' banks.log || tail -40 banks.log
+            echo '```'
+            echo
+            echo "Tighten the pattern, or re-run \`generate-eval.yml\` in ari-tools"
+            echo "to rewrite the banks against these skills."
+          } >> comment.md
+
       # The templates are the endpoints of the two tutorials in docs/, and the
       # code blocks in those tutorials are excerpts of these files. Building
       # and validating them here is what stops the docs drifting away from the
@@ -208,5 +260,6 @@ jobs:
         if: >-
           steps.validate.outputs.status != '0'
           || steps.poaching.outputs.status != '0'
+          || steps.banks.outputs.status != '0'
           || steps.templates.outputs.status != '0'
         run: exit 1
