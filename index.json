@@ -1,10 +1,10 @@
 {
   "index_version": 1,
-  "generated_at": "2026-08-21T09:28:05Z",
+  "generated_at": "2026-08-25T05:06:29Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
-    "sha256": "c41b1fe4692bd17ecba6de8f509ce2dd438212bde139f697b91839f03c6ebae9"
+    "sha256": "248c4aa6349616e8e33e2663456509b5f0e862c92545097598d7884c36be8748"
   },
   "skills": [
     {
