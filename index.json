@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-08-25T05:06:29Z",
+  "generated_at": "2026-08-25T10:01:05Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -94,7 +94,7 @@
       ],
       "bundle": "bundles/dev.heyari.homeassistant-0.3.1.tar.gz",
       "signature": "bundles/dev.heyari.homeassistant-0.3.1.tar.gz.sig",
-      "sha256": "f45eddeed68a68846de30c16e7609775a3725c85471ee18606be950272f7a8fd",
+      "sha256": "2b35820f7533a5b551722635fd87cfe45269693677b5983e75b9a5ba59470190",
       "manifest": "manifests/dev.heyari.homeassistant-0.3.1.md",
       "localizations": {
         "it": {
@@ -408,7 +408,7 @@
     },
     {
       "id": "dev.heyari.message",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "name": "message",
       "description": "Send a message to someone through SMS, WhatsApp, Telegram, Signal, Messenger, Slack, Matrix or email. Say who and what, and Ari either sends it or opens the app with your message ready to go.\n",
       "type": "skill",
@@ -422,13 +422,19 @@
         "reply"
       ],
       "languages": [
-        "en"
+        "en",
+        "it"
       ],
-      "bundle": "bundles/dev.heyari.message-0.1.0.tar.gz",
-      "signature": "bundles/dev.heyari.message-0.1.0.tar.gz.sig",
-      "sha256": "1d2dc3fb566ec3415dc00376a210728ae94d390ca9c74cbbb59d434896c710d8",
-      "manifest": "manifests/dev.heyari.message-0.1.0.md",
-      "localizations": {},
+      "bundle": "bundles/dev.heyari.message-0.2.0.tar.gz",
+      "signature": "bundles/dev.heyari.message-0.2.0.tar.gz.sig",
+      "sha256": "a424813b286a7005c067a0568039fdba12cb38ccbc8739ca7f90f1955183caa1",
+      "manifest": "manifests/dev.heyari.message-0.2.0.md",
+      "localizations": {
+        "it": {
+          "name": "message",
+          "description": "Manda un messaggio a qualcuno via SMS, WhatsApp, Telegram, Signal, Messenger, Slack, Matrix o email. Dici a chi e cosa, e Ari lo invia oppure apre l'app con il messaggio già pronto.\n"
+        }
+      },
       "screenshots": {}
     },
     {
