@@ -17,5 +17,6 @@
   "sign_in_no_browser": "Non riesco ad aprire un browser per l'accesso.",
   "sign_in_unverified": "Non è stato possibile verificare l'accesso. Riprova.",
   "sign_in_no_internet": "Non è stato possibile completare l'accesso a Home Assistant — il server potrebbe non essere raggiungibile da Internet. Usa invece l'autenticazione con token.",
-  "needs_reauth": "Ho perso la connessione a Home Assistant — accedi di nuovo dalle impostazioni."
+  "needs_reauth": "Ho perso la connessione a Home Assistant — accedi di nuovo dalle impostazioni.",
+  "invalid_url": "L'indirizzo non sembra quello di un Home Assistant. Controlla l'URL del server nelle impostazioni."
 }
