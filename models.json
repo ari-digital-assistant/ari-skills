@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-14T05:48:19Z",
+  "generated_at": "2026-08-25T04:55:37Z",
   "source": "https://models.dev/api.json",
   "include_preview": true,
   "providers": {
@@ -58,8 +58,8 @@
           "top_k"
         ],
         "pricing_per_million_tokens": {
-          "input": 5,
-          "output": 30
+          "input": 4,
+          "output": 20
         },
         "context_tokens": 1050000,
         "selection_method": "semantic-name",
