@@ -179,7 +179,15 @@ jobs:
           {
             pip install pyyaml
             git clone --depth 1 https://github.com/ari-digital-assistant/ari-tools.git ari-tools-src
-            python3 ari-tools-src/functiongemma/check_eval_hygiene.py --all || rc=$?
+            # The checker lives in another repo on another release cadence.
+            # If it isn't there, say so and pass: a skills PR is not the place
+            # to discover that ari-tools moved a file, and the nightly's own
+            # pre-flight still catches the thing this step is looking for.
+            if [[ -f ari-tools-src/functiongemma/check_eval_hygiene.py ]]; then
+              python3 ari-tools-src/functiongemma/check_eval_hygiene.py --all || rc=$?
+            else
+              echo "::warning::ari-tools has no functiongemma/check_eval_hygiene.py — eval banks not graded"
+            fi
           } > banks.log 2>&1
           cat banks.log
           echo "status=$rc" >> "$GITHUB_OUTPUT"
