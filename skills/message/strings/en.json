@@ -6,7 +6,7 @@
   "send.cancelled": "OK, I won't send it.",
   "reply.confirm": "Your reply to {recipient} says: {body}. Want me to send it?",
   "reply.confirm_unnamed": "Your reply says: {body}. Want me to send it?",
-  "confirm.yes_words": "yes yeah yep yup sure ok okay send",
+  "confirm.yes_words": "yes, yeah, yep, yup, sure, ok, okay, send",
   "error.not_understood": "I didn't catch who that was for.",
   "error.no_body": "I didn't catch what you wanted to say.",
   "error.no_contact": "I couldn't find {recipient} in your contacts.",

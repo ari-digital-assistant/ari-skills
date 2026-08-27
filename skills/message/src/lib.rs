@@ -354,9 +354,32 @@ fn describe(outcome: &transport::Outcome, recipient: &str, service: &str) -> Str
 /// without the key still works rather than treating every answer as "no".
 #[cfg(target_arch = "wasm32")]
 fn is_yes(text: &str) -> bool {
-    let answer = text.trim().to_lowercase();
-    let listed = ari::t("confirm.yes_words", &[]).unwrap_or("yes yeah yep go on send it ok okay");
-    listed.split_whitespace().any(|w| answer == w) || answer == listed
+    let listed = ari::t("confirm.yes_words", &[]).unwrap_or(YES_WORDS_FALLBACK);
+    yes_matches(text, listed)
+}
+
+const YES_WORDS_FALLBACK: &str = "yes, yeah, yep, yup, sure, ok, okay, send";
+
+/// Whether `text` is one of the comma-separated affirmatives in `listed`.
+///
+/// Punctuation is stripped from both ends first. Cloud STT punctuates what it
+/// transcribes, so a spoken "yes" arrives as "Yes." — and comparing that
+/// verbatim read a clear confirmation as a refusal.
+///
+/// The list is comma-separated because several affirmatives are phrases:
+/// Italian ships "va bene". Splitting on whitespace made "va" and "bene" each
+/// count as a yes on their own while the phrase itself matched nothing, which
+/// is a poor way to send a message that cannot be recalled.
+fn yes_matches(text: &str, listed: &str) -> bool {
+    let answer = text
+        .trim()
+        .trim_matches(|c: char| !c.is_alphanumeric())
+        .to_lowercase();
+    listed
+        .split(',')
+        .map(str::trim)
+        .filter(|phrase| !phrase.is_empty())
+        .any(|phrase| answer == phrase.to_lowercase())
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -460,5 +483,72 @@ mod tests {
         // message before it reaches another person.
         assert_eq!(plan("sms", true, TRUE_SEND), Plan::Confirm);
         assert_eq!(plan("sms", false, TRUE_SEND), Plan::Send);
+    }
+
+    const EN: &str = "yes, yeah, yep, yup, sure, ok, okay, send";
+    const IT: &str = "sì, si, certo, va bene, ok, okay, manda, invia, procedi";
+
+    #[test]
+    fn a_bare_yes_confirms() {
+        assert!(yes_matches("yes", EN));
+    }
+
+    #[test]
+    fn a_transcribed_yes_confirms() {
+        // Cloud STT punctuates: a spoken "yes" arrives as "Yes." and used to
+        // be read as a refusal, cancelling the send.
+        assert!(yes_matches("Yes.", EN));
+        assert!(yes_matches("Yeah!", EN));
+        assert!(yes_matches("  Okay...  ", EN));
+    }
+
+    #[test]
+    fn a_refusal_is_not_a_confirmation() {
+        assert!(!yes_matches("no", EN));
+        assert!(!yes_matches("No.", EN));
+        assert!(!yes_matches("don't", EN));
+    }
+
+    #[test]
+    fn an_empty_answer_is_not_a_confirmation() {
+        assert!(!yes_matches("", EN));
+        assert!(!yes_matches("   ", EN));
+        assert!(!yes_matches("...", EN));
+    }
+
+    #[test]
+    fn a_multi_word_affirmative_confirms_as_a_phrase() {
+        assert!(yes_matches("va bene", IT));
+        assert!(yes_matches("Va bene.", IT));
+    }
+
+    #[test]
+    fn half_a_phrase_does_not_confirm() {
+        // "va" and "bene" were each a yes of their own while the whole phrase
+        // matched nothing — the wrong way round for an unrecallable message.
+        assert!(!yes_matches("va", IT));
+        assert!(!yes_matches("bene", IT));
+    }
+
+    #[test]
+    fn an_accented_affirmative_confirms() {
+        assert!(yes_matches("sì", IT));
+        assert!(yes_matches("Sì.", IT));
+        assert!(yes_matches("si", IT));
+    }
+
+    #[test]
+    fn one_language_does_not_answer_for_another() {
+        assert!(!yes_matches("yes", IT));
+        assert!(!yes_matches("certo", EN));
+    }
+
+    #[test]
+    fn the_english_fallback_matches_the_shipped_list() {
+        // The fallback only runs when the locale lookup fails, so a drift
+        // between the two would be invisible until exactly then.
+        assert!(yes_matches("yes", YES_WORDS_FALLBACK));
+        assert!(!yes_matches("it", YES_WORDS_FALLBACK));
+        assert!(!yes_matches("go", YES_WORDS_FALLBACK));
     }
 }
