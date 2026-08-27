@@ -6,7 +6,7 @@
   "send.cancelled": "Va bene, non lo mando.",
   "reply.confirm": "La risposta per {recipient} dice: {body}. La mando?",
   "reply.confirm_unnamed": "La risposta dice: {body}. La mando?",
-  "confirm.yes_words": "sì si certo va bene ok okay manda invia procedi",
+  "confirm.yes_words": "sì, si, certo, va bene, ok, okay, manda, invia, procedi",
   "error.not_understood": "Non ho capito a chi era destinato.",
   "error.no_body": "Non ho capito cosa volevi dire.",
   "error.no_contact": "Non ho trovato {recipient} nei tuoi contatti.",
