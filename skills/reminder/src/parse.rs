@@ -197,12 +197,19 @@ fn parse_day_ordinal(token: &str) -> Option<u8> {
 
 const SPEAK_TEMPLATE: &str = "Added {title} to your {list_name} list";
 
-pub fn parse(input: &str) -> Parsed {
+/// `known_lists` are the display names of the lists the user actually
+/// has. They let "add garlic powder to family shopping" be recognised as
+/// a list add without the word "list" in it, while "add cream to the
+/// coffee" stays a reminder — the difference is whether the trailing
+/// words name a list that exists. Pass an empty slice when the caller
+/// can't know (tests, the non-wasm build); the grammar then only accepts
+/// the explicit "… list" form, exactly as it always did.
+pub fn parse(input: &str, known_lists: &[&str]) -> Parsed {
     let normalised = input.trim().to_lowercase();
 
     // Named-list shape first — these utterances don't start with
     // "remind me" so we pattern-match them on their own.
-    if let Some(p) = parse_named_list(&normalised) {
+    if let Some(p) = parse_named_list(&normalised, known_lists) {
         return p;
     }
 
@@ -347,7 +354,7 @@ fn looks_like_ordinal_date(w: &str) -> bool {
 
 /// `add X to my Y list` / `put X on the Y list` etc. Returns None if
 /// the input doesn't fit; reminder parsing then takes over.
-fn parse_named_list(input: &str) -> Option<Parsed> {
+fn parse_named_list(input: &str, known_lists: &[&str]) -> Option<Parsed> {
     // Anchored on a leading "add " or "put ". Other verbs ("save",
     // "stick", "throw") could be added later if real users ask for
     // them — for v0.1 keep the surface narrow so we don't accidentally
@@ -372,6 +379,7 @@ fn parse_named_list(input: &str) -> Option<Parsed> {
             &[" to ", " on "],
             &["my ", "the ", "our ", "your ", "their ", ""],
             " list",
+            known_lists,
         ) {
             return Some(parsed);
         }
@@ -400,6 +408,28 @@ fn match_named_list_shape(
     connectors: &[&str],
     determiners: &[&str],
     list_suffix: &str,
+    known_lists: &[&str],
+) -> Option<Parsed> {
+    // Two passes, and the order matters. An utterance that says "list"
+    // wins wherever it sits, so every phrasing that worked before still
+    // resolves identically. Only if no split anywhere yields one do we
+    // accept a bare "<item> to <name>", and then only when <name> is a
+    // list the user really has — otherwise "add cream to the coffee"
+    // would file cream under a list called coffee. Italian never needed
+    // the suffix, so English was the odd one out.
+    scan_named_list(rest, connectors, determiners, Some(list_suffix), &[])
+        .or_else(|| scan_named_list(rest, connectors, determiners, None, known_lists))
+}
+
+/// One pass. With `list_suffix` the trailing word is required and
+/// `known_lists` is ignored; without it the remainder must match a
+/// known list to count.
+fn scan_named_list(
+    rest: &str,
+    connectors: &[&str],
+    determiners: &[&str],
+    list_suffix: Option<&str>,
+    known_lists: &[&str],
 ) -> Option<Parsed> {
     for connector in connectors {
         let mut search_from = 0usize;
@@ -413,9 +443,17 @@ fn match_named_list_shape(
                 .find_map(|det| after.strip_prefix(*det));
 
             if let Some(after_det) = after_det {
-                if let Some(list_name) = after_det.strip_suffix(list_suffix) {
+                let candidate = match list_suffix {
+                    Some(suffix) => after_det.strip_suffix(suffix),
+                    None => Some(after_det),
+                };
+                if let Some(list_name) = candidate {
                     let list_name = list_name.trim();
-                    if !list_name.is_empty() && !item.is_empty() {
+                    let acceptable = list_suffix.is_some()
+                        || known_lists
+                            .iter()
+                            .any(|l| l.trim().eq_ignore_ascii_case(list_name));
+                    if acceptable && !list_name.is_empty() && !item.is_empty() {
                         return Some(Parsed {
                             title: item.to_string(),
                             when: When::None,
@@ -1054,7 +1092,7 @@ mod tests {
 
     #[test]
     fn named_list_basic() {
-        let p = parse("add milk to my shopping list");
+        let p = parse("add milk to my shopping list", &[]);
         assert_eq!(p.title, "milk");
         assert_eq!(p.list_hint.as_deref(), Some("shopping"));
         assert_eq!(p.when, When::None);
@@ -1062,14 +1100,14 @@ mod tests {
 
     #[test]
     fn named_list_put_on_the() {
-        let p = parse("put eggs on the shopping list");
+        let p = parse("put eggs on the shopping list", &[]);
         assert_eq!(p.title, "eggs");
         assert_eq!(p.list_hint.as_deref(), Some("shopping"));
     }
 
     #[test]
     fn named_list_multi_word_name() {
-        let p = parse("add deadline review to my work projects list");
+        let p = parse("add deadline review to my work projects list", &[]);
         assert_eq!(p.title, "deadline review");
         assert_eq!(p.list_hint.as_deref(), Some("work projects"));
     }
@@ -1079,7 +1117,7 @@ mod tests {
         // "add milk to family shopping list" — no "my"/"the". Requiring a
         // determiner made this fall through to the reminder parser, which
         // kept the whole utterance as the title and lost the list entirely.
-        let p = parse("add milk to family shopping list");
+        let p = parse("add milk to family shopping list", &[]);
         assert_eq!(p.title, "milk");
         assert_eq!(p.list_hint.as_deref(), Some("family shopping"));
         assert_eq!(p.confidence, Confidence::High);
@@ -1087,7 +1125,7 @@ mod tests {
 
     #[test]
     fn named_list_single_word_without_determiner() {
-        let p = parse("add bread to shopping list");
+        let p = parse("add bread to shopping list", &[]);
         assert_eq!(p.title, "bread");
         assert_eq!(p.list_hint.as_deref(), Some("shopping"));
     }
@@ -1097,19 +1135,74 @@ mod tests {
         // The empty determiner must lose to a real one, or every hint
         // arrives with "my "/"our " glued to the front.
         assert_eq!(
-            parse("add milk to my shopping list").list_hint.as_deref(),
+            parse("add milk to my shopping list", &[]).list_hint.as_deref(),
             Some("shopping"),
         );
         assert_eq!(
-            parse("add milk to our family list").list_hint.as_deref(),
+            parse("add milk to our family list", &[]).list_hint.as_deref(),
             Some("family"),
         );
         assert_eq!(
-            parse("add milk to your shopping list").list_hint.as_deref(),
+            parse("add milk to your shopping list", &[]).list_hint.as_deref(),
             Some("shopping"),
         );
         assert_eq!(
-            parse("add milk to their shopping list").list_hint.as_deref(),
+            parse("add milk to their shopping list", &[]).list_hint.as_deref(),
+            Some("shopping"),
+        );
+    }
+
+    #[test]
+    fn named_list_without_the_word_list_when_that_list_exists() {
+        // How people actually talk. Before, the missing suffix meant the
+        // whole thing parsed as a reminder and the item landed silently
+        // in the default list.
+        let p = parse("add garlic powder to family shopping", &["Family Shopping"]);
+        assert_eq!(p.title, "garlic powder");
+        assert_eq!(p.list_hint.as_deref(), Some("family shopping"));
+        assert_eq!(p.when, When::None);
+        assert_eq!(p.confidence, Confidence::High);
+    }
+
+    #[test]
+    fn bare_list_name_match_ignores_case() {
+        let p = parse("add eggs to weekly shop", &["Weekly Shop"]);
+        assert_eq!(p.list_hint.as_deref(), Some("weekly shop"));
+    }
+
+    #[test]
+    fn bare_list_name_needs_a_list_that_exists() {
+        // The safety catch: without it every "add X to Y" invents a list.
+        let p = parse("add cream to the coffee", &["Family Shopping"]);
+        assert_eq!(p.list_hint, None);
+        assert_eq!(p.title, "add cream to the coffee");
+    }
+
+    #[test]
+    fn a_reminder_phrased_with_to_is_not_a_list_add() {
+        // The case that makes the known-list check load-bearing rather
+        // than belt-and-braces.
+        let p = parse("add a reminder to call mum", &["Family Shopping"]);
+        assert_eq!(p.list_hint, None);
+    }
+
+    #[test]
+    fn explicit_list_suffix_wins_over_a_bare_name_that_would_also_match() {
+        // "coffee" is a real list, so the bare pass would happily claim
+        // the first split — the explicit pass runs first and takes it.
+        // The name it yields is greedy, swallowing everything up to the
+        // last " list"; that is long-standing behaviour, pinned here so
+        // bare-name support can be seen not to have changed it.
+        let p = parse("add cream to the coffee on the shopping list", &["coffee", "shopping"]);
+        assert_eq!(p.list_hint.as_deref(), Some("coffee on the shopping"));
+        assert_eq!(p.title, "cream");
+    }
+
+    #[test]
+    fn explicit_list_suffix_still_works_with_no_known_lists() {
+        // Callers that can't enumerate lists lose nothing.
+        assert_eq!(
+            parse("add milk to the shopping list", &[]).list_hint.as_deref(),
             Some("shopping"),
         );
     }
@@ -1119,33 +1212,33 @@ mod tests {
         // "to the coffee" is not a list intent — should fall through to
         // the reminder parser, which strips no lead and treats the whole
         // string as the title.
-        let p = parse("add cream to the coffee");
+        let p = parse("add cream to the coffee", &[]);
         assert_eq!(p.list_hint, None);
     }
 
     #[test]
     fn untimed_reminder_strips_to_lead() {
-        let p = parse("remind me to buy milk");
+        let p = parse("remind me to buy milk", &[]);
         assert_eq!(p.title, "buy milk");
         assert_eq!(p.when, When::None);
     }
 
     #[test]
     fn relative_minutes_extracts_offset_and_strips_phrase() {
-        let p = parse("remind me in 30 minutes to check the oven");
+        let p = parse("remind me in 30 minutes to check the oven", &[]);
         assert_eq!(p.title, "check the oven");
         assert_eq!(p.when, When::InSeconds(1800));
     }
 
     #[test]
     fn relative_hours_works() {
-        let p = parse("remind me in 2 hours to check the oven");
+        let p = parse("remind me in 2 hours to check the oven", &[]);
         assert_eq!(p.when, When::InSeconds(7200));
     }
 
     #[test]
     fn at_time_today_extracts_clock_and_strips() {
-        let p = parse("remind me to walk the dog at 5pm");
+        let p = parse("remind me to walk the dog at 5pm", &[]);
         assert_eq!(p.title, "walk the dog");
         assert_eq!(
             p.when,
@@ -1155,7 +1248,7 @@ mod tests {
 
     #[test]
     fn at_time_with_tomorrow_sets_day_offset_one() {
-        let p = parse("remind me at 9am tomorrow to call the dentist");
+        let p = parse("remind me at 9am tomorrow to call the dentist", &[]);
         assert_eq!(p.title, "call the dentist");
         assert_eq!(
             p.when,
@@ -1165,7 +1258,7 @@ mod tests {
 
     #[test]
     fn at_time_tomorrow_can_lead_the_payload() {
-        let p = parse("remind me tomorrow at 3pm to pick up the parcel");
+        let p = parse("remind me tomorrow at 3pm to pick up the parcel", &[]);
         assert_eq!(p.title, "pick up the parcel");
         assert_eq!(
             p.when,
@@ -1175,14 +1268,14 @@ mod tests {
 
     #[test]
     fn tomorrow_alone_yields_date_only() {
-        let p = parse("remind me about laundry tomorrow");
+        let p = parse("remind me about laundry tomorrow", &[]);
         assert_eq!(p.title, "laundry");
         assert_eq!(p.when, When::DateOnly { day_offset: 1 });
     }
 
     #[test]
     fn empty_input_returns_empty_title() {
-        let p = parse("");
+        let p = parse("", &[]);
         assert_eq!(p.title, "");
         assert_eq!(p.when, When::None);
     }
@@ -1192,7 +1285,7 @@ mod tests {
         // Doesn't start with any reminder lead and doesn't match the
         // named-list shape — frontend gets the original text as the
         // title so the user still gets something usable.
-        let p = parse("eggs and bacon");
+        let p = parse("eggs and bacon", &[]);
         assert_eq!(p.title, "eggs and bacon");
         assert_eq!(p.when, When::None);
     }
@@ -1204,7 +1297,7 @@ mod tests {
 
     #[test]
     fn at_time_split_token_24h() {
-        let p = parse("remind me to take out the trash at 9 30");
+        let p = parse("remind me to take out the trash at 9 30", &[]);
         assert_eq!(p.title, "take out the trash");
         assert_eq!(
             p.when,
@@ -1214,7 +1307,7 @@ mod tests {
 
     #[test]
     fn at_time_split_token_with_pm() {
-        let p = parse("remind me to take out the trash at 9 30 pm");
+        let p = parse("remind me to take out the trash at 9 30 pm", &[]);
         assert_eq!(p.title, "take out the trash");
         assert_eq!(
             p.when,
@@ -1224,7 +1317,7 @@ mod tests {
 
     #[test]
     fn at_time_split_token_with_am() {
-        let p = parse("remind me to call the dentist at 9 30 am");
+        let p = parse("remind me to call the dentist at 9 30 am", &[]);
         assert_eq!(p.title, "call the dentist");
         assert_eq!(
             p.when,
@@ -1235,7 +1328,7 @@ mod tests {
     #[test]
     fn at_time_hour_only_with_pm_split() {
         // "at nine pm" normalises to "at 9 pm" — two tokens after "at".
-        let p = parse("remind me to leave at 9 pm");
+        let p = parse("remind me to leave at 9 pm", &[]);
         assert_eq!(p.title, "leave");
         assert_eq!(
             p.when,
@@ -1245,7 +1338,7 @@ mod tests {
 
     #[test]
     fn at_time_split_token_with_tomorrow_anywhere() {
-        let p = parse("remind me at 9 30 tomorrow to call mum");
+        let p = parse("remind me at 9 30 tomorrow to call mum", &[]);
         assert_eq!(p.title, "call mum");
         assert_eq!(
             p.when,
@@ -1256,7 +1349,7 @@ mod tests {
     #[test]
     fn at_time_split_token_rejects_non_minute_second_token() {
         // "at 9 tomorrow" must NOT consume "tomorrow" as minutes.
-        let p = parse("remind me at 9 tomorrow to buy milk");
+        let p = parse("remind me at 9 tomorrow to buy milk", &[]);
         assert_eq!(p.title, "buy milk");
         assert_eq!(
             p.when,
@@ -1311,7 +1404,7 @@ mod tests {
 
     #[test]
     fn at_time_on_named_weekday_strips_on_prefix() {
-        let p = parse("remind me to wash anu on friday at 3pm");
+        let p = parse("remind me to wash anu on friday at 3pm", &[]);
         assert_eq!(p.title, "wash anu");
         assert_eq!(
             p.when,
@@ -1321,7 +1414,7 @@ mod tests {
 
     #[test]
     fn at_time_bare_weekday_works() {
-        let p = parse("remind me to call mum friday at 11am");
+        let p = parse("remind me to call mum friday at 11am", &[]);
         assert_eq!(p.title, "call mum");
         assert_eq!(
             p.when,
@@ -1331,7 +1424,7 @@ mod tests {
 
     #[test]
     fn at_time_weekday_can_lead_the_payload() {
-        let p = parse("remind me on tuesday at 9am to take my pills");
+        let p = parse("remind me on tuesday at 9am to take my pills", &[]);
         assert_eq!(p.title, "take my pills");
         assert_eq!(
             p.when,
@@ -1341,14 +1434,14 @@ mod tests {
 
     #[test]
     fn day_only_on_weekday_yields_date_only_weekday() {
-        let p = parse("remind me on friday to send the report");
+        let p = parse("remind me on friday to send the report", &[]);
         assert_eq!(p.title, "send the report");
         assert_eq!(p.when, When::DateOnlyWeekday { weekday: 4 });
     }
 
     #[test]
     fn day_only_bare_weekday_still_matches() {
-        let p = parse("remind me saturday to water the plants");
+        let p = parse("remind me saturday to water the plants", &[]);
         assert_eq!(p.title, "water the plants");
         assert_eq!(p.when, When::DateOnlyWeekday { weekday: 5 });
     }
@@ -1365,7 +1458,7 @@ mod tests {
             ("sunday", 6),
         ];
         for (name, expected) in expectations {
-            let p = parse(&alloc::format!("remind me on {name} to do a thing"));
+            let p = parse(&alloc::format!("remind me on {name} to do a thing"), &[]);
             assert_eq!(
                 p.when,
                 When::DateOnlyWeekday { weekday: expected },
@@ -1378,7 +1471,7 @@ mod tests {
     fn on_without_weekday_is_not_consumed() {
         // "on the desk" shouldn't eat "on" as a day-anchor prefix —
         // only "on <weekday>" does.
-        let p = parse("remind me to put the key on the desk");
+        let p = parse("remind me to put the key on the desk", &[]);
         assert_eq!(p.title, "put the key on the desk");
         assert_eq!(p.when, When::None);
     }
@@ -1387,7 +1480,7 @@ mod tests {
     fn tomorrow_still_wins_over_absent_weekday() {
         // Regression guard: the new scanner's first-match behaviour must
         // still produce day_offset=1 for plain "tomorrow".
-        let p = parse("remind me tomorrow at 3pm to call the plumber");
+        let p = parse("remind me tomorrow at 3pm to call the plumber", &[]);
         assert_eq!(p.title, "call the plumber");
         assert_eq!(
             p.when,
@@ -1405,7 +1498,7 @@ mod tests {
     #[test]
     fn date_ordinal_with_of_and_at_time() {
         // "remind me to submit my tax return on the 27th of april at 10am"
-        let p = parse("remind me to submit my tax return on the 27th of april at 10am");
+        let p = parse("remind me to submit my tax return on the 27th of april at 10am", &[]);
         assert_eq!(p.title, "submit my tax return");
         assert_eq!(
             p.when,
@@ -1416,7 +1509,7 @@ mod tests {
     #[test]
     fn date_ordinal_no_of_and_at_time() {
         // "on the 27th april at 10am"
-        let p = parse("remind me to submit my tax return on the 27th april at 10am");
+        let p = parse("remind me to submit my tax return on the 27th april at 10am", &[]);
         assert_eq!(p.title, "submit my tax return");
         assert_eq!(
             p.when,
@@ -1430,7 +1523,7 @@ mod tests {
         // normaliser collapses "twenty seventh" to "27", and the
         // resulting "on the 27 of april" parses identically to the
         // ordinal-suffix form.
-        let p = parse("remind me to submit my tax return on the 27 of april at 10am");
+        let p = parse("remind me to submit my tax return on the 27 of april at 10am", &[]);
         assert_eq!(p.title, "submit my tax return");
         assert_eq!(
             p.when,
@@ -1441,7 +1534,7 @@ mod tests {
     #[test]
     fn date_numberwords_no_of_and_at_time() {
         // "twenty seventh april" → normaliser → "27 april".
-        let p = parse("remind me to submit my tax return on the 27 april at 10am");
+        let p = parse("remind me to submit my tax return on the 27 april at 10am", &[]);
         assert_eq!(p.title, "submit my tax return");
         assert_eq!(
             p.when,
@@ -1451,7 +1544,7 @@ mod tests {
 
     #[test]
     fn date_without_time_emits_date_only_date() {
-        let p = parse("remind me on the 27th of april to submit my tax return");
+        let p = parse("remind me on the 27th of april to submit my tax return", &[]);
         assert_eq!(p.title, "submit my tax return");
         assert_eq!(p.when, When::DateOnlyDate { month: 4, day: 27 });
     }
@@ -1460,7 +1553,7 @@ mod tests {
     fn date_leading_order_with_time_still_strips_cleanly() {
         // "on the 27th of april at 10am to X" — date leads, clock
         // follows, "to X" is the title.
-        let p = parse("remind me on the 27th of april at 10am to call the accountant");
+        let p = parse("remind me on the 27th of april at 10am to call the accountant", &[]);
         assert_eq!(p.title, "call the accountant");
         assert_eq!(
             p.when,
@@ -1470,7 +1563,7 @@ mod tests {
 
     #[test]
     fn date_with_ordinal_suffix_one_st() {
-        let p = parse("remind me to file the return on the 1st of may at 9am");
+        let p = parse("remind me to file the return on the 1st of may at 9am", &[]);
         assert_eq!(p.title, "file the return");
         assert_eq!(
             p.when,
@@ -1485,7 +1578,7 @@ mod tests {
         // falls through to LocalClock today at 9am with the stray
         // "32 of may" staying in the title. Not ideal, but honest:
         // the parser has no opinion on "that day can't exist".
-        let p = parse("remind me to nothing on the 32 of may at 9am");
+        let p = parse("remind me to nothing on the 32 of may at 9am", &[]);
         assert!(
             matches!(p.when, When::LocalClock { hour: 9, minute: 0, day_offset: 0 }),
             "got {:?}",
@@ -1503,14 +1596,14 @@ mod tests {
 
     #[test]
     fn confidence_high_when_title_has_no_residue() {
-        let p = parse("remind me to walk the dog at 5pm");
+        let p = parse("remind me to walk the dog at 5pm", &[]);
         assert_eq!(p.confidence, Confidence::High);
         assert_eq!(p.unparsed, None);
     }
 
     #[test]
     fn confidence_high_for_weekday_clean_parse() {
-        let p = parse("remind me to call mum at 9am on friday");
+        let p = parse("remind me to call mum at 9am on friday", &[]);
         assert_eq!(p.confidence, Confidence::High);
         assert_eq!(p.unparsed, None);
     }
@@ -1523,7 +1616,7 @@ mod tests {
         // Confidence drops to Partial (we did get a weekday anchor),
         // and unparsed="next" tells the frontend what was missed so
         // the user can be warned.
-        let p = parse("remind me next tuesday at 9am to see the dentist");
+        let p = parse("remind me next tuesday at 9am to see the dentist", &[]);
         assert_eq!(p.confidence, Confidence::Partial, "title={:?}", p.title);
         assert_eq!(p.unparsed.as_deref(), Some("next"));
     }
@@ -1538,10 +1631,10 @@ mod tests {
         // Note: "christmas" doesn't trip is_datetime_residue today
         // (no holiday table yet), so the residue is actually just
         // "tomorrow" — included to show the "fell back" branch fires.
-        let p = parse("remind me tomorrow to buy christmas presents");
+        let p = parse("remind me tomorrow to buy christmas presents", &[]);
         // Today+tomorrow is a clean parse; use a case that actually
         // leaves residue:
-        let p2 = parse("remind me on tuesday the 40th to do a thing");
+        let p2 = parse("remind me on tuesday the 40th to do a thing", &[]);
         // "tuesday" is consumed as weekday; "40th" is not a valid
         // ordinal date. When is LocalClockOnWeekday, which is NOT a
         // fallback — so confidence is Partial. That's the right
@@ -1550,7 +1643,7 @@ mod tests {
         assert_eq!(p2.unparsed.as_deref(), Some("40th"));
         // Belt-and-braces: demonstrate Low separately via a pure
         // fallback case.
-        let p3 = parse("remind me to do a thing tonight");
+        let p3 = parse("remind me to do a thing tonight", &[]);
         // "tonight" isn't an anchor (no hour/minute mapping today).
         // When is None. Residue is "tonight" → Low.
         assert_eq!(p3.confidence, Confidence::Low);
@@ -1563,7 +1656,7 @@ mod tests {
     fn confidence_low_when_month_only_and_no_day() {
         // "in april" — parser has no anchor for "april" alone (needs a
         // day). Falls back, residue preserved.
-        let p = parse("remind me in april to book the flight");
+        let p = parse("remind me in april to book the flight", &[]);
         assert_eq!(p.confidence, Confidence::Low);
         assert_eq!(p.unparsed.as_deref(), Some("april"));
     }
@@ -1573,14 +1666,14 @@ mod tests {
         // "on the 27th" (no month) — scan_calendar_date requires both
         // day and month, so nothing is consumed. Residue "27th"
         // survives in the title.
-        let p = parse("remind me on the 27th at 10am to submit the form");
+        let p = parse("remind me on the 27th at 10am to submit the form", &[]);
         assert_eq!(p.confidence, Confidence::Low, "title={:?}", p.title);
         assert_eq!(p.unparsed.as_deref(), Some("27th"));
     }
 
     #[test]
     fn confidence_high_for_calendar_date_clean_parse() {
-        let p = parse("remind me to submit my tax return on the 27th of april at 10am");
+        let p = parse("remind me to submit my tax return on the 27th of april at 10am", &[]);
         assert_eq!(p.confidence, Confidence::High);
         assert_eq!(p.unparsed, None);
     }
@@ -1589,7 +1682,7 @@ mod tests {
     fn confidence_high_when_plain_number_is_not_ordinal() {
         // "buy 3 apples" — bare digit, not a date ordinal. Must not
         // be mistaken for residue.
-        let p = parse("remind me to buy 3 apples at 5pm");
+        let p = parse("remind me to buy 3 apples at 5pm", &[]);
         assert_eq!(p.confidence, Confidence::High, "title={:?}", p.title);
         assert_eq!(p.unparsed, None);
     }
@@ -1601,7 +1694,7 @@ mod tests {
         // clean, so the skill reported High and committed an untimed
         // task without a card — the user thought nothing happened.
         // No-time creates route through Layer C instead.
-        let p = parse("remind me about business");
+        let p = parse("remind me about business", &[]);
         assert_eq!(p.title, "business");
         assert_eq!(p.when, When::None);
         assert_eq!(p.confidence, Confidence::Partial);
@@ -1612,7 +1705,7 @@ mod tests {
         // The same utterance with the time intact. "one hour" reaches
         // the skill as "1 hour" — the engine's words_to_number
         // normaliser runs before dispatch.
-        let p = parse("remind me about business in 1 hour");
+        let p = parse("remind me about business in 1 hour", &[]);
         assert_eq!(p.title, "business");
         assert_eq!(p.when, When::InSeconds(3600));
         assert_eq!(p.confidence, Confidence::High);
@@ -1621,7 +1714,7 @@ mod tests {
     #[test]
     fn named_list_add_stays_high_without_time() {
         // Untimed is the NORMAL case for list adds — must not regress.
-        let p = parse("add milk to my shopping list");
+        let p = parse("add milk to my shopping list", &[]);
         assert_eq!(p.confidence, Confidence::High);
         assert_eq!(p.when, When::None);
         assert_eq!(p.list_hint.as_deref(), Some("shopping"));
@@ -1640,7 +1733,7 @@ mod tests {
         // april", the explicit calendar date wins. Loose utterances
         // like "on friday the 27th of april" should still resolve to
         // the date.
-        let p = parse("remind me on friday the 27th of april at 10am to do a thing");
+        let p = parse("remind me on friday the 27th of april at 10am to do a thing", &[]);
         assert_eq!(p.title, "do a thing");
         // "friday" gets left in the title or stripped — we don't
         // assert its fate, only that the calendar date wins over the
@@ -1660,7 +1753,7 @@ mod tests {
     #[test]
     fn italian_lead_strip_ricordami_di() {
         // "ricordami di chiamare mia madre alle 17"
-        let p = parse("ricordami di chiamare mia madre alle 17");
+        let p = parse("ricordami di chiamare mia madre alle 17", &[]);
         assert_eq!(p.title, "chiamare mia madre");
         assert_eq!(p.when, When::LocalClock { hour: 17, minute: 0, day_offset: 0 });
         assert_eq!(p.confidence, Confidence::High);
@@ -1670,7 +1763,7 @@ mod tests {
     fn italian_lead_strip_ricordami_no_di() {
         // Bare "ricordami chiamare ..." — Italian voice users skip "di"
         // about as often as English users skip "to".
-        let p = parse("ricordami chiamare il dottore alle 9");
+        let p = parse("ricordami chiamare il dottore alle 9", &[]);
         assert_eq!(p.title, "chiamare il dottore");
         assert_eq!(p.when, When::LocalClock { hour: 9, minute: 0, day_offset: 0 });
     }
@@ -1678,7 +1771,7 @@ mod tests {
     #[test]
     fn italian_relative_tra_minutes() {
         // "tra 5 minuti" — Italian "in 5 minutes"
-        let p = parse("ricordami di mescolare la salsa tra 5 minuti");
+        let p = parse("ricordami di mescolare la salsa tra 5 minuti", &[]);
         assert_eq!(p.title, "mescolare la salsa");
         assert_eq!(p.when, When::InSeconds(5 * 60));
     }
@@ -1686,7 +1779,7 @@ mod tests {
     #[test]
     fn italian_relative_fra_hours() {
         // "fra 2 ore" — synonym of "tra"
-        let p = parse("ricordami di chiamare papà fra 2 ore");
+        let p = parse("ricordami di chiamare papà fra 2 ore", &[]);
         assert_eq!(p.title, "chiamare papà");
         assert_eq!(p.when, When::InSeconds(2 * 3600));
     }
@@ -1694,7 +1787,7 @@ mod tests {
     #[test]
     fn italian_alle_24h_no_ampm() {
         // Italian uses 24-hour: "alle 17:30" → 17:30 directly
-        let p = parse("ricordami di prendere il treno alle 17:30");
+        let p = parse("ricordami di prendere il treno alle 17:30", &[]);
         assert_eq!(p.title, "prendere il treno");
         assert_eq!(p.when, When::LocalClock { hour: 17, minute: 30, day_offset: 0 });
     }
@@ -1703,24 +1796,24 @@ mod tests {
     fn italian_weekday_lunedi() {
         // "lunedì alle 10" — weekday with clock. Both diacritic and
         // bare-ASCII forms accepted.
-        let p = parse("ricordami di andare in palestra lunedì alle 10");
+        let p = parse("ricordami di andare in palestra lunedì alle 10", &[]);
         assert_eq!(p.title, "andare in palestra");
         assert_eq!(p.when, When::LocalClockOnWeekday { hour: 10, minute: 0, weekday: 0 });
 
-        let p = parse("ricordami di andare in palestra lunedi alle 10");
+        let p = parse("ricordami di andare in palestra lunedi alle 10", &[]);
         assert_eq!(p.when, When::LocalClockOnWeekday { hour: 10, minute: 0, weekday: 0 });
     }
 
     #[test]
     fn italian_today_oggi() {
-        let p = parse("ricordami di mangiare oggi alle 13");
+        let p = parse("ricordami di mangiare oggi alle 13", &[]);
         assert_eq!(p.title, "mangiare");
         assert_eq!(p.when, When::LocalClock { hour: 13, minute: 0, day_offset: 0 });
     }
 
     #[test]
     fn italian_tomorrow_domani() {
-        let p = parse("ricordami di chiamare il dentista domani alle 9");
+        let p = parse("ricordami di chiamare il dentista domani alle 9", &[]);
         assert_eq!(p.title, "chiamare il dentista");
         assert_eq!(p.when, When::LocalClock { hour: 9, minute: 0, day_offset: 1 });
     }
@@ -1728,7 +1821,7 @@ mod tests {
     #[test]
     fn italian_month_calendar_date() {
         // "il 27 aprile alle 10"
-        let p = parse("ricordami di andare al medico il 27 aprile alle 10");
+        let p = parse("ricordami di andare al medico il 27 aprile alle 10", &[]);
         assert_eq!(p.title, "andare al medico");
         assert_eq!(
             p.when,
@@ -1738,7 +1831,7 @@ mod tests {
 
     #[test]
     fn italian_mezzogiorno() {
-        let p = parse("ricordami di pranzare a mezzogiorno");
+        let p = parse("ricordami di pranzare a mezzogiorno", &[]);
         // "a mezzogiorno" — the bare token "mezzogiorno" parses as
         // 12:00 via parse_clock_token. The "a" preposition isn't a
         // recognised lead so the time stays in the title; this test
@@ -1755,7 +1848,7 @@ mod tests {
     #[test]
     fn italian_named_list_alla() {
         // "aggiungi latte alla lista della spesa"
-        let p = parse("aggiungi latte alla lista della spesa");
+        let p = parse("aggiungi latte alla lista della spesa", &[]);
         assert_eq!(p.title, "latte");
         assert_eq!(p.list_hint.as_deref(), Some("spesa"));
         assert_eq!(p.confidence, Confidence::High);
@@ -1764,7 +1857,7 @@ mod tests {
     #[test]
     fn italian_named_list_metti_sulla() {
         // "metti pane sulla lista della spesa"
-        let p = parse("metti pane sulla lista della spesa");
+        let p = parse("metti pane sulla lista della spesa", &[]);
         assert_eq!(p.title, "pane");
         assert_eq!(p.list_hint.as_deref(), Some("spesa"));
     }
@@ -1772,7 +1865,7 @@ mod tests {
     #[test]
     fn italian_named_list_short_form() {
         // Short form: "aggiungi latte alla spesa" — no "lista" word.
-        let p = parse("aggiungi latte alla spesa");
+        let p = parse("aggiungi latte alla spesa", &[]);
         assert_eq!(p.title, "latte");
         assert_eq!(p.list_hint.as_deref(), Some("spesa"));
     }
@@ -1781,7 +1874,7 @@ mod tests {
     fn italian_partial_when_missed_token() {
         // Italian residue word that the parser doesn't understand —
         // confidence drops accordingly.
-        let p = parse("ricordami di chiamare la nonna stasera");
+        let p = parse("ricordami di chiamare la nonna stasera", &[]);
         // "stasera" (this evening) is residue per is_datetime_residue.
         // No clock parse happened, so we fall through to None +
         // residue → Low confidence.
@@ -1801,7 +1894,7 @@ mod scratch_probe {
             "add milk to the family shopping list",
             "add milk to shopping list",
         ] {
-            let p = parse(u);
+            let p = parse(u, &[]);
             println!("{u:?} -> title={:?} hint={:?} conf={:?}", p.title, p.list_hint, p.confidence);
         }
     }
