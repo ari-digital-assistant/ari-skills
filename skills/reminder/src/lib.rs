@@ -142,7 +142,7 @@ pub fn dispatch(input: &str) -> String {
             p
         }
         None => {
-            let p = parse::parse(input);
+            let p = parse_with_lists(input);
             ari::log(
                 ari::LogLevel::Info,
                 &format!(
@@ -185,6 +185,34 @@ pub fn dispatch(input: &str) -> String {
 /// when the args left us without a usable time anchor — `when`
 /// supplied but not parsed cleanly, or no `when` at all on a create
 /// that isn't a list add — so Layer C can step in to disambiguate.
+/// Parse an utterance, telling the grammar which lists the user really
+/// has so it can read "add garlic powder to family shopping" — no word
+/// "list" in it — as a list add rather than a reminder.
+///
+/// The lookup is skipped unless the utterance opens with an add verb, so
+/// an ordinary reminder never pays for the host call.
+#[cfg(target_arch = "wasm32")]
+fn parse_with_lists(input: &str) -> parse::Parsed {
+    const ADD_VERBS: [&str; 4] = ["add ", "put ", "aggiungi ", "metti "];
+    let lowered = input.trim().to_lowercase();
+    if !ADD_VERBS.iter().any(|v| lowered.starts_with(v)) || !ari::tasks_provider_installed() {
+        return parse::parse(input, &[]);
+    }
+    let names: Vec<String> = ari::tasks_list_lists()
+        .into_iter()
+        .map(|l| l.display_name)
+        .collect();
+    let refs: Vec<&str> = names.iter().map(|s| s.as_str()).collect();
+    parse::parse(input, &refs)
+}
+
+/// Host-free twin for the native test build, where no tasks provider
+/// exists. Only the explicit "… list" form is recognised.
+#[cfg(not(target_arch = "wasm32"))]
+fn parse_with_lists(input: &str) -> parse::Parsed {
+    parse::parse(input, &[])
+}
+
 #[cfg(target_arch = "wasm32")]
 fn parsed_from_args(input: &str) -> Option<parse::Parsed> {
     let args_json = ari::args()?;
@@ -218,7 +246,7 @@ fn parsed_from_args(input: &str) -> Option<parse::Parsed> {
     // typed-args fast path silently bypasses the grammar fix and the item
     // lands in the default list.
     if list_hint.is_none() {
-        let from_grammar = parse::parse(input);
+        let from_grammar = parse_with_lists(input);
         if from_grammar.list_hint.is_some() {
             ari::log(
                 ari::LogLevel::Info,
@@ -241,7 +269,7 @@ fn parsed_from_args(input: &str) -> Option<parse::Parsed> {
             // Synthesize a minimal "remind me at <when>" so the
             // parser's date scanner has the framing it expects.
             let synthetic = format!("remind me at {w}");
-            let parsed = parse::parse(&synthetic);
+            let parsed = parse::parse(&synthetic, &[]);
             // If parse.rs flagged residue, treat the args as partial
             // so Layer C disambiguates rather than committing on a
             // half-understood time.
@@ -474,7 +502,7 @@ fn handle_continuation(cont: layer_c::Continuation) -> String {
         &format!("continuation: assistant response preview: {preview:?}"),
     );
 
-    let parsed = parse::parse(&cont.context);
+    let parsed = parse_with_lists(&cont.context);
 
     match layer_c::parse_assistant_response(&cont.response) {
         Some(resp) if resp.confidence.eq_ignore_ascii_case("high") => {
