@@ -182,6 +182,35 @@ fn act_reply(target: Option<String>, body: &str) -> String {
     action::ask_json(&question, &action::pack_context("replyconfirm", &name, "", "", body))
 }
 
+/// Which branch a contact lookup lands on, decided purely from which of the
+/// matches are reachable on the service being asked for.
+///
+/// Split out from [`resolve_and_act`] because that function is wasm-only —
+/// it is wrapped in host calls that cannot run in a native test build — and
+/// this is the part that was wrong. Same reason `yes_matches` is split out.
+#[derive(Debug, PartialEq, Eq)]
+enum Candidates {
+    /// Nobody by that name at all.
+    Nobody,
+    /// Somebody by that name, but not reachable this way.
+    Unreachable,
+    /// Exactly one to act on, at this index into the match list.
+    One(usize),
+    /// Several to ask about.
+    Several,
+}
+
+fn candidates(reachable: &[bool]) -> Candidates {
+    let mut hits = reachable.iter().enumerate().filter(|(_, r)| **r).map(|(i, _)| i);
+    let first = hits.next();
+    match (reachable.is_empty(), first, hits.next()) {
+        (true, _, _) => Candidates::Nobody,
+        (_, None, _) => Candidates::Unreachable,
+        (_, Some(i), None) => Candidates::One(i),
+        (_, Some(_), Some(_)) => Candidates::Several,
+    }
+}
+
 /// Turn a spoken name into somebody we can actually address, then act.
 ///
 /// Four outcomes, and they are genuinely different answers to the user:
@@ -195,23 +224,45 @@ fn resolve_and_act(recipient: &str, service: &str, body: &str) -> String {
     }
 
     let matches = ari::contacts_lookup(recipient);
-    match matches.len() {
-        0 => action::say_json(&t_args("error.no_contact", &[("recipient", recipient)])),
-        1 => {
-            let c = &matches[0];
-            match channel_for(c, service) {
-                Some(id) => act(&c.display_name, Some(id), service, body),
-                None => action::say_json(&t_args(
-                    "error.no_channel",
-                    &[("recipient", &c.display_name), ("service", service)],
-                )),
-            }
+    // Narrow to people reachable on the service being asked for BEFORE
+    // counting. Three cards for one name where only one carries a phone
+    // number is a single answer and two dead ends — asking "which Keith?"
+    // there is a question the user cannot meaningfully answer, since the
+    // other two would only fail once chosen.
+    let reachable: Vec<bool> = matches
+        .iter()
+        .map(|c| channel_for(c, service).is_some())
+        .collect();
+
+    match candidates(&reachable) {
+        Candidates::Nobody => {
+            action::say_json(&t_args("error.no_contact", &[("recipient", recipient)]))
         }
-        _ => {
-            // More than one Gail is the normal case, not an error. Ask.
+        Candidates::Unreachable => {
+            // Somebody by that name exists, they just can't be reached this
+            // way. Name them when there is only one; with several we would be
+            // picking one arbitrarily to apologise about.
+            let who = if matches.len() == 1 {
+                matches[0].display_name.as_str()
+            } else {
+                recipient
+            };
+            action::say_json(&t_args(
+                "error.no_channel",
+                &[("recipient", who), ("service", service)],
+            ))
+        }
+        Candidates::One(i) => {
+            let c = &matches[i];
+            act(&c.display_name, channel_for(c, service), service, body)
+        }
+        Candidates::Several => {
+            // More than one reachable Gail is the normal case, not an error.
             let names = matches
                 .iter()
-                .map(|c| c.display_name.as_str())
+                .zip(&reachable)
+                .filter(|(_, r)| **r)
+                .map(|(c, _)| c.display_name.as_str())
                 .collect::<Vec<_>>()
                 .join(", ");
             action::ask_json(
@@ -402,6 +453,48 @@ fn t_args(key: &str, args: &[(&str, &str)]) -> String {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn nobody_by_that_name() {
+        assert_eq!(candidates(&[]), Candidates::Nobody);
+    }
+
+    #[test]
+    fn found_but_not_reachable_this_way() {
+        assert_eq!(candidates(&[false]), Candidates::Unreachable);
+        assert_eq!(candidates(&[false, false, false]), Candidates::Unreachable);
+    }
+
+    #[test]
+    fn one_reachable_among_several_is_an_answer_not_a_question() {
+        // The bug. Three "Keith Vassallo" cards, one with a phone number:
+        // asking which is a question the user can't usefully answer, because
+        // the other two would only fail once picked.
+        assert_eq!(candidates(&[false, true, false]), Candidates::One(1));
+        assert_eq!(candidates(&[true, false, false]), Candidates::One(0));
+        assert_eq!(candidates(&[false, false, true]), Candidates::One(2));
+    }
+
+    #[test]
+    fn the_single_match_case_still_works() {
+        assert_eq!(candidates(&[true]), Candidates::One(0));
+    }
+
+    #[test]
+    fn two_reachable_people_is_still_worth_asking_about() {
+        assert_eq!(candidates(&[true, true]), Candidates::Several);
+        assert_eq!(candidates(&[true, false, true]), Candidates::Several);
+    }
+
+    #[test]
+    fn the_index_points_into_the_full_match_list_not_the_filtered_one() {
+        // Getting this wrong would text the wrong person rather than fail
+        // loudly, so it is worth its own test.
+        match candidates(&[false, false, true]) {
+            Candidates::One(i) => assert_eq!(i, 2),
+            other => panic!("expected One(2), got {other:?}"),
+        }
+    }
     use super::*;
 
     #[test]

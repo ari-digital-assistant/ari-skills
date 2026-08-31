@@ -348,10 +348,16 @@ fn build_from_rest(
     // the address book. Falls back to the first word when nothing matches —
     // the skill still says something useful about a name it can't find.
     let words: Vec<&str> = rest.split_whitespace().collect();
+    let lower_raw = raw.to_lowercase();
     let mut take = words.len().min(MAX_NAME_WORDS);
     while take > 1 {
         let candidate = words[..take].join(" ");
-        if is_contact(&candidate) {
+        // The candidate has to cover whole words of the RAW text, not just
+        // read plausibly in the normalised one. "I'm" normalises to "i am",
+        // which makes "gail i" look like a two-word name — and a loose
+        // contacts filter will match it against an Abigail — but its second
+        // word is only part of the raw "I'm", so it cannot anchor the body.
+        if is_contact(&candidate) && spans_whole_words(&candidate, &lower_raw) {
             let tail = rest[candidate.len().min(rest.len())..].trim_start();
             return build(&candidate, tail, &candidate, service, raw, confidence);
         }
@@ -423,13 +429,14 @@ fn first_marker(tail: &str) -> Option<(&'static str, usize)> {
 /// and contractions survive. `anchor` is the last token before the body —
 /// found by search rather than by index, see the module note.
 fn body_after(raw: &str, anchor: &str) -> Option<String> {
-    let lower = raw.to_lowercase();
     let anchor = anchor.trim();
     if anchor.is_empty() {
         return None;
     }
-    let at = find_word(&lower, anchor)?;
-    let rest = raw[at + anchor.len()..].trim();
+    // Whole words, not a literal find: an anchor of "o brien" has to clear
+    // the raw "O'Brien", and "gail i" must not clear part of "I'm".
+    let at = end_of_words(raw, anchor)?;
+    let rest = raw[at..].trim();
     let rest = rest.trim_start_matches(|c: char| c == ',' || c == ':');
     let rest = rest.trim();
     if rest.is_empty() {
@@ -442,12 +449,30 @@ fn body_after(raw: &str, anchor: &str) -> Option<String> {
 /// The recipient as the user actually said it, so "Mario" is spoken back as
 /// "Mario" rather than "mario".
 fn display_form(raw: &str, recipient: &str) -> Option<String> {
-    let lower = raw.to_lowercase();
-    let first = recipient.split(' ').next()?;
-    let at = find_word(&lower, first)?;
-    let taken: Vec<&str> = raw[at..].split_whitespace().collect();
-    let want = recipient.split(' ').filter(|w| !w.is_empty()).count();
-    if taken.len() < want {
+    let first = alnum_lower(recipient.split(' ').next()?);
+    let letters = alnum_lower(recipient);
+    if first.is_empty() {
+        return None;
+    }
+    let tokens: Vec<&str> = raw.split_whitespace().collect();
+    // Letters only, and a prefix match: normalisation splits "O'Brien" into
+    // "o brien", so the raw token a name starts in is often longer than the
+    // word being looked for.
+    let start = tokens.iter().position(|t| alnum_lower(t).starts_with(&first))?;
+    // Take raw tokens until their letters cover the recipient's. Counting
+    // recipient words instead would take two tokens for "o brien" and drag
+    // the next word of the sentence into the name.
+    let mut covered = String::new();
+    let mut want = 0usize;
+    for token in &tokens[start..] {
+        covered.push_str(&alnum_lower(token));
+        want += 1;
+        if covered.len() >= letters.len() {
+            break;
+        }
+    }
+    let taken = &tokens[start..];
+    if want == 0 || taken.len() < want {
         return None;
     }
     // "Send an email to Gail, remember the milk" — the raw text carries
@@ -465,23 +490,51 @@ fn display_form(raw: &str, recipient: &str) -> Option<String> {
 
 /// Byte offset of `needle` in `hay` at a word boundary, so "sam" doesn't
 /// match inside "same".
-fn find_word(hay: &str, needle: &str) -> Option<usize> {
-    let bytes = hay.as_bytes();
-    let mut from = 0usize;
-    while let Some(rel) = hay[from..].find(needle) {
-        let at = from + rel;
-        let end = at + needle.len();
-        let before_ok = at == 0 || !bytes[at - 1].is_ascii_alphanumeric();
-        let after_ok = end >= bytes.len() || !bytes[end].is_ascii_alphanumeric();
-        if before_ok && after_ok {
-            return Some(at);
-        }
-        from = at + 1;
-        if from >= hay.len() {
-            break;
+/// Letters and digits only, lowercased — the form in which a normalised
+/// candidate and the raw text can be compared without punctuation getting in
+/// the way.
+fn alnum_lower(s: &str) -> String {
+    s.chars().filter(|c| c.is_alphanumeric()).flat_map(|c| c.to_lowercase()).collect()
+}
+
+/// Byte offset in `raw` just past the run of whole words that `phrase`
+/// covers, or `None` if it covers no such run.
+///
+/// Comparing letters only, but insisting the run both starts and ends on a
+/// word boundary, is what separates the two cases that matter. Normalisation
+/// turns an apostrophe into a space, so "O'Brien" reaches the parser as
+/// "o brien" — two words spanning one raw word, and legitimate. "gail i" is
+/// not: its second word is a fragment of the raw "I'm", so no run of whole
+/// words matches and the body is never cut mid-word.
+fn end_of_words(raw: &str, phrase: &str) -> Option<usize> {
+    let want = alnum_lower(phrase);
+    if want.is_empty() {
+        return None;
+    }
+    // split_whitespace drops the offsets, and we need them to slice the body
+    // out afterwards. Each token is a subslice of `raw`, so the difference
+    // between their pointers is its byte offset.
+    let tokens: Vec<(usize, &str)> = raw
+        .split_whitespace()
+        .map(|t| (t.as_ptr() as usize - raw.as_ptr() as usize, t))
+        .collect();
+    for start in 0..tokens.len() {
+        let mut acc = String::new();
+        for (offset, token) in &tokens[start..] {
+            acc.push_str(&alnum_lower(token));
+            if acc == want {
+                return Some(offset + token.len());
+            }
+            if !want.starts_with(&acc) {
+                break;
+            }
         }
     }
     None
+}
+
+fn spans_whole_words(candidate: &str, raw: &str) -> bool {
+    end_of_words(raw, candidate).is_some()
 }
 
 /// Trailing "on whatsapp" / "on telegram", removed before verb matching so
@@ -739,6 +792,61 @@ mod tests {
     fn punctuation_after_a_name_is_not_part_of_it() {
         let r = p("Tell Gail, I am on my way", "tell gail i am on my way").unwrap();
         assert_eq!(r.recipient, "Gail");
+    }
+
+    #[test]
+    fn a_contraction_is_not_part_of_the_name() {
+        // "tell gail I'm on the way" went out as "'m on the way". The engine
+        // normalises "I'm" to "i am", which offers "gail i" as a two-word
+        // name; a loose contacts filter matches it against an Abigail, and
+        // the body was then cut from the middle of the raw "I'm".
+        let r = parse_with("tell gail i am on the way", "tell gail I'm on the way", |n| {
+            n == "gail" || n == "gail i"
+        })
+        .unwrap();
+        assert_eq!(r.recipient, "gail");
+        assert_eq!(r.body.as_deref(), Some("I'm on the way"));
+    }
+
+    #[test]
+    fn an_anchor_will_not_clear_part_of_a_contraction() {
+        let raw = "tell gail i'm on the way";
+        assert_eq!(end_of_words(raw, "gail i"), None);
+        assert_eq!(end_of_words(raw, "gail").map(|i| raw[i..].trim()), Some("i'm on the way"));
+    }
+
+    #[test]
+    fn an_anchor_clears_an_apostrophe_the_normaliser_split() {
+        let raw = "tell O'Brien hello there";
+        assert_eq!(end_of_words(raw, "o brien").map(|i| raw[i..].trim()), Some("hello there"));
+    }
+
+    #[test]
+    fn anchors_work_on_non_ascii_names() {
+        // Byte-stepping used to risk landing inside a multi-byte character.
+        let raw = "dì a Sofía ciao";
+        assert_eq!(end_of_words(raw, "sofía").map(|i| raw[i..].trim()), Some("ciao"));
+        assert_eq!(end_of_words(raw, "sofi"), None);
+    }
+
+    #[test]
+    fn a_candidate_must_cover_whole_words_of_the_raw_text() {
+        // "o brien" spans the single raw word "O'Brien" — legitimate.
+        assert!(spans_whole_words("o brien", "tell o'brien hello"));
+        // "gail i" only covers part of "I'm" — not something the user said.
+        assert!(!spans_whole_words("gail i", "tell gail i'm on the way"));
+        assert!(spans_whole_words("gail", "tell gail i'm on the way"));
+    }
+
+    #[test]
+    fn a_two_word_name_spanning_one_raw_word_does_not_eat_the_sentence() {
+        // Counting recipient words rather than raw ones took "O'Brien hello".
+        let r = parse_with("tell o brien hello there", "tell O'Brien hello there", |n| {
+            n == "o brien"
+        })
+        .unwrap();
+        assert_eq!(r.recipient, "O'Brien");
+        assert_eq!(r.body.as_deref(), Some("hello there"));
     }
 
     #[test]

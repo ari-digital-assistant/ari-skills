@@ -7,7 +7,7 @@ description: >
 metadata:
   ari:
     id: dev.heyari.message
-    version: "0.2.1"
+    version: "0.2.2"
     type: skill
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari-skills
