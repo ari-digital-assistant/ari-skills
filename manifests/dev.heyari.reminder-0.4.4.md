@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.reminder
-    version: "0.4.3"
+    version: "0.4.4"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
@@ -27,6 +27,13 @@ metadata:
         # depends entirely on the router, which then dispatches with
         # typed args that have no list_hint in them. The trailing literal
         # "list" is what keeps this from grabbing ordinary sentences.
+        #
+        # Drop the word entirely — "add milk to family shopping" — and no
+        # pattern here matches, so the router is the only way in. That is
+        # deliberate: a regex loose enough to catch it would also catch
+        # "add the lamp to the living room group". The grammar recovers
+        # the list name on the args path instead, by checking the trailing
+        # words against the lists the user actually has.
         - regex: "\\b(add|put) .+ (to|on) (my |the |our |your |their )?[\\w]+( [\\w]+)? list\\b"
           weight: 0.9
         # Read-only queries — list reminders for today/tomorrow, or
