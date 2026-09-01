@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-09-01T13:23:22Z",
+  "generated_at": "2026-09-01T16:47:27Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -26,7 +26,7 @@
       ],
       "bundle": "bundles/dev.heyari.timer-0.2.0.tar.gz",
       "signature": "bundles/dev.heyari.timer-0.2.0.tar.gz.sig",
-      "sha256": "d23ed7c02e4dd3c7df86af05f07c7e15d645e12fac23df9e69ff77b18334729d",
+      "sha256": "0a0c28af4dc2f90b6e87627926fd965fe779ca4a8a32f0f923592c089ac1cb0e",
       "manifest": "manifests/dev.heyari.timer-0.2.0.md",
       "localizations": {
         "it": {
@@ -161,7 +161,7 @@
       ],
       "bundle": "bundles/dev.heyari.navigation-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.navigation-0.1.0.tar.gz.sig",
-      "sha256": "fbade61943fffe339030928ee802790a6e502aa8a893443d69c1c298680ff625",
+      "sha256": "f4902896b8bfdba684887121871f7216b0251f12bc40b2ef98aaa71c80ce908b",
       "manifest": "manifests/dev.heyari.navigation-0.1.0.md",
       "localizations": {
         "it": {
@@ -323,7 +323,7 @@
       ],
       "bundle": "bundles/dev.heyari.alarm-0.1.2.tar.gz",
       "signature": "bundles/dev.heyari.alarm-0.1.2.tar.gz.sig",
-      "sha256": "7f1c675d539b44069c2abe4855d07b80e28c908d839346b675c8edf961aee826",
+      "sha256": "f1cd0448eb67bea31ec515365d61ed721c72bfde92292c84794949fad715f612",
       "manifest": "manifests/dev.heyari.alarm-0.1.2.md",
       "localizations": {
         "it": {
@@ -359,7 +359,7 @@
       ],
       "bundle": "bundles/dev.heyari.music-0.1.1.tar.gz",
       "signature": "bundles/dev.heyari.music-0.1.1.tar.gz.sig",
-      "sha256": "639c1a9416ab729305e4427eb855c4c5a849d9532c6eebfb9ef5edcc7ce6bf6b",
+      "sha256": "c813ab0f6460bbba97d7b8e6159067b1eea0d9ec93f1d936fe5d982639114075",
       "manifest": "manifests/dev.heyari.music-0.1.1.md",
       "localizations": {
         "it": {
@@ -457,7 +457,7 @@
       ],
       "bundle": "bundles/dev.heyari.weather-0.2.1.tar.gz",
       "signature": "bundles/dev.heyari.weather-0.2.1.tar.gz.sig",
-      "sha256": "50bb5915349dcf3caaa6eefb655256e69921c0c2931062e7757f44a30b57fc66",
+      "sha256": "e8bb96d8f1111d4d005155b29ee5ef027e4c518ea4fd43f7ae42f682e2658efa",
       "manifest": "manifests/dev.heyari.weather-0.2.1.md",
       "localizations": {
         "it": {
@@ -475,7 +475,7 @@
     },
     {
       "id": "dev.heyari.reminder",
-      "version": "0.4.4",
+      "version": "0.5.0",
       "name": "reminder",
       "description": "Sets timed reminders and untimed list items. Routes to the user's tasks app (default), calendar, or both, with optional voice-named lists like \"add milk to my shopping list\".",
       "type": "skill",
@@ -490,10 +490,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.reminder-0.4.4.tar.gz",
-      "signature": "bundles/dev.heyari.reminder-0.4.4.tar.gz.sig",
-      "sha256": "84709fde17b3b7fe2406d10e5d66293cf7c7a734275b15c4e73a66b1767a4cf8",
-      "manifest": "manifests/dev.heyari.reminder-0.4.4.md",
+      "bundle": "bundles/dev.heyari.reminder-0.5.0.tar.gz",
+      "signature": "bundles/dev.heyari.reminder-0.5.0.tar.gz.sig",
+      "sha256": "1dc50bb3ed5dbd5c208d90b2d394b6688c7d9bcd271c93338b92b4c5d9622fa4",
+      "manifest": "manifests/dev.heyari.reminder-0.5.0.md",
       "localizations": {
         "it": {
           "name": "reminder",
@@ -502,11 +502,11 @@
       },
       "screenshots": {
         "android": [
-          "screenshots/dev.heyari.reminder-0.4.4/android/01-task-request.webp",
-          "screenshots/dev.heyari.reminder-0.4.4/android/02-tasks-org-integration.webp",
-          "screenshots/dev.heyari.reminder-0.4.4/android/03-shopping-list-request.webp",
-          "screenshots/dev.heyari.reminder-0.4.4/android/04-shopping-list-response.webp",
-          "screenshots/dev.heyari.reminder-0.4.4/android/05-settings.webp"
+          "screenshots/dev.heyari.reminder-0.5.0/android/01-task-request.webp",
+          "screenshots/dev.heyari.reminder-0.5.0/android/02-tasks-org-integration.webp",
+          "screenshots/dev.heyari.reminder-0.5.0/android/03-shopping-list-request.webp",
+          "screenshots/dev.heyari.reminder-0.5.0/android/04-shopping-list-response.webp",
+          "screenshots/dev.heyari.reminder-0.5.0/android/05-settings.webp"
         ]
       }
     }

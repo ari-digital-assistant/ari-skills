@@ -5,10 +5,10 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.reminder
-    version: "0.4.4"
+    version: "0.5.0"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
-    engine: ">=0.3"
+    engine: ">=0.5"
     capabilities: [calendar, tasks]
     languages: [en, it]
     specificity: high
@@ -28,14 +28,20 @@ metadata:
         # typed args that have no list_hint in them. The trailing literal
         # "list" is what keeps this from grabbing ordinary sentences.
         #
-        # Drop the word entirely — "add milk to family shopping" — and no
-        # pattern here matches, so the router is the only way in. That is
-        # deliberate: a regex loose enough to catch it would also catch
-        # "add the lamp to the living room group". The grammar recovers
-        # the list name on the args path instead, by checking the trailing
-        # words against the lists the user actually has.
         - regex: "\\b(add|put) .+ (to|on) (my |the |our |your |their )?[\\w]+( [\\w]+)? list\\b"
           weight: 0.9
+        # Drop the word "list" entirely — "add bananas to family shopping"
+        # — and only the user's real list names tell this apart from "add
+        # cream to the coffee". The example phrases below do that properly
+        # via {list:tasks.lists}; this loose pattern is the backstop for a
+        # frontend that pushes no vocabulary. It sits at 0.65 so it can only
+        # win the last ranking round, and the skill answers anything it
+        # wrongly caught with `_ari_no_match` — see `parse::is_unclaimed_add`.
+        #
+        # "add" only, not "put": the poaching gate showed "put X on Y" taking
+        # examples off `open`, `counter` and `current_date`.
+        - regex: "^add .+ to .+"
+          weight: 0.65
         # Read-only queries — list reminders for today/tomorrow, or
         # the next upcoming reminder. Patterns assume the input has
         # been through `normalize_input`, which expands `what's` →
@@ -324,6 +330,30 @@ metadata:
           list_hint: "{list}"
       - text: "add {item} to {list} list"
         weight: 0.75
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      # The bare form, with no word "list" in it. The slot is constrained to
+      # the user's real lists, which is the only thing separating "add
+      # bananas to family shopping" from "add cream to the coffee". Without
+      # the constraint these would swallow half the language.
+      - text: "add {item} to {list:tasks.lists}"
+        weight: 0.9
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "put {item} on {list:tasks.lists}"
+        weight: 0.9
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "add {item} to my {list:tasks.lists}"
+        weight: 0.9
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "put {item} on the {list:tasks.lists}"
+        weight: 0.9
         args:
           title: "{item}"
           list_hint: "{list}"
