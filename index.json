@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-09-01T12:21:08Z",
+  "generated_at": "2026-09-01T13:23:22Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -94,7 +94,7 @@
       ],
       "bundle": "bundles/dev.heyari.homeassistant-0.3.1.tar.gz",
       "signature": "bundles/dev.heyari.homeassistant-0.3.1.tar.gz.sig",
-      "sha256": "84740e77f1e656c261c6b5157ac3b4a615edb79f097faf268ed6557d63941d35",
+      "sha256": "707c024615d70fa99550df3d5b51c27107f4b0845ec516b238d73729236ef573",
       "manifest": "manifests/dev.heyari.homeassistant-0.3.1.md",
       "localizations": {
         "it": {
@@ -392,7 +392,7 @@
       ],
       "bundle": "bundles/dev.heyari.coinflip-0.1.0.tar.gz",
       "signature": "bundles/dev.heyari.coinflip-0.1.0.tar.gz.sig",
-      "sha256": "960290bd8574e42168f1230a44a46bc4e58f51f6bf3c9f38a965807142ea5175",
+      "sha256": "c1c0944a975f4e6ec79fbe87d964c9d4a050ff50a5e4e67d21ba3acd1017e105",
       "manifest": "manifests/dev.heyari.coinflip-0.1.0.md",
       "localizations": {
         "it": {
@@ -427,7 +427,7 @@
       ],
       "bundle": "bundles/dev.heyari.message-0.2.2.tar.gz",
       "signature": "bundles/dev.heyari.message-0.2.2.tar.gz.sig",
-      "sha256": "c33625b1a08fe60816d925d3ec147137001f30172e21f19949eb15be165709af",
+      "sha256": "d59c3443db4bab40a81588b0d0fddd124d36108b97a53522ad84eb408b622cb8",
       "manifest": "manifests/dev.heyari.message-0.2.2.md",
       "localizations": {
         "it": {
@@ -457,7 +457,7 @@
       ],
       "bundle": "bundles/dev.heyari.weather-0.2.1.tar.gz",
       "signature": "bundles/dev.heyari.weather-0.2.1.tar.gz.sig",
-      "sha256": "9d92496f696c8ef027c31b90a1b3fc467c29b44a54abbc91e24e9b93bd064767",
+      "sha256": "50bb5915349dcf3caaa6eefb655256e69921c0c2931062e7757f44a30b57fc66",
       "manifest": "manifests/dev.heyari.weather-0.2.1.md",
       "localizations": {
         "it": {
