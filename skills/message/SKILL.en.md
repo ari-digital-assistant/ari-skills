@@ -69,6 +69,11 @@ metadata:
           - value: email
             label: Email
     examples:
+      - text: "start a WhatsApp message to {recipient}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          service: "whatsapp"
       - text: "tell {recipient} {body}"
         weight: 0.6
         args:

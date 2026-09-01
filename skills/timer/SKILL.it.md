@@ -33,6 +33,8 @@ metadata:
           weight: 0.85
       custom_score: false
     examples:
+      - text: "avvia il conto alla rovescia di {minutes} minuti per {name}"
+        weight: 0.95
       - text: "imposta un timer di {minutes} minuti"
         weight: 0.95
       - text: "imposta un timer per {minutes} minuti"

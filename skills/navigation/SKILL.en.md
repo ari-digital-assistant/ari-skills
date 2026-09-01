@@ -26,6 +26,14 @@ metadata:
           weight: 0.9
       custom_score: false
     examples:
+      - text: "start navigation to {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "start driving me home"
+        weight: 0.85
+        args:
+          destination: "home"
       - text: "take me to {destination}"
         weight: 0.6
         args:

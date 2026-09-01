@@ -86,6 +86,10 @@ metadata:
     # "l incontro"). Gli accenti sopravvivono alla normalizzazione e vanno
     # scritti.
     examples:
+      - text: "aprimi un nuovo messaggio per {recipient}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
       - text: "scrivi a {recipient} che {body}"
         weight: 0.95
         args:

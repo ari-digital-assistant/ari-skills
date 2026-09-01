@@ -55,6 +55,16 @@ metadata:
         - keywords: [termostato, luci]
           weight: 0.7
     examples:
+      - text: "apri {cover}"
+        weight: 0.95
+      - text: "avvia la scena {scene}"
+        weight: 0.95
+      - text: "esegui la scena {scene}"
+        weight: 0.95
+      - text: "lancia la scena {scene}"
+        weight: 0.95
+      - text: "apri il portone"
+        weight: 0.95
       - text: "accendi {entity}"
         weight: 0.95
       - text: "spegni {entity}"

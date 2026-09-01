@@ -26,6 +26,8 @@ metadata:
           weight: 0.9
       custom_score: false
     examples:
+      - text: "start a {minutes} minute countdown for the {name}"
+        weight: 0.95
       - text: "set a timer for {minutes} minutes"
         weight: 0.95
       - text: "set a {minutes} minute timer"

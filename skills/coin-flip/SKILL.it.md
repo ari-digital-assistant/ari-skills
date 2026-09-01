@@ -26,6 +26,14 @@ metadata:
     # caso") sono quindi le più utili: sono esattamente i casi per cui il
     # router esiste.
     examples:
+      - text: "lancia una monetina"
+        weight: 0.95
+      - text: "lancia la monetina"
+        weight: 0.95
+      - text: "lancia in aria una monetina"
+        weight: 0.95
+      - text: "dai lancia la monetina"
+        weight: 0.85
       - text: "lancia la moneta"
         weight: 0.95
       - text: "tira la moneta"

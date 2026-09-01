@@ -20,6 +20,32 @@ metadata:
     # "esegui"/"avvia" verrebbero rivendicate dalla skill built-in
     # `open`, quindi qui restano fuori: il router non le vedrebbe mai.
     examples:
+      - text: "esegui il loader wasm"
+        weight: 0.95
+      - text: "esegui il caricatore wasm"
+        weight: 0.95
+      - text: "esegui il modulo wasm"
+        weight: 0.95
+      - text: "esegui la skill di test wasm"
+        weight: 0.95
+      - text: "lancia il loader wasm"
+        weight: 0.95
+      - text: "lancia il caricatore wasm"
+        weight: 0.95
+      - text: "lancia il modulo wasm"
+        weight: 0.95
+      - text: "lancia la skill di test wasm"
+        weight: 0.95
+      - text: "avvia il loader wasm"
+        weight: 0.95
+      - text: "avvia il caricatore wasm"
+        weight: 0.95
+      - text: "avvia il modulo wasm"
+        weight: 0.95
+      - text: "avvia la skill di test wasm"
+        weight: 0.95
+      - text: "esegui il test del wasm"
+        weight: 0.95
       - text: "prova il modulo wasm echo"
         weight: 0.95
       - text: "prova la skill wasm echo"
