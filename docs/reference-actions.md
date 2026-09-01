@@ -28,6 +28,7 @@ Declarative skills put a static envelope under `declarative.action`.
 {
   "v": 1,
   "speak": "Pasta timer set for 8 minutes.",
+  "display": "Pasta timer set for 8 minutes.",
   "cards": [ … ],
   "alerts": [ … ],
   "notifications": [ … ],
@@ -55,6 +56,11 @@ Rules:
 - `speak` is the bubble text and what gets spoken. For `launch_app`, `search`
   and `open_url`, omit it and the frontend phrases it itself ("Opening
   Spotify"). Set it to override.
+- `display` replaces the bubble text while `speak` stays what is said aloud.
+  Omit it — almost always — and the bubble shows `speak`. It exists for the
+  handful of lines where the two genuinely differ: a card says "Tap Cancel",
+  but there is nothing to tap when Ari is only talking, so the spoken line
+  says "say cancel" instead.
 - Single-value slots (`launch_app`, `search`, `open_url`, `clipboard`,
   `alarm`, `navigate`, `media`, `message`, `reply`) take at most one value
   per envelope.

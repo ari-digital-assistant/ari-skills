@@ -50,6 +50,8 @@ pub struct Envelope {
     v: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     speak: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    display: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     cards: Vec<Card>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -87,6 +89,17 @@ impl Envelope {
 
     pub fn speak(mut self, s: impl Into<String>) -> Self {
         self.speak = Some(s.into());
+        self
+    }
+
+    /// Text for the on-screen bubble when it should differ from what is
+    /// spoken. Omit it and the bubble shows `speak`.
+    ///
+    /// Only reach for this where the two genuinely need different words —
+    /// a card the user can tap reads "Tap Cancel", but there is nothing to
+    /// tap when Ari is talking to them, so the spoken line says "say cancel".
+    pub fn display(mut self, s: impl Into<String>) -> Self {
+        self.display = Some(s.into());
         self
     }
 
