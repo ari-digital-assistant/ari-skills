@@ -26,6 +26,8 @@ metadata:
           weight: 0.9
       custom_score: false
     examples:
+      - text: "i have an early start so wake me at {time}"
+        weight: 0.85
       - text: "set an alarm for {time}"
         weight: 0.95
       - text: "set an alarm for {time} every weekday"

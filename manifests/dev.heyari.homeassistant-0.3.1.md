@@ -31,6 +31,14 @@ metadata:
         - keywords: [thermostat, lights]
           weight: 0.7
     examples:
+      - text: "open the {room} blinds"
+        weight: 0.95
+      - text: "run the good morning scene"
+        weight: 0.85
+      - text: "start the bedtime scene"
+        weight: 0.95
+      - text: "open the garage door"
+        weight: 0.95
       - text: "turn on {entity}"
         weight: 0.6
       - text: "turn off {entity}"
