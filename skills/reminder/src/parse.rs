@@ -354,6 +354,29 @@ fn looks_like_ordinal_date(w: &str) -> bool {
 
 /// `add X to my Y list` / `put X on the Y list` etc. Returns None if
 /// the input doesn't fit; reminder parsing then takes over.
+/// Verbs that open a list add. English first, then Italian; the verb fixes
+/// the language convention for the rest of the utterance.
+pub const ADD_VERBS: [&str; 4] = ["add ", "put ", "aggiungi ", "metti "];
+
+/// An "add X to Y" that named no list of the user's, carried no time, and
+/// asked for no reminder — so nothing in it is ours. "add cream to the
+/// coffee" is not a task, and filing it under its own sentence, which is
+/// what this parser falls back to, has never once been what someone meant.
+/// The skill answers these with `_ari_no_match` and the engine tries the
+/// next tier.
+pub fn is_unclaimed_add(input: &str, parsed: &Parsed) -> bool {
+    let normalised = input.trim().to_lowercase();
+    ADD_VERBS.iter().any(|v| normalised.starts_with(v))
+        && parsed.list_hint.is_none()
+        && matches!(parsed.when, When::None)
+        && !REMINDER_WORDS.iter().any(|w| normalised.contains(w))
+}
+
+/// Stems rather than whole words, so "remind me", "a reminder", "reminders",
+/// "ricordami" and "ricordati" all say the same thing: this one is ours,
+/// whatever else the sentence is missing.
+const REMINDER_WORDS: [&str; 3] = ["remind", "ricord", "promemoria"];
+
 fn parse_named_list(input: &str, known_lists: &[&str]) -> Option<Parsed> {
     // Anchored on a leading "add " or "put ". Other verbs ("save",
     // "stick", "throw") could be added later if real users ask for
@@ -1088,6 +1111,34 @@ mod tests {
         assert_eq!(parse_clock_token("dog"), None);
         assert_eq!(parse_clock_token("25"), None);
         assert_eq!(parse_clock_token("12:99pm"), None);
+    }
+
+    #[test]
+    fn unclaimed_add_is_declined() {
+        // No list of theirs, no time, no reminder asked for.
+        let p = parse("add cream to the coffee", &[]);
+        assert!(is_unclaimed_add("add cream to the coffee", &p));
+        let p = parse("put spotify on the dock", &[]);
+        assert!(is_unclaimed_add("put spotify on the dock", &p));
+    }
+
+    #[test]
+    fn a_real_add_is_not_declined() {
+        // Names a list they have.
+        let p = parse("add bananas to family shopping", &["Family Shopping"]);
+        assert!(!is_unclaimed_add("add bananas to family shopping", &p));
+        // Says "list" outright.
+        let p = parse("add milk to my shopping list", &[]);
+        assert!(!is_unclaimed_add("add milk to my shopping list", &p));
+        // Carries a time.
+        let p = parse("put the bins out tomorrow at 8", &[]);
+        assert!(!is_unclaimed_add("put the bins out tomorrow at 8", &p));
+        // Asks for a reminder in so many words.
+        let p = parse("add a reminder to call mum", &[]);
+        assert!(!is_unclaimed_add("add a reminder to call mum", &p));
+        // Doesn't open with an add verb at all.
+        let p = parse("remind me to call mum", &[]);
+        assert!(!is_unclaimed_add("remind me to call mum", &p));
     }
 
     #[test]
@@ -1880,22 +1931,5 @@ mod tests {
         // residue → Low confidence.
         assert!(matches!(p.confidence, Confidence::Partial | Confidence::Low));
         assert_eq!(p.unparsed.as_deref(), Some("stasera"));
-    }
-}
-
-#[cfg(test)]
-mod scratch_probe {
-    use super::*;
-    #[test]
-    fn probe_keiths_utterance() {
-        for u in [
-            "add milk to family shopping list",
-            "add milk to my family shopping list",
-            "add milk to the family shopping list",
-            "add milk to shopping list",
-        ] {
-            let p = parse(u, &[]);
-            println!("{u:?} -> title={:?} hint={:?} conf={:?}", p.title, p.list_hint, p.confidence);
-        }
     }
 }

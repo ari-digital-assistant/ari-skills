@@ -31,6 +31,8 @@
   "success.partial.timed_preface": "Ho impostato per {when_phrase}",
   "success.partial.aside_unparsed": ". Non ho capito cosa intendessi con \"{unparsed}\" — tocca Annulla sulla scheda se era importante.",
   "success.partial.aside_no_unparsed": ". Tocca Annulla sulla scheda se non è quello che intendevi.",
+  "success.partial.aside_unparsed.spoken": ". Non ho capito cosa intendessi con \"{unparsed}\" \u2014 di' annulla se era importante.",
+  "success.partial.aside_no_unparsed.spoken": ". Di' annulla se non è quello che intendevi.",
 
   "when_phrase.untimed": "la tua lista",
 

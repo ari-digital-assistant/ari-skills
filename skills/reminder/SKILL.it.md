@@ -9,10 +9,10 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.reminder
-    version: "0.4.4"
+    version: "0.5.0"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
-    engine: ">=0.3"
+    engine: ">=0.5"
     capabilities: [calendar, tasks]
     languages: [en, it]
     specificity: high
@@ -256,6 +256,29 @@ metadata:
           list_hint: "{list}"
       - text: "metti {item} nella {list}"
         weight: 0.6
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      # Lo slot è vincolato alle liste che l'utente ha davvero: è l'unica
+      # cosa che distingue "aggiungi banane alla spesa di famiglia" da
+      # "aggiungi panna al caffè".
+      - text: "aggiungi {item} alla {list:tasks.lists}"
+        weight: 0.9
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "aggiungi {item} a {list:tasks.lists}"
+        weight: 0.9
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "metti {item} nella {list:tasks.lists}"
+        weight: 0.9
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "segna {item} sulla {list:tasks.lists}"
+        weight: 0.9
         args:
           title: "{item}"
           list_hint: "{list}"
