@@ -1882,20 +1882,3 @@ mod tests {
         assert_eq!(p.unparsed.as_deref(), Some("stasera"));
     }
 }
-
-#[cfg(test)]
-mod scratch_probe {
-    use super::*;
-    #[test]
-    fn probe_keiths_utterance() {
-        for u in [
-            "add milk to family shopping list",
-            "add milk to my family shopping list",
-            "add milk to the family shopping list",
-            "add milk to shopping list",
-        ] {
-            let p = parse(u, &[]);
-            println!("{u:?} -> title={:?} hint={:?} conf={:?}", p.title, p.list_hint, p.confidence);
-        }
-    }
-}
