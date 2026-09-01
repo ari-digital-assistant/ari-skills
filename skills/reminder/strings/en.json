@@ -31,6 +31,8 @@
   "success.partial.timed_preface": "I've set this for {when_phrase}",
   "success.partial.aside_unparsed": ". I wasn't sure what \"{unparsed}\" meant — tap Cancel on the card if that was important.",
   "success.partial.aside_no_unparsed": ". Tap Cancel on the card if that's not what you meant.",
+  "success.partial.aside_unparsed.spoken": ". I wasn't sure what \"{unparsed}\" meant \u2014 say cancel if that was important.",
+  "success.partial.aside_no_unparsed.spoken": ". Say cancel if that's not what you meant.",
 
   "when_phrase.untimed": "your list",
 

@@ -162,6 +162,19 @@ pub fn dispatch(input: &str) -> String {
     // handler writes the reminder only once the assistant confirms.
     // High-confidence parses short-circuit to the classic immediate
     // commit.
+    // Hand back an "add X to Y" whose Y names no list of theirs. The router
+    // gives us every sentence of that shape — it can't tell "add bananas to
+    // family shopping" from "add cream to the coffee" without knowing the
+    // user's lists, and we're the only ones who do. Declining lets the engine
+    // try the next tier instead of us filing the sentence as its own title.
+    if parse::is_unclaimed_add(input, &parsed) {
+        ari::log(
+            ari::LogLevel::Info,
+            "declining: an add naming no list of theirs, no time and no reminder",
+        );
+        return String::from("{\"v\":1,\"_ari_no_match\":true}");
+    }
+
     match parsed.confidence {
         parse::Confidence::High => handle_create(&parsed),
         parse::Confidence::Partial | parse::Confidence::Low => {
@@ -193,9 +206,8 @@ pub fn dispatch(input: &str) -> String {
 /// an ordinary reminder never pays for the host call.
 #[cfg(target_arch = "wasm32")]
 fn parse_with_lists(input: &str) -> parse::Parsed {
-    const ADD_VERBS: [&str; 4] = ["add ", "put ", "aggiungi ", "metti "];
     let lowered = input.trim().to_lowercase();
-    if !ADD_VERBS.iter().any(|v| lowered.starts_with(v)) || !ari::tasks_provider_installed() {
+    if !parse::ADD_VERBS.iter().any(|v| lowered.starts_with(v)) || !ari::tasks_provider_installed() {
         return parse::parse(input, &[]);
     }
     let names: Vec<String> = ari::tasks_list_lists()
@@ -1505,11 +1517,15 @@ fn build_envelope(parsed: &parse::Parsed, resolved: &Resolved, result: &Outcome)
             destination_name,
             row_id,
         } => {
-            let speak = format_success_speech(parsed, resolved, destination_name);
+            let speak = format_success_speech(parsed, resolved, destination_name, Phrasing::Spoken);
             out.push_str(",\"speak\":");
             push_json_string(&mut out, &speak);
 
             if parsed.confidence != parse::Confidence::High {
+                let display =
+                    format_success_speech(parsed, resolved, destination_name, Phrasing::Written);
+                out.push_str(",\"display\":");
+                push_json_string(&mut out, &display);
                 out.push_str(",\"cards\":[");
                 out.push_str(&build_partial_card(
                     parsed,
@@ -1538,11 +1554,22 @@ fn build_envelope(parsed: &parse::Parsed, resolved: &Resolved, result: &Outcome)
     out
 }
 
+/// Which wording of the partial-confidence aside to build. The card offers a
+/// Cancel button to tap; the spoken line can't, so it asks for the word
+/// instead. Everything before the aside is identical.
+#[cfg(target_arch = "wasm32")]
+#[derive(Clone, Copy, PartialEq)]
+enum Phrasing {
+    Spoken,
+    Written,
+}
+
 #[cfg(target_arch = "wasm32")]
 fn format_success_speech(
     parsed: &parse::Parsed,
     resolved: &Resolved,
     destination_name: &str,
+    phrasing: Phrasing,
 ) -> String {
     let when_phrase = match resolved {
         Resolved::Untimed => ari::t("when_phrase.untimed", &[])
@@ -1595,15 +1622,24 @@ fn format_success_speech(
             .map(|s| s.to_string())
             .unwrap_or_else(|| format!("I've set this for {}", when_phrase))
         };
-        let aside = match &parsed.unparsed {
-            Some(u) => ari::t("success.partial.aside_unparsed", &[("unparsed", u)])
+        let aside = match (&parsed.unparsed, phrasing) {
+            (Some(u), Phrasing::Written) => ari::t("success.partial.aside_unparsed", &[("unparsed", u)])
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| format!(
                     ". I wasn't sure what \"{}\" meant — tap Cancel on the card if that was important.",
                     u
                 )),
-            None => ari::t("success.partial.aside_no_unparsed", &[])
+            (Some(u), Phrasing::Spoken) => ari::t("success.partial.aside_unparsed.spoken", &[("unparsed", u)])
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| format!(
+                    ". I wasn't sure what \"{}\" meant — say cancel if that was important.",
+                    u
+                )),
+            (None, Phrasing::Written) => ari::t("success.partial.aside_no_unparsed", &[])
                 .unwrap_or(". Tap Cancel on the card if that's not what you meant.")
+                .to_string(),
+            (None, Phrasing::Spoken) => ari::t("success.partial.aside_no_unparsed.spoken", &[])
+                .unwrap_or(". Say cancel if that's not what you meant.")
                 .to_string(),
         };
         preface + &aside
