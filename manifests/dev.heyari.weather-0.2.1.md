@@ -35,72 +35,361 @@ metadata:
     # slots the skill needs: `location` (empty string = use GPS) and
     # `when` (one of now | today | tomorrow | this week).
     examples:
-      - text: "how is the weather"
+      - text: "what are the weather conditions {location} right now"
+        weight: 0.95
         args:
-          location: ""
+          location: "{location}"
           when: "now"
-      - text: "what is the weather in tokyo"
+      - text: "give me the current weather {location}"
+        weight: 0.95
         args:
-          location: "tokyo"
+          location: "{location}"
           when: "now"
-      - text: "weather in valletta tomorrow"
+      - text: "how warm is it {location} at the moment"
+        weight: 0.95
         args:
-          location: "valletta"
-          when: "tomorrow"
-      - text: "what is the forecast this week"
+          location: "{location}"
+          when: "now"
+      - text: "what is the temperature {location} right now"
+        weight: 0.95
         args:
-          location: ""
-          when: "this week"
-      - text: "will it rain today"
+          location: "{location}"
+          when: "now"
+      - text: "what does it feel like outside {location} right now"
+        weight: 0.95
         args:
-          location: ""
+          location: "{location}"
+          when: "now"
+      - text: "is any rain falling {location} right now"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "how strong is the wind {location} at the moment"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "what is the humidity {location} right now"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "how high is the uv level {location} right now"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "are the skies clear {location} at the moment"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "how is the weather shaping up {location} today"
+        weight: 0.95
+        args:
+          location: "{location}"
           when: "today"
+      - text: "give me today's forecast {location}"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "is rain expected {location} today"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "are there showers coming later {location} today"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "will it be windy {location} today"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "what will the high temperature be {location} today"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "is it going to stay cold {location} today"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "will sunscreen be necessary {location} today"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "do I need an umbrella {location} today"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "how humid will it be {location} today"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "when will the uv be strongest {location} today"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "is there a chance of snow {location} today"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "is the weather suitable for being outdoors {location} today"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "show me tomorrow's forecast {location}"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "tomorrow"
+      - text: "what will the weather be like {location} tomorrow"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "tomorrow"
+      - text: "is rain likely {location} tomorrow"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "tomorrow"
+      - text: "what temperature will it reach {location} tomorrow"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "tomorrow"
+      - text: "will the wind pick up {location} tomorrow"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "tomorrow"
+      - text: "could it snow {location} tomorrow"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "tomorrow"
+      - text: "will I need a warm coat {location} tomorrow"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "tomorrow"
+      - text: "should I bring an umbrella {location} tomorrow"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "tomorrow"
+      - text: "will I need sun protection {location} tomorrow"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "tomorrow"
+      - text: "is it expected to be humid {location} tomorrow"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "tomorrow"
+      - text: "are clear skies expected {location} tomorrow"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "tomorrow"
+      - text: "what is the weather outlook {location} this week"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "this week"
+      - text: "give me the weeklong forecast {location}"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "this week"
+      - text: "will it rain at any point {location} this week"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "this week"
+      - text: "what temperatures are expected {location} this week"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "this week"
+      - text: "are strong winds expected {location} this week"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "this week"
+      - text: "is snow in the forecast {location} this week"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "this week"
+      - text: "which days should be sunniest {location} this week"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "this week"
+      - text: "am I likely to need an umbrella {location} this week"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "this week"
+      - text: "will the weather be good for outdoor plans {location} this week"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "this week"
+      - text: "I'd like a quick weather update {location}"
+        weight: 0.85
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "can you check the current conditions {location}"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "tell me whether it is dry {location} right now"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "is there much cloud cover {location} at the moment"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "what does the weather feel like {location} today"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "I need to know today's weather {location}"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "let me know if thunderstorms are likely {location} today"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "could you check tomorrow's weather {location}"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "tomorrow"
+      - text: "I am curious whether tomorrow will be warmer {location}"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "tomorrow"
+      - text: "give me the rain outlook {location} for this week"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "this week"
+      - text: "which day has the best weather {location} this week"
+        weight: 0.85
+        args:
+          location: "{location}"
+          when: "this week"
+      - text: "will freezing conditions be a concern {location} this week"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "this week"
+      - text: "how is the weather"
+        weight: 0.95
+        args:
+          location: ""
+          when: "now"
+      - text: "what is the weather in {location}"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "weather in {location} {when}"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "{when}"
+      - text: "what is the forecast {when}"
+        weight: 0.95
+        args:
+          location: ""
+          when: "{when}"
+      - text: "will it rain {when}"
+        weight: 0.95
+        args:
+          location: ""
+          when: "{when}"
       - text: "is it windy"
+        weight: 0.95
         args:
           location: ""
           when: "now"
       - text: "what is the uv index"
+        weight: 0.95
         args:
           location: ""
           when: "now"
-      - text: "is it humid today"
+      - text: "is it humid {when}"
+        weight: 0.95
         args:
           location: ""
-          when: "today"
-      # Oblique phrasings the keyword patterns above deliberately miss —
-      # these are the ones the router actually sees in production.
+          when: "{when}"
       - text: "will i need a coat later"
+        weight: 0.95
         args:
           location: ""
           when: "today"
       - text: "how hot is it outside"
+        weight: 0.95
         args:
           location: ""
           when: "now"
-      - text: "should i take an umbrella tomorrow"
+      - text: "should i take an umbrella {when}"
+        weight: 0.95
         args:
           location: ""
-          when: "tomorrow"
-      - text: "is it going to be cold in london tomorrow"
+          when: "{when}"
+      - text: "is it going to be cold in {location} {when}"
+        weight: 0.95
         args:
-          location: "london"
-          when: "tomorrow"
-      - text: "do i need sunscreen today"
+          location: "{location}"
+          when: "{when}"
+      - text: "do i need sunscreen {when}"
+        weight: 0.95
         args:
           location: ""
-          when: "today"
-      - text: "is the sun out in valletta"
+          when: "{when}"
+      - text: "is the sun out in {location}"
+        weight: 0.95
         args:
-          location: "valletta"
+          location: "{location}"
           when: "now"
-      - text: "any chance of snow this week"
+      - text: "any chance of snow {when}"
+        weight: 0.95
         args:
           location: ""
-          when: "this week"
-      - text: "will it be chilly tomorrow morning"
+          when: "{when}"
+      - text: "will it be chilly {when} morning"
+        weight: 0.6
         args:
           location: ""
-          when: "tomorrow"
+          when: "{when}"
     settings:
       - key: units
         label: Units

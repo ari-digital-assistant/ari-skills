@@ -26,24 +26,140 @@ metadata:
           weight: 0.9
       custom_score: false
     examples:
-      - text: "set an alarm for 7am"
-      - text: "set an alarm for 6:30 every weekday"
-      - text: "wake me up at half past six"
-      - text: "gym alarm at 5:45"
-      - text: "set an alarm for 8am on saturdays and sundays"
-      - text: "cancel my 7am alarm"
-      - text: "what alarms do i have"
+      - text: "set an alarm for {time}"
+        weight: 0.95
+      - text: "set an alarm for {time} every weekday"
+        weight: 0.95
+      - text: "set an alarm for {time} on saturday"
+        weight: 0.95
+      - text: "set an alarm for {time} on weekends"
+        weight: 0.95
+      - text: "put an alarm on for {time}"
+        weight: 0.95
+      - text: "add an alarm at {time}"
+        weight: 0.95
+      - text: "create an alarm for {time}"
+        weight: 0.95
+      - text: "set a {label} alarm for {time}"
+        weight: 0.95
+      - text: "{label} alarm at {time}"
+        weight: 0.95
+      - text: "wake me at {time}"
+        weight: 0.95
+      - text: "wake me up at {time}"
+        weight: 0.95
+      - text: "wake me up at {time} tomorrow"
+        weight: 0.95
+      - text: "can you wake me at {time}"
+        weight: 0.95
+      - text: "i need to be up by {time}"
+        weight: 0.6
+      - text: "get me up at {time}"
+        weight: 0.6
+      - text: "buzz me at {time}"
+        weight: 0.95
+      - text: "give me a wake up call at {time}"
+        weight: 0.75
+      - text: "dont let me sleep past {time}"
+        weight: 0.95
+      - text: "make sure im awake by {time}"
+        weight: 0.6
+      - text: "rouse me at {time}"
+        weight: 0.95
+      - text: "i have to be up at {time} for my {label}"
+        weight: 0.55
+      - text: "set an alarm so im up for {label} at {time}"
+        weight: 0.95
+      - text: "i want to wake up at {time}"
+        weight: 0.75
+      - text: "alarm for {time} please"
+        weight: 0.95
+      - text: "need an alarm at {time}"
+        weight: 0.95
+      - text: "set the alarm for {time}"
+        weight: 0.95
+      - text: "wake me before {time}"
+        weight: 0.95
+      - text: "set an alarm for {time} and another one later"
+        weight: 0.85
+      - text: "schedule an alarm for {time}"
+        weight: 0.95
+      - text: "set a daily alarm for {time}"
+        weight: 0.95
+      - text: "wake me up every day at {time}"
+        weight: 0.85
+      - text: "set a recurring alarm for {time}"
+        weight: 0.95
+      - text: "get me out of bed at {time}"
+        weight: 0.75
+      - text: "drag me out of bed at {time}"
+        weight: 0.95
+      - text: "i cant miss my {label} so wake me at {time}"
+        weight: 0.85
+      - text: "set an alarm for {time} on monday"
+        weight: 0.95
+      - text: "alarm at {time} for the {label}"
+        weight: 0.95
+      - text: "wake me up at {time} on the dot"
+        weight: 0.95
+      - text: "i need waking at {time}"
+        weight: 0.95
+      - text: "set my morning alarm for {time}"
+        weight: 0.85
+      - text: "can you set an alarm for {time}"
+        weight: 0.95
+      - text: "cancel my alarm"
+        weight: 0.95
+      - text: "cancel my {time} alarm"
+        weight: 0.95
       - text: "turn off my alarm"
-      # Oblique phrasings the keyword patterns above deliberately miss —
-      # these are the ones the router actually sees in production.
-      - text: "i need to be up by six tomorrow"
-      - text: "make sure i am awake at five thirty"
-      - text: "do not let me sleep past eight"
-      - text: "i have an early flight so buzz me at four am"
-      - text: "get me out of bed at seven tomorrow"
-      - text: "i want to be woken at quarter to seven"
+        weight: 0.95
+      - text: "turn off the {time} alarm"
+        weight: 0.95
+      - text: "delete my {label} alarm"
+        weight: 0.95
+      - text: "remove the alarm for {time}"
+        weight: 0.95
+      - text: "stop my morning alarm"
+        weight: 0.95
+      - text: "what alarms do i have"
+        weight: 0.95
+      - text: "what alarms do i have set"
+        weight: 0.95
+      - text: "do i have any alarms set"
+        weight: 0.95
       - text: "when am i being woken tomorrow"
+        weight: 0.95
+      - text: "list my alarms"
+        weight: 0.95
+      - text: "have i got an alarm for the morning"
+        weight: 0.85
+      - text: "set an alarm for 7am"
+        weight: 0.85
+      - text: "set an alarm for 6:30 every weekday"
+        weight: 0.95
+      - text: "wake me up at half past six"
+        weight: 0.95
+      - text: "gym alarm at 5:45"
+        weight: 0.85
+      - text: "set an alarm for 8am on saturdays and sundays"
+        weight: 0.75
+      - text: "cancel my 7am alarm"
+        weight: 0.95
+      - text: "i need to be up by six tomorrow"
+        weight: 0.85
+      - text: "make sure i am awake at five thirty"
+        weight: 0.85
+      - text: "do not let me sleep past eight"
+        weight: 0.95
+      - text: "i have an early flight so buzz me at four am"
+        weight: 0.85
+      - text: "get me out of bed at seven tomorrow"
+        weight: 0.95
+      - text: "i want to be woken at quarter to seven"
+        weight: 0.95
       - text: "no need to wake me tomorrow morning"
+        weight: 0.75
     wasm:
       module: skill.wasm
       memory_limit_mb: 4

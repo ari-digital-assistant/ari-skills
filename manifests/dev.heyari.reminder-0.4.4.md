@@ -69,90 +69,339 @@ metadata:
           weight: 1.0
       custom_score: false
     examples:
-      - text: "remind me to walk the dog at 5pm"
+      - text: "set a reminder for me to {text} {when}"
+        weight: 0.95
         args:
-          title: "walk the dog"
-          when: "at 5pm"
-      - text: "remind me to buy milk"
+          title: "{text}"
+          when: "{when}"
+      - text: "create a reminder to {text} {when}"
+        weight: 0.95
         args:
-          title: "buy milk"
-      - text: "remind me to take out the bins tonight"
+          title: "{text}"
+          when: "{when}"
+      - text: "schedule a reminder {when} for me to {text}"
+        weight: 0.95
         args:
-          title: "take out the bins"
-          when: "tonight"
-      - text: "remind me at 9am tomorrow to call the dentist"
+          title: "{text}"
+          when: "{when}"
+      - text: "make me a reminder to {text} {when}"
+        weight: 0.95
         args:
-          title: "call the dentist"
-          when: "at 9am tomorrow"
-      - text: "remind me in 30 minutes to check the oven"
+          title: "{text}"
+          when: "{when}"
+      - text: "add a reminder to {text} {when}"
+        weight: 0.95
         args:
-          title: "check the oven"
-          when: "in 30 minutes"
-      - text: "set a reminder to email Sarah on Friday at 3"
+          title: "{text}"
+          when: "{when}"
+      - text: "put in a reminder to {text} {when}"
+        weight: 0.95
         args:
-          title: "email Sarah"
-          when: "on Friday at 3"
-      - text: "add milk to my shopping list"
+          title: "{text}"
+          when: "{when}"
+      - text: "can you set a reminder for me to {text} {when}"
+        weight: 0.95
         args:
-          title: "milk"
-          list_hint: "shopping"
-      - text: "put eggs on the shopping list"
+          title: "{text}"
+          when: "{when}"
+      - text: "could you create a reminder to {text} {when}"
+        weight: 0.95
         args:
-          title: "eggs"
-          list_hint: "shopping"
-      - text: "add deadline review to my work list"
+          title: "{text}"
+          when: "{when}"
+      - text: "would you set a reminder {when} to {text}"
+        weight: 0.95
         args:
-          title: "deadline review"
-          list_hint: "work"
-      # Determiner-less forms. Every list example above says "my"/"the",
-      # which taught the router that the bare form isn't a list add at
-      # all — it dropped list_hint and left the list name in the title.
-      - text: "add milk to family shopping list"
+          title: "{text}"
+          when: "{when}"
+      - text: "please schedule a reminder to {text} {when}"
+        weight: 0.95
         args:
-          title: "milk"
-          list_hint: "family shopping"
-      - text: "add bread to shopping list"
+          title: "{text}"
+          when: "{when}"
+      - text: "I need a reminder to {text} {when}"
+        weight: 0.95
         args:
-          title: "bread"
-          list_hint: "shopping"
-      - text: "remind me about the meeting at 4pm"
+          title: "{text}"
+          when: "{when}"
+      - text: "I'd like a reminder {when} to {text}"
+        weight: 0.85
         args:
-          title: "the meeting"
-          when: "at 4pm"
-      # Paraphrases without literal "remind me" / "set a reminder" /
-      # "add to list" triggers — teach the router that future-time
-      # nudges with no explicit reminder verb still belong here.
-      - text: "ping me at 5pm to walk the dog"
+          title: "{text}"
+          when: "{when}"
+      - text: "I want a reminder to {text} {when}"
+        weight: 0.95
         args:
-          title: "walk the dog"
-          when: "at 5pm"
-      - text: "tell me at 9 tomorrow to call the dentist"
+          title: "{text}"
+          when: "{when}"
+      - text: "set a reminder {when} so I don't forget to {text}"
+        weight: 0.95
         args:
-          title: "call the dentist"
-          when: "at 9 tomorrow"
-      - text: "buzz me about the meeting at 2pm"
+          title: "{text}"
+          when: "{when}"
+      - text: "make sure I get a reminder {when} to {text}"
+        weight: 0.75
         args:
-          title: "the meeting"
-          when: "at 2pm"
-      # Not "wake me up at X" — that is the alarm skill's job, and its
-      # patterns win the utterance outright, so this example would train
-      # the router to contradict what production actually does.
-      - text: "give me a shout at 7am to take my tablets"
+          title: "{text}"
+          when: "{when}"
+      - text: "give me a reminder {when} to {text}"
+        weight: 0.95
         args:
-          title: "take my tablets"
-          when: "at 7am"
-      - text: "let me know to take the bins out tonight"
+          title: "{text}"
+          when: "{when}"
+      - text: "send me a reminder {when} to {text}"
+        weight: 0.95
         args:
-          title: "take the bins out"
-          when: "tonight"
-      - text: "give me a heads up at 3pm to leave for work"
+          title: "{text}"
+          when: "{when}"
+      - text: "have a reminder pop up {when} to {text}"
+        weight: 0.95
         args:
-          title: "leave for work"
-          when: "at 3pm"
-      - text: "nudge me about the dentist on Friday at 9"
+          title: "{text}"
+          when: "{when}"
+      - text: "arrange a reminder {when} for me to {text}"
+        weight: 0.95
         args:
-          title: "the dentist"
-          when: "on Friday at 9"
+          title: "{text}"
+          when: "{when}"
+      - text: "leave me a reminder {when} to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "put {text} in my reminders {when}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "add {text} to my reminders {when}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "put a reminder on my schedule {when} to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "set up a reminder {when} to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "program a reminder {when} for me to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "I could use a reminder {when} to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "I need you to set a reminder {when} to {text}"
+        weight: 0.85
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "is it possible to set a reminder {when} to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "how about setting a reminder {when} to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "do me a favor and set a reminder {when} to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "remind me to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "please remind me to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "can you remind me to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "could you remind me to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "don't let me forget to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "make sure I remember to {text}"
+        weight: 0.75
+        args:
+          title: "{text}"
+      - text: "I need a reminder to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "create a reminder for me to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "put down a reminder to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "jot down a reminder for me to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "save a reminder that I need to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "keep a reminder for me to {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "add {item} to my {list} list"
+        weight: 0.75
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "put {item} on my {list} list"
+        weight: 0.75
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "please add {item} to my {list} list"
+        weight: 0.75
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "can you put {item} on my {list} list"
+        weight: 0.75
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "I need {item} added to my {list} list"
+        weight: 0.85
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "make sure {item} goes on my {list} list"
+        weight: 0.75
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "stick {item} on my {list} list"
+        weight: 0.95
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "pop {item} onto my {list} list"
+        weight: 0.95
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "jot {item} down on my {list} list"
+        weight: 0.95
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "add {item} to the {list} list"
+        weight: 0.75
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "put {item} on our {list} list"
+        weight: 0.75
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "add {item} to {list} list"
+        weight: 0.75
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "{item} needs to go on my {list} list"
+        weight: 0.85
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "remind me to {title} {when}"
+        weight: 0.95
+        args:
+          title: "{title}"
+          when: "{when}"
+      - text: "remind me {when} to {title}"
+        weight: 0.95
+        args:
+          title: "{title}"
+          when: "{when}"
+      - text: "set a reminder to {title} {when}"
+        weight: 0.95
+        args:
+          title: "{title}"
+          when: "{when}"
+      - text: "add {title} to my {list_hint} list"
+        weight: 0.75
+        args:
+          title: "{title}"
+          list_hint: "{list_hint}"
+      - text: "put {title} on the {list_hint} list"
+        weight: 0.75
+        args:
+          title: "{title}"
+          list_hint: "{list_hint}"
+      - text: "add {title} to {list_hint} list"
+        weight: 0.75
+        args:
+          title: "{title}"
+          list_hint: "{list_hint}"
+      - text: "remind me about {title} {when}"
+        weight: 0.95
+        args:
+          title: "{title}"
+          when: "{when}"
+      - text: "ping me {when} to {title}"
+        weight: 0.6
+        args:
+          title: "{title}"
+          when: "{when}"
+      - text: "tell me {when} to {title}"
+        weight: 0.6
+        args:
+          title: "{title}"
+          when: "{when}"
+      - text: "buzz me about {title} {when}"
+        weight: 0.95
+        args:
+          title: "{title}"
+          when: "{when}"
+      - text: "give me a shout {when} to {title}"
+        weight: 0.6
+        args:
+          title: "{title}"
+          when: "{when}"
+      - text: "let me know to {title} {when}"
+        weight: 0.6
+        args:
+          title: "{title}"
+          when: "{when}"
+      - text: "give me a heads up {when} to {title}"
+        weight: 0.95
+        args:
+          title: "{title}"
+          when: "{when}"
+      - text: "nudge me about {title} {when}"
+        weight: 0.95
+        args:
+          title: "{title}"
+          when: "{when}"
     settings:
       - key: destination
         label: Save reminders to

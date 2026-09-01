@@ -69,22 +69,311 @@ metadata:
           - value: email
             label: Email
     examples:
+      - text: "tell {recipient} {body}"
+        weight: 0.6
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "tell {recipient} that {body}"
+        weight: 0.6
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "please tell {recipient} {body}"
+        weight: 0.6
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "could you tell {recipient} that {body}"
+        weight: 0.6
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "would you mind telling {recipient} that {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "let {recipient} know {body}"
+        weight: 0.6
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "please let {recipient} know that {body}"
+        weight: 0.6
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "can you let {recipient} know {body}"
+        weight: 0.6
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "could you let {recipient} know that {body}"
+        weight: 0.6
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "make sure {recipient} gets my message that {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "pass this message to {recipient}: {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "pass along a message to {recipient} saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "get a message to {recipient} saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "relay this message to {recipient}: {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "send {recipient} a message saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "send a message to {recipient} saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "send {recipient} this message: {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "please send {recipient} a message saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "can you send {recipient} a message saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "could you send a message to {recipient} saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "would you send {recipient} a message saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "i need you to send {recipient} a message saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "i want to send {recipient} a message saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "i'd like to send a message to {recipient} saying {body}"
+        weight: 0.85
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "help me send {recipient} a message saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "message {recipient} {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "message {recipient}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+      - text: "can you message {recipient} saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "could you message {recipient} and say {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "i need to message {recipient} that {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "i want to message {recipient}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+      - text: "text {recipient} {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "sms"
+      - text: "send a text to {recipient} saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "sms"
+      - text: "please text {recipient} {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "sms"
+      - text: "can you text {recipient}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          service: "sms"
+      - text: "i need to text {recipient} that {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "sms"
+      - text: "whatsapp {recipient} {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "whatsapp"
+      - text: "send {recipient} a WhatsApp message saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "whatsapp"
+      - text: "telegram {recipient} {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "telegram"
+      - text: "send {recipient} a Telegram message saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "telegram"
+      - text: "send {recipient} a Signal message saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "signal"
+      - text: "message {recipient} via Signal and say {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "signal"
+      - text: "send {recipient} a Messenger message saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "messenger"
+      - text: "send {recipient} a Slack message saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "slack"
+      - text: "send {recipient} a Matrix message saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "matrix"
+      - text: "email {recipient} {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "email"
+      - text: "send an email to {recipient} saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "email"
+      - text: "please email {recipient} and say {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "email"
+      - text: "can you email {recipient}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          service: "email"
+      - text: "send {recipient} a message via {service} saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "{service}"
+      - text: "please send a message to {recipient} via {service} saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "{service}"
+      - text: "can you send {recipient} a message using {service} saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "{service}"
+      - text: "message {recipient} via {service} and say {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "{service}"
+      - text: "i need to get a message to {recipient} via {service} saying {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "{service}"
       - text: "tell mario i will be home soon"
-        args: '{"recipient":"mario","body":"i will be home soon"}'
+        weight: 0.6
       - text: "send a message to gail saying i am running late"
-        args: '{"recipient":"gail","body":"i am running late"}'
+        weight: 0.95
       - text: "message sam on my way"
-        args: '{"recipient":"sam","body":"on my way"}'
+        weight: 0.95
       - text: "text gail see you at 8"
-        args: '{"recipient":"gail","body":"see you at 8","service":"sms"}'
+        weight: 0.95
       - text: "whatsapp mario happy birthday"
-        args: '{"recipient":"mario","body":"happy birthday","service":"whatsapp"}'
+        weight: 0.75
       - text: "let gail know i am on the bus"
-        args: '{"recipient":"gail","body":"i am on the bus"}'
+        weight: 0.6
       - text: "send an email to gail remember the milk"
-        args: '{"recipient":"gail","body":"remember the milk","service":"email"}'
+        weight: 0.85
       - text: "tell mario i am outside on telegram"
-        args: '{"recipient":"mario","body":"i am outside","service":"telegram"}'
+        weight: 0.95
     wasm:
       module: skill.wasm
       memory_limit_mb: 4
