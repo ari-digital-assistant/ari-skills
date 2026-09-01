@@ -217,7 +217,8 @@ A phrase may carry `{slot}` placeholders, each binding one or more words:
 
 The match is anchored at both ends, so `play {song}` matches "play hotel
 california" but not "shall i play something". Write several phrasings rather
-than one clever one.
+than one clever one. A slot can also be restricted to the user's own data —
+see [Constraining a slot to real data](#constraining-a-slot-to-real-data).
 
 `weight` says how confidently that wording means your skill, on the same scale
 as `matching.patterns`. Explicit phrasings go high; anything another skill
@@ -233,6 +234,93 @@ phrasing and conversational filler. Write them naturally ("what's the time") —
 the loader normalises them the same way it normalises user input.
 
 Assistant-type skills are exempt.
+
+### Constraining a slot to real data
+
+Some commands can only be recognised by knowing something about the user.
+"Add bananas to family shopping" is a list add; "add cream to the coffee" is
+not a command at all. Nothing in the words tells them apart — the difference
+is that *family shopping* is a list this user really has.
+
+Write `{slot:vocabulary}` and the slot binds only text naming a member of
+that vocabulary:
+
+```yaml
+    examples:
+      - text: "add {item} to {list:tasks.lists}"
+        weight: 0.9
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+```
+
+The slot is still called `list` — the part after the colon names the
+vocabulary, and `args` refers to the slot by its own name.
+
+The frontend fills these in, because it is the only part of the stack that
+can see them. Available today:
+
+| Vocabulary | Contents |
+|---|---|
+| `tasks.lists` | Display names of the user's task lists |
+
+An unconstrained `{list}` in that phrase would match "add cream to the
+coffee", "add sugar to the recipe" and most of the language besides. That is
+why these are worth reaching for: a constrained slot can be **loose in
+wording and still precise**, which is exactly the combination a keyword
+pattern cannot give you.
+
+Two rules to keep in mind:
+
+- **A vocabulary the frontend never pushed admits nothing.** A phrase naming
+  one matches nothing at all rather than degrading to an unconstrained slot,
+  because falling open would turn your careful phrase into a greedy one.
+  Keep your ordinary phrases and keyword patterns as the way in on a
+  frontend that supplies nothing — don't make a constrained phrase the only
+  route to your skill.
+- **The user's data is not always what you assumed.** They may rename a list
+  between the push and the utterance. Your `execute` should still check, and
+  answer `_ari_no_match` when the request turns out not to be yours — see
+  [declining a dispatch](#declining-a-dispatch).
+
+#### Adding a new vocabulary
+
+There is no way to declare one from a manifest: a vocabulary is real data on
+the user's device, so something on the frontend has to go and get it. Adding
+`contacts.names` or `homeassistant.rooms` means a change to the engine's
+hosts, not to your skill:
+
+1. The frontend reads the set — a content provider, an API, whatever holds
+   it — and calls `AriEngine.setVocabulary("your.name", values)`.
+2. It re-pushes whenever the set can have changed. Android does this at
+   engine build and on every return-to-foreground, because a user creates a
+   task list in a different app and nothing broadcasts that.
+3. Skills refer to it as `{slot:your.name}`.
+
+Push an empty list when the user has none of the thing. Phrases naming that
+vocabulary then match nothing, which for an empty set is the right answer.
+
+## Declining a dispatch
+
+When the engine hands your skill an utterance that turns out not to be
+yours, answer with an envelope carrying `_ari_no_match` and nothing else:
+
+```json
+{ "v": 1, "_ari_no_match": true }
+```
+
+The engine logs it and carries on to the next tier — your phrases, then the
+user's assistant — exactly as if you had never scored. Nothing is spoken and
+no card is shown.
+
+This is what lets a skill claim a deliberately loose pattern and stay honest
+about it. The reminder skill matches "add … to …" so that a list add without
+the word "list" in it can reach the one component that knows the user's
+lists; when the tail turns out to name no list of theirs, it declines rather
+than filing the sentence as a task.
+
+Decline, don't apologise. A spoken "sorry, I can't do that" ends the turn and
+robs every skill behind you of its chance.
 
 ## `settings`
 

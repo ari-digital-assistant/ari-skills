@@ -93,6 +93,20 @@ some skill's keywords already win is one that never fires in production.
 You can write phrases naturally ("what's the time"); the loader normalises
 them the same way it normalises user input, keeping `{slot}` intact.
 
+A slot written `{list:tasks.lists}` binds only text naming something in a
+**runtime vocabulary** the frontend pushed — the user's task lists, and
+whatever else gets added later. It is the only way to recognise a command
+whose meaning lives in the user's data rather than in their words: "add
+bananas to family shopping" is a list add and "add cream to the coffee" is
+not, and nothing but the list names separates them. A vocabulary nobody
+pushed admits nothing, so a constrained phrase fails closed. See
+[Constraining a slot to real data](reference-manifest.md#constraining-a-slot-to-real-data).
+
+A skill that gets handed something it turns out not to want answers
+`{"v":1,"_ari_no_match":true}` and the engine moves to the next tier, exactly
+as if the skill had never scored. That is what lets a skill claim a
+deliberately loose pattern without owning every sentence it catches.
+
 ### 3. The assistant
 
 If no phrase matches either, the active assistant skill answers directly. One
