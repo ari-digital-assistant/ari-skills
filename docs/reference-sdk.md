@@ -118,16 +118,17 @@ which are a separate scratch store behind the `storage_kv` capability.
 Values are always strings. Writes to a field declared `type: secret` are
 routed to encrypted storage automatically.
 
-### Router arguments
+### Arguments
 
 ```rust
 let args: Option<&str> = ari::args();   // JSON, or None
 ```
 
-When the router dispatches your skill it can pass the arguments it extracted,
-matching the `args` you declared in `metadata.ari.examples`. `None` means you
-were selected by the keyword matcher instead — so always have a fallback path
-that parses the raw utterance.
+**Currently always `None`.** The engine no longer extracts arguments before
+dispatching — parse what you need from the utterance yourself. The hook and the
+`args` you declare in `metadata.ari.examples` remain, because the phrase
+matcher knows which `{slot}` fills which argument and may start supplying them
+again; code that already has a parsing path will simply keep using it.
 
 ### The utterance as spoken
 

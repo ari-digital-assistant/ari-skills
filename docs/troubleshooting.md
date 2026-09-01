@@ -75,20 +75,24 @@ Test the negatives explicitly. A skill matching `[open]` will hijack "open the
 window", "open a bank account" and "open question". Add the second keyword
 that makes it unambiguous.
 
-## The router never picks my skill
+## Nothing picks my skill for a phrasing I expected
 
-The router only sees utterances the **keyword matcher missed**. If your own
-patterns already win an utterance, the router is never consulted for it.
+The phrase matcher only sees utterances the **keyword matcher missed**. If your
+own patterns already win an utterance, it is never consulted for it.
 
-Beyond that, the router reads exactly one field: `description`. Not your
-patterns, not your body text. If it's vague, rewrite it — first sentence what
-the skill does, second sentence when to use it, packed with the words a real
-person would say.
+Beyond that, it matches your `examples` and nothing else — not your patterns,
+not your body text. A phrase is anchored at both ends, so `play {song}` will
+not match "shall i play something": write the phrasings you actually expect,
+several of them, rather than one clever template.
+
+If the user has a cloud assistant, it gets a last go using your `description`.
+If that's vague, rewrite it — first sentence what the skill does, second
+sentence when to use it, packed with the words a real person would say.
 
 Then sideload the skill and try the phrasings from your `examples` as actual
 utterances. That's the only honest test.
 
-## CI failed with "router-example poaching"
+## CI failed with "example poaching"
 
 Another skill's keywords win one of your examples. Re-word the example so no
 keyword set catches it. Full explanation:

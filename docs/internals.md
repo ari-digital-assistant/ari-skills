@@ -35,8 +35,8 @@ utterance
    ↓
 1. keyword scorer  ──── clears a threshold? ──→ execute, done
    ↓ nothing cleared
-2. router (on-device model) ──── confident pick? ──→ execute, done
-   ↓ abstained
+2. example phrases ──── a phrase matches? ──→ execute, done
+   ↓ nothing matched
 3. assistant ──── active? ──→ answer
    ↓ none
    "Sorry, I didn't understand that."
@@ -68,28 +68,36 @@ WASM skills can opt into `matching.custom_score: true`, which makes the loader
 call the module's `score` export during ranking. It costs an instantiation per
 skill per utterance, so it's discouraged.
 
-### 2. The router
+### 2. Example phrases
 
-An on-device FunctionGemma model, one per locale, ~270 MB. It sees the
-utterance and each skill's `description`, and either names a skill or
-abstains. Picks must clear a per-model confidence floor shipped with the
-model.
+Every skill declares example phrases in its manifest's `examples:` block, and
+the engine matches them directly against anything the keyword scorer didn't
+claim. No model is involved.
 
-The router is a **fallback**: it only ever sees utterances the keyword scorer
-didn't claim. That's the fact behind the
-[no-poaching gate](publishing.md#the-no-poaching-gate) — an example utterance
-that some skill's keywords already win is one the router never sees in
-production.
+A phrase is a template: literal words plus `{slot}` placeholders that each bind
+one or more words. `metti su {artist}` matches "metti su vasco rossi". The
+match is anchored at both ends, so a phrase claims the whole utterance or
+nothing — which is why you want several phrasings rather than one clever one.
 
-Skills are shown to the model by a short **alias** — the last segment of the
-reverse-DNS id (`weather` for `dev.heyari.weather`) — because a 270M model
-can't reliably emit a full dotted id. The engine maps it back, so authors
-never see this except in router logs.
+Each phrase carries a `weight` (0..=1, same scale as `matching.patterns`)
+saying how confidently that wording means your skill. Put explicit phrasings
+high and anything another skill could plausibly claim low; the engine runs the
+same ranking rounds it uses for keywords, so weight and `specificity` decide
+who wins when two skills both match.
+
+Phrase matching is a **fallback**: it only ever sees utterances the keyword
+scorer didn't claim. That's the fact behind the
+[no-poaching gate](publishing.md#the-no-poaching-gate) — an example phrase that
+some skill's keywords already win is one that never fires in production.
+
+You can write phrases naturally ("what's the time"); the loader normalises
+them the same way it normalises user input, keeping `{slot}` intact.
 
 ### 3. The assistant
 
-If the router abstains, the active assistant skill answers directly. One can
-be active at a time; if none is, the user gets the didn't-understand message.
+If no phrase matches either, the active assistant skill answers directly. One
+can be active at a time; if none is, the user gets the didn't-understand
+message.
 
 ## Manifest format
 
@@ -102,8 +110,8 @@ manifest prose — there's no LLM in the engine. So why use it?
 1. **Standards alignment.** Every Ari skill is also a valid AgentSkills
    document, so authoring one in Claude Code, Cursor or Goose gets you that
    tool's skill discovery for free.
-2. **A future learned router.** The markdown body is reserved as input for a
-   richer on-device classifier. Same file, better router, no migration.
+2. **Room to grow.** The markdown body is reserved as input for a richer
+   on-device matcher. Same file, better matching, no migration.
 3. **No format fork.** We follow the spec and use its official extension
    point rather than inventing another YAML schema.
 

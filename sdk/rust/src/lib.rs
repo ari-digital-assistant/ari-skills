@@ -350,10 +350,12 @@ pub fn setting_set(key: &str, value: &str) -> bool {
     rc == 0
 }
 
-/// Typed JSON args extracted from the user's utterance by the
-/// FunctionGemma skill router. Returns `Some(json)` when the skill
-/// was invoked via the router's typed-args path; `None` when invoked
-/// via the keyword scorer or with no extracted slots.
+/// Typed JSON args extracted from the user's utterance before dispatch.
+///
+/// **Currently always `None`** — nothing in the engine extracts arguments
+/// today, so parse what you need from the utterance yourself. The hook
+/// remains because the phrase matcher knows which `{slot}` fills which
+/// argument and may start supplying them again.
 ///
 /// The JSON object's shape matches whatever the skill declared in
 /// `parameters_schema()` (built-in skills) or inferred from

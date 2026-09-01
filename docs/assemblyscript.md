@@ -24,7 +24,7 @@ And here's what's missing, all of which Rust has:
   principle.
 - **No settings access.** No `settingGet`/`settingSet`, so no user-configurable
   skills, no `settings_query`, no `settings_action`, no OAuth.
-- **No `args()`** — you can't read the arguments the router extracted.
+- **No `args()`** — the Rust SDK's argument hook has no AssemblyScript equivalent (it is unused today; parse the utterance instead).
 - **No wrappers** for location, tasks, calendar or media services.
 - **`httpFetchRaw` returns a raw JSON string**, not a typed response. You parse
   it yourself.

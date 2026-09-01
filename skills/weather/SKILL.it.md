@@ -41,11 +41,10 @@ metadata:
         - regex: "\\bumidit(a|à)\\b"
           weight: 0.8
       custom_score: false
-    # Gli esempi portano `args` perché FunctionGemma impari a estrarre i
-    # due slot: `location` (stringa vuota = usa il GPS) e `when`. I valori
-    # di `when` restano i token INGLESI (now | today | tomorrow | this
-    # week): il router della skill mappa quei token, e il modello impara
-    # a emetterli dalle frasi italiane.
+    # Gli esempi portano `args` che nominano i due slot: `location`
+    # (stringa vuota = usa il GPS) e `when`. I valori di `when` restano
+    # i token INGLESI (now | today | tomorrow | this week): è la skill
+    # a mappare quei token.
     examples:
       - text: "Che tempo c'è fuori in questo momento?"
         weight: 0.85
@@ -444,9 +443,9 @@ principale.
 - `qual e l'indice uv` — domanda sull'indice UV
 - `c'e umidità oggi` — domanda sull'umidità
 
-## Argomenti estratti
+## Argomenti
 
-Il router estrae due slot:
+La skill estrae due slot dalla frase:
 
 - `location` — il nome del luogo, oppure una stringa vuota per usare la
   posizione approssimativa del dispositivo tramite la capability

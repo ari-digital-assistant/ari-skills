@@ -189,7 +189,7 @@ claim it for anything that does.
 ## Examples and aliases
 
 Assistant skills are exempt from the five-example minimum, but examples still
-help the router recognise "ask claude…" style direct addressing. Write them
+help the phrase matcher recognise "ask claude…" style direct addressing. Write them
 around your `aliases`.
 
 ## Writing an honest `description`

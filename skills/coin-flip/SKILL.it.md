@@ -20,11 +20,10 @@ metadata:
           weight: 0.95
         - keywords: [testa, croce]
           weight: 0.9
-    # Gli esempi alimentano il router FunctionGemma, che entra in gioco
-    # SOLO quando lo scorer a keyword non trova nulla. Le frasi che i
-    # pattern qui sopra non catturano ("lancio della moneta", "decida il
-    # caso") sono quindi le più utili: sono esattamente i casi per cui il
-    # router esiste.
+    # Gli esempi vengono confrontati direttamente con la frase, ma SOLO
+    # quando lo scorer a keyword non trova nulla. Le frasi che i pattern
+    # qui sopra non catturano ("lancio della moneta", "decida il caso")
+    # sono quindi le più utili: sono esattamente i casi che coprono.
     examples:
       - text: "lancia una monetina"
         weight: 0.95

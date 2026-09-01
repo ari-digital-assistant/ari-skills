@@ -98,11 +98,11 @@ Two sentences, and each has a job:
    when the user asks to roll a dice, roll a die, throw the dice, or wants a
    random number between one and six."
 
-The router — a model — reads this to decide whether your skill fits an
-utterance your keywords didn't catch. A vague description is a skill that
-never gets picked. Write the second sentence as if you're describing the skill
-to someone who has to recognise it from a stranger's phrasing, because that's
-exactly the job.
+A user's cloud assistant reads this to decide whether your skill fits an
+utterance neither your keywords nor your examples caught. A vague description
+is a skill that never gets picked. Write the second sentence as if you're
+describing the skill to someone who has to recognise it from a stranger's
+phrasing, because that's exactly the job.
 
 ### `matching.patterns` — the fast path
 
@@ -139,11 +139,11 @@ gets a look in.
 Use `high` when your patterns are specific. Use `low` for broad catch-alls.
 If you leave it out entirely you get `medium`.
 
-### `examples` — router training data, not documentation
+### `examples` — matched directly, not documentation
 
 This is the field everyone gets wrong, so read this bit twice.
 
-Examples feed the on-device router's training set. The router is the
+The engine matches these against the utterance directly. Phrase matching is the
 **fallback** layer — it only ever sees utterances the keyword matcher
 **failed** to catch. Therefore:
 
@@ -151,11 +151,11 @@ Examples feed the on-device router's training set. The router is the
 
 Look at the list above. Not one of them contains "roll" plus "dice". They're
 all the oblique, human phrasings a keyword list can't anticipate — which is
-precisely what the router is for.
+precisely what the phrase matcher is for.
 
 If you write `- text: "roll a dice"`, your keywords already win that
-utterance, the router will never be asked about it, and CI will **fail your
-PR** for it. See [the no-poaching gate](publishing.md#the-no-poaching-gate).
+utterance, the phrase matcher will never be asked about it, and CI will **fail
+your PR** for it. See [the no-poaching gate](publishing.md#the-no-poaching-gate).
 
 Five is the minimum. Aim for 15–30.
 

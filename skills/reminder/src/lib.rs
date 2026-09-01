@@ -122,12 +122,12 @@ pub fn dispatch(input: &str) -> String {
         return handle_query(window);
     }
 
-    // Typed-args fast path: when the FunctionGemma router dispatched
-    // this skill via execute_with_args, it pre-extracted the slots
-    // (title / when / list_hint) and we skip parse.rs's grammar
-    // entirely. parse.rs still runs as the fallback for keyword-
-    // scorer dispatches and for cases where the model's args came
-    // back missing or ill-shaped. See `parsed_from_args` for the
+    // Typed-args fast path: when the engine dispatches this skill via
+    // execute_with_args with the slots (title / when / list_hint)
+    // already extracted, we skip parse.rs's grammar entirely. Nothing
+    // supplies args today, so parse.rs is the live path — it also
+    // covers keyword-scorer dispatches and args that came back
+    // missing or ill-shaped. See `parsed_from_args` for the
     // shape contract.
     let parsed = match parsed_from_args(input) {
         Some(p) => {
@@ -170,9 +170,9 @@ pub fn dispatch(input: &str) -> String {
     }
 }
 
-/// Build a [`parse::Parsed`] from the FunctionGemma router's typed
-/// args, when present and well-shaped. Returns `None` when:
-/// - the router didn't dispatch this skill via `execute_with_args`
+/// Build a [`parse::Parsed`] from the engine's typed args, when present
+/// and well-shaped. Returns `None` when:
+/// - this skill wasn't dispatched via `execute_with_args`
 /// - the args JSON is malformed
 /// - `title` is missing or empty (the only required slot — without
 ///   it we can't sensibly create anything)

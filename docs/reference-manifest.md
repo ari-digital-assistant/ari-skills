@@ -17,7 +17,7 @@ contain both it and `SKILL.en.md`.
 | Field | Required | Notes |
 |---|---|---|
 | `name` | **Yes** | 1–64 chars, `[a-z0-9-]` only. No leading, trailing or doubled hyphens. **Must equal the directory name.** |
-| `description` | **Yes** | 1–1024 chars. Read by the router — see [writing one](#writing-a-description-the-router-can-use). |
+| `description` | **Yes** | 1–1024 chars. Read by a cloud assistant when it routes — see [writing one](#writing-a-description-an-assistant-can-use). |
 | `license` | No | SPDX identifier or free text. |
 | `compatibility` | No | Free-text environment notes. |
 | `metadata` | No in AgentSkills, **yes in practice** | Without `metadata.ari` your file is a valid AgentSkills doc but not an Ari skill, and the validator says so. |
@@ -43,7 +43,7 @@ reserved as input for future routing models. Keep it short and factual.
 | `declarative` | XOR `wasm` | — | Response config for a code-free skill. |
 | `wasm` | XOR `declarative` | — | Module config for a WASM skill. |
 | `assistant` | **Yes** for `type: assistant` | — | See [assistant-skills.md](assistant-skills.md). |
-| `examples` | No to parse, **yes to publish** | `[]` | Router training utterances. Under 5 raises a validator warning. |
+| `examples` | No to parse, **yes to publish** | `[]` | Phrases the engine matches against. Under 5 raises a validator warning. |
 | `settings` | No | `[]` | The skill's settings screen. |
 | `fallback` | No | — | `{requires_setting: <key>}` — marks the skill as a fallback tier that's only eligible once that setting has a value. |
 
@@ -55,7 +55,7 @@ Several of these are commonly believed to be required and aren't:
 them anyway — an empty `capabilities: []` says "I checked", an absent one says
 "I didn't think about it".
 
-### Writing a `description` the router can use
+### Writing a `description` an assistant can use
 
 Two sentences. The first says what the skill does. The second says when to
 use it, in the words a real person would use.
@@ -66,12 +66,14 @@ description: >
   flip a coin, toss a coin, call it, or make a random either-or choice.
 ```
 
-The keyword matcher never reads this field. The **router** does — it's a
-model, matching on meaning. "call it" and "either-or choice" in that second
-sentence buy you coverage for phrasings you'd never enumerate as keywords.
+Nothing on the device reads this field — not the keyword matcher, not the
+phrase matcher. A **cloud assistant** does: when the user has one configured,
+it is shown this description and asked to pick a skill for whatever the
+on-device tiers declined. "call it" and "either-or choice" in that second
+sentence are what let it recognise your skill from a phrasing nobody
+enumerated.
 
-Vague description, unused skill. This is the highest-leverage field in the
-file.
+For users with no cloud assistant, `examples` is the field that matters.
 
 ## `matching`
 
@@ -116,8 +118,8 @@ skill to clear its round's bar wins.
 | 3 | 0.60 | 0.70 | 0.80 |
 
 A confident `high` skill therefore wins before a broad `low` catch-all gets
-considered at all. If no round produces a winner, the input goes to the
-router.
+considered at all. If no round produces a winner, the input goes to the phrase
+matcher, which runs the same rounds over your `examples`.
 
 ### Input normalisation
 
@@ -196,15 +198,39 @@ Each call gets a fresh store, so nothing survives between invocations. Use
 | Field | Required | Notes |
 |---|---|---|
 | `text` | **Yes** | The user utterance. |
-| `args` | No | The arguments the router should produce. Read them back with `ari::args()`. |
+| `weight` | No | `0..=1`, default `1.0`. How confidently this wording means your skill. |
+| `args` | No | Which argument each `{slot}` fills. Not currently supplied at dispatch — see [reference-sdk.md](reference-sdk.md#arguments). |
 
-These are **router training data**. The router only ever sees utterances the
-keyword matcher missed, so a good example is one your own patterns do **not**
-match. CI rejects examples that any skill's keywords already win — see
+The engine **matches these directly** against anything the keyword patterns
+didn't claim. They are not training data for anything — what you write here is
+what gets matched.
+
+A phrase may carry `{slot}` placeholders, each binding one or more words:
+
+```yaml
+    examples:
+      - text: "play {song}"
+        weight: 0.95
+        args:
+          query: "{song}"
+```
+
+The match is anchored at both ends, so `play {song}` matches "play hotel
+california" but not "shall i play something". Write several phrasings rather
+than one clever one.
+
+`weight` says how confidently that wording means your skill, on the same scale
+as `matching.patterns`. Explicit phrasings go high; anything another skill
+could plausibly claim goes low, so the ranking rounds can arbitrate.
+
+A good example is one your own patterns do **not** match — the phrase tier only
+ever sees what the keyword matcher missed. CI rejects examples that any skill's
+keywords already win — see
 [the no-poaching gate](publishing.md#the-no-poaching-gate).
 
 Five is the enforced minimum. Aim for 15–30, covering paraphrases, indirect
-phrasing and conversational filler.
+phrasing and conversational filler. Write them naturally ("what's the time") —
+the loader normalises them the same way it normalises user input.
 
 Assistant-type skills are exempt.
 

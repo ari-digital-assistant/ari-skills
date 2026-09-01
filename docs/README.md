@@ -46,11 +46,12 @@ Two layers, in order:
 1. **The keyword matcher.** Deterministic, instant, free. Every skill scores
    itself against the utterance using the patterns you declared. Best score
    over the threshold wins and runs. Most utterances stop here.
-2. **The router.** Only runs when nothing matched. An on-device model reads
-   your `description` and decides whether your skill fits. This is the safety
-   net for phrasings your keywords missed.
+2. **The phrase matcher.** Only runs when nothing matched. The engine matches
+   the utterance against the `examples` you declared. This is the safety net
+   for phrasings your keywords missed.
 
-If neither claims it, the user's configured assistant answers instead.
+If neither claims it, the user's configured assistant answers instead — and a
+cloud assistant is shown your `description` so it can route to you too.
 
 This split is the single most important thing to understand, because **the two
 layers read completely different fields**:
@@ -58,11 +59,12 @@ layers read completely different fields**:
 | Layer | Reads | Tune it by |
 |---|---|---|
 | Keyword matcher | `matching.patterns` | Adding tight keyword sets |
-| Router | `description`, and it was trained on your `examples` | Writing a rich description and realistic examples |
+| Phrase matcher | `examples` | Writing realistic phrasings your keywords miss |
+| Cloud assistant (last) | `description` | Writing a rich, recognisable description |
 
 A consequence that catches everyone: **your `examples` should be the
 utterances your keywords *miss*.** An example your own patterns already win is
-one the router never sees in production, and CI will reject it. See
+one the phrase matcher never sees in production, and CI will reject it. See
 [publishing.md](publishing.md#the-no-poaching-gate).
 
 ### What your skill can send back

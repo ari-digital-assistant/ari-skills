@@ -20,9 +20,8 @@ English-only while the rest of the registry ships another language. That is
 a perfectly legal thing to contribute, and refusing it would be a rotten
 thing to do to someone writing their first skill. But it is also how
 `dev.heyari.message` reached main on 2026-08-21 with no Italian manifest,
-which the FunctionGemma nightly then tripped over four nights running. The
-pipeline no longer breaks on it (`author-frames.py` falls back to English),
-so this is a to-do list, not a gate.
+which meant it shipped with no Italian phrases to match against. Nothing
+breaks on it, so this is a to-do list, not a gate.
 
 Self-contained: stdlib plus PyYAML. No engine build, no cargo, no Rust.
 """

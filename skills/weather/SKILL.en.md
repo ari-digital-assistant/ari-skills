@@ -31,9 +31,9 @@ metadata:
         - regex: "\\bhumid(ity)?\\b"
           weight: 0.8
       custom_score: false
-    # Examples carry `args` so FunctionGemma learns to extract the two
-    # slots the skill needs: `location` (empty string = use GPS) and
-    # `when` (one of now | today | tomorrow | this week).
+    # Examples carry `args` naming the two slots the skill needs:
+    # `location` (empty string = use GPS) and `when` (one of
+    # now | today | tomorrow | this week).
     examples:
       - text: "what are the weather conditions {location} right now"
         weight: 0.95
@@ -430,9 +430,9 @@ speed, and humidity. A calm, dry day just gets the lead sentence.
 - `what is the uv index` — UV facet
 - `is it humid today` — humidity facet
 
-## Extracted arguments
+## Arguments
 
-The router extracts two slots:
+The skill parses two slots from the utterance:
 
 - `location` — the place name, or an empty string to use the device's
   coarse location via the `location` capability.

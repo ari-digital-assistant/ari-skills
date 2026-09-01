@@ -135,7 +135,7 @@ adb logcat -s EngineModule AriEngine SkillUpdateWorker AssetResolver   # engine 
 ```
 
 Do this before opening a PR for anything that renders UI. It's also the only
-way to check that the router picks your skill up for the paraphrases in your
+way to check that your skill gets picked up for the paraphrases in your
 `examples`.
 
 ## The no-poaching gate
@@ -150,15 +150,15 @@ skill's keywords win one of your examples, your PR fails.
 
 The keyword matcher runs first and short-circuits. If skill B's keywords match
 your example utterance, then in production that utterance goes to skill B and
-the router is never consulted. So the example:
+the phrase matcher is never consulted. So the example:
 
-- teaches the router the opposite of what actually happens, and
+- claims a phrasing that always goes somewhere else, and
 - describes an utterance your skill can never serve anyway.
 
 ### What it looks like
 
 ```
-### ❌ Router-example poaching
+### ❌ Example poaching
 
 These examples are won by a different skill's keyword patterns.
   [en] "set a timer for five minutes" → won by dev.heyari.timer
@@ -173,7 +173,7 @@ The deeper fix is to write examples correctly in the first place:
 
 > **Your examples should be the utterances your keywords MISS.**
 
-The router is a fallback. Its training data should be the oblique, indirect,
+Phrase matching is a fallback. Your examples should be the oblique, indirect,
 conversational phrasings that a keyword list can never anticipate — not the
 obvious ones your patterns already handle.
 
@@ -183,7 +183,7 @@ examples:
   - text: "roll a dice"
   - text: "roll the dice"
 
-# Right — no keyword set wins these, so the router has to
+# Right — no keyword set wins these, so the phrase matcher has to
 examples:
   - text: "settle this for me, one to six"
   - text: "i cannot find the dice, do it for me"
