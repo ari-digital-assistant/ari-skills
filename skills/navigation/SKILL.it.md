@@ -24,47 +24,262 @@ metadata:
           weight: 0.8
       custom_score: false
     examples:
-      - text: "portami a asda"
+      - text: "portami {destination}"
+        weight: 0.95
         args:
-          destination: "asda"
-      - text: "portami al lavoro"
+          destination: "{destination}"
+      - text: "accompagnami {destination}"
+        weight: 0.95
         args:
-          destination: "lavoro"
-      - text: "portami a casa"
+          destination: "{destination}"
+      - text: "guidami {destination}"
+        weight: 0.95
         args:
-          destination: "casa"
-      - text: "come arrivo a mcdonalds"
+          destination: "{destination}"
+      - text: "vai {destination}"
+        weight: 0.6
         args:
-          destination: "mcdonalds"
-      - text: "indicazioni per il museo"
+          destination: "{destination}"
+      - text: "andiamo {destination}"
+        weight: 0.95
         args:
-          destination: "museo"
-      # Frasi oblique che i pattern qui sopra non intercettano di proposito:
-      # sono quelle che il router vede davvero in produzione.
-      - text: "qual è la strada più veloce per la stazione"
+          destination: "{destination}"
+      - text: "voglio andare {destination}"
+        weight: 0.75
+        args:
+          destination: "{destination}"
+      - text: "devo andare {destination}"
+        weight: 0.75
+        args:
+          destination: "{destination}"
+      - text: "come arrivo {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "come ci arrivo {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "come si arriva {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "come faccio ad arrivare {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "quanto ci metto ad arrivare {destination}"
+        weight: 0.85
+        args:
+          destination: "{destination}"
+      - text: "qual è la strada più veloce per arrivare {destination}"
+        weight: 0.85
+        args:
+          destination: "{destination}"
+      - text: "portami {destination} in macchina"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "portami subito {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "voglio andare {destination} in auto"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "fammi arrivare {destination}"
+        weight: 0.75
+        args:
+          destination: "{destination}"
+      - text: "conducimi {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "accompagnami {destination} per favore"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "mi porti {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "puoi portarmi {destination}"
+        weight: 0.75
+        args:
+          destination: "{destination}"
+      - text: "portami di nuovo {destination}"
+        weight: 0.75
+        args:
+          destination: "{destination}"
+      - text: "come arrivo {destination} da qui"
+        weight: 0.75
+        args:
+          destination: "{destination}"
+      - text: "fammi strada {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "andiamo subito {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "naviga {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "imposta la rotta {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "voglio andare {destination} adesso"
+        weight: 0.75
+        args:
+          destination: "{destination}"
+      - text: "indicazioni per la stazione"
+        weight: 0.95
         args:
           destination: "stazione"
-      - text: "accompagnami all'ospedale"
-        args:
-          destination: "ospedale"
-      - text: "voglio andare al mare"
-        args:
-          destination: "mare"
-      - text: "guidami fino al museo"
+      - text: "indicazioni per il museo"
+        weight: 0.95
         args:
           destination: "museo"
-      - text: "quanto ci metto ad arrivare in aeroporto"
+      - text: "indicazioni per l'aeroporto"
+        weight: 0.95
         args:
           destination: "aeroporto"
-      - text: "devo raggiungere il centro entro un'ora"
+      - text: "indicazioni per l'ospedale"
+        weight: 0.95
         args:
-          destination: "centro"
-      - text: "fammi strada fino al ristorante"
+          destination: "ospedale"
+      - text: "voglio tornare {destination}"
+        weight: 0.95
         args:
-          destination: "ristorante"
-      - text: "voglio tornare a casa in macchina"
+          destination: "{destination}"
+      - text: "voglio tornare {destination} in macchina"
+        weight: 0.95
         args:
-          destination: "casa"
+          destination: "{destination}"
+      - text: "riportami {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "portami velocemente {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "ho bisogno di andare {destination}"
+        weight: 0.75
+        args:
+          destination: "{destination}"
+      - text: "mi serve andare {destination}"
+        weight: 0.75
+        args:
+          destination: "{destination}"
+      - text: "dobbiamo andare {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "fammi da navigatore {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "come ci si arriva {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "che strada faccio per arrivare {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "trovami la strada {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "portami {destination} adesso"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "voglio andare {destination} subito"
+        weight: 0.85
+        args:
+          destination: "{destination}"
+      - text: "accompagnami {destination} in auto"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "conducimi {destination} per favore"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "vorrei andare {destination}"
+        weight: 0.75
+        args:
+          destination: "{destination}"
+      - text: "mi indichi come arrivare {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "portaci {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "come arrivo prima {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "portami {destination} il prima possibile"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "portami a {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "portami al {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "come arrivo a {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "indicazioni per il {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "qual è la strada più veloce per la {destination}"
+        weight: 0.85
+        args:
+          destination: "{destination}"
+      - text: "accompagnami all'{destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "voglio andare al {destination}"
+        weight: 0.75
+        args:
+          destination: "{destination}"
+      - text: "guidami fino al {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "quanto ci metto ad arrivare in {destination}"
+        weight: 0.85
+        args:
+          destination: "{destination}"
+      - text: "devo raggiungere il {destination} entro un'ora"
+        weight: 0.6
+        args:
+          destination: "{destination}"
+      - text: "fammi strada fino al {destination}"
+        weight: 0.95
+        args:
+          destination: "{destination}"
+      - text: "voglio tornare a {destination} in macchina"
+        weight: 0.95
+        args:
+          destination: "{destination}"
     settings:
       - key: navigation_mode
         label: Stile di navigazione

@@ -33,23 +33,132 @@ metadata:
           weight: 0.85
       custom_score: false
     examples:
-      - text: "imposta un timer per 10 minuti"
-      - text: "imposta un timer per la pasta di 8 minuti"
-      - text: "avvia un timer di 4 minuti per la pasta"
-      - text: "quanto manca al mio timer della pasta"
-      - text: "annulla il mio timer della pasta"
+      - text: "imposta un timer di {minutes} minuti"
+        weight: 0.95
+      - text: "imposta un timer per {minutes} minuti"
+        weight: 0.95
+      - text: "avvia un timer di {minutes} minuti"
+        weight: 0.95
+      - text: "metti un timer di {minutes} minuti"
+        weight: 0.95
+      - text: "crea un timer da {minutes} minuti"
+        weight: 0.95
+      - text: "fai partire un timer di {minutes} minuti"
+        weight: 0.95
+      - text: "imposta un timer per {name} di {minutes} minuti"
+        weight: 0.95
+      - text: "avvia un timer di {minutes} minuti per {name}"
+        weight: 0.95
+      - text: "metti un timer di {minutes} minuti per {name}"
+        weight: 0.95
+      - text: "imposta il timer per {name}"
+        weight: 0.95
+      - text: "un timer da {minutes} minuti per {name}"
+        weight: 0.95
+      - text: "imposta un timer di {seconds} secondi"
+        weight: 0.95
+      - text: "avvia un timer di {seconds} secondi"
+        weight: 0.95
+      - text: "metti {minutes} minuti"
+        weight: 0.95
+      - text: "mettimi {minutes} minuti per {name}"
+        weight: 0.95
+      - text: "dammi {minutes} minuti per {name}"
+        weight: 0.95
+      - text: "avvisami tra {minutes} minuti"
+        weight: 0.95
+      - text: "avvisami tra {minutes} minuti per {name}"
+        weight: 0.95
+      - text: "fammi sapere quando sono passati {minutes} minuti"
+        weight: 0.85
+      - text: "conto alla rovescia di {minutes} minuti"
+        weight: 0.95
+      - text: "conto alla rovescia di {minutes} minuti per {name}"
+        weight: 0.95
+      - text: "fai un conto alla rovescia di {minutes} minuti"
+        weight: 0.95
+      - text: "suona tra {minutes} minuti"
+        weight: 0.95
+      - text: "parti con un timer di {minutes} minuti"
+        weight: 0.95
+      - text: "fai partire {minutes} minuti per {name}"
+        weight: 0.85
+      - text: "imposta un timer di {minutes} minuti e un altro di {minutes2} minuti"
+        weight: 0.95
+      - text: "metti un timer di {minutes} minuti e uno di {minutes2} minuti"
+        weight: 0.95
+      - text: "quanto manca al timer per {name}"
+        weight: 0.95
+      - text: "quanto resta al timer per {name}"
+        weight: 0.95
+      - text: "quanto manca per {name}"
+        weight: 0.75
+      - text: "ancora quanto per {name}"
+        weight: 0.6
+      - text: "quanto manca"
+        weight: 0.75
+      - text: "quanti minuti mancano al timer per {name}"
+        weight: 0.95
+      - text: "annulla il timer per {name}"
+        weight: 0.95
+      - text: "cancella il timer per {name}"
+        weight: 0.95
+      - text: "elimina il timer per {name}"
+        weight: 0.95
+      - text: "non mi serve più il timer per {name}"
+        weight: 0.85
+      - text: "togli il timer per {name}"
+        weight: 0.95
+      - text: "annulla il timer di {minutes} minuti"
+        weight: 0.95
+      - text: "cancella tutti i timer"
+        weight: 0.95
       - text: "quali timer ho"
-      - text: "imposta un timer per 5 minuti e un altro per 15 minuti"
-      # Frasi oblique che i pattern qui sopra non intercettano di proposito:
-      # sono quelle che il router vede davvero in produzione.
-      - text: "avvisami tra dieci minuti"
-      - text: "mettimi otto minuti per la pasta"
-      - text: "fammi sapere quando sono passati venti minuti"
-      - text: "suona tra un quarto d'ora"
-      - text: "quanto resta alla pasta"
-      - text: "ancora quanto per le uova"
-      - text: "non mi serve più il timer della pasta"
+        weight: 0.95
+      - text: "quali timer ho attivi"
+        weight: 0.95
       - text: "che timer ho attivi"
+        weight: 0.95
+      - text: "elenca i miei timer"
+        weight: 0.95
+      - text: "mostrami i timer attivi"
+        weight: 0.95
+      - text: "quanti timer ho attivi"
+        weight: 0.95
+      - text: "imposta un timer per {name} da {minutes} minuti"
+        weight: 0.95
+      - text: "fai un timer di {minutes} minuti per {name}"
+        weight: 0.95
+      - text: "fai partire il timer per {name}"
+        weight: 0.85
+      - text: "ancora molto per {name}"
+        weight: 0.6
+      - text: "imposta un timer per 10 minuti"
+        weight: 0.95
+      - text: "imposta un timer per la pasta di 8 minuti"
+        weight: 0.95
+      - text: "avvia un timer di 4 minuti per la pasta"
+        weight: 0.95
+      - text: "quanto manca al mio timer della pasta"
+        weight: 0.85
+      - text: "annulla il mio timer della pasta"
+        weight: 0.95
+      - text: "imposta un timer per 5 minuti e un altro per 15 minuti"
+        weight: 0.95
+      - text: "avvisami tra dieci minuti"
+        weight: 0.95
+      - text: "mettimi otto minuti per la pasta"
+        weight: 0.95
+      - text: "fammi sapere quando sono passati venti minuti"
+        weight: 0.85
+      - text: "suona tra un quarto d'ora"
+        weight: 0.95
+      - text: "quanto resta alla pasta"
+        weight: 0.75
+      - text: "ancora quanto per le uova"
+        weight: 0.6
+      - text: "non mi serve più il timer della pasta"
+        weight: 0.75
     wasm:
       module: skill.wasm
       memory_limit_mb: 4

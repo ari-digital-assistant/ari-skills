@@ -86,41 +86,316 @@ metadata:
     # "l incontro"). Gli accenti sopravvivono alla normalizzazione e vanno
     # scritti.
     examples:
-      # Forme canoniche: le vince il parser della skill, quindi in
-      # produzione il router non le vede mai. Stanno qui perché
-      # documentano gli slot — `recipient`, `body`, `service`.
+      - text: "scrivi a {recipient} che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "puoi scrivere a {recipient} che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "mi scrivi a {recipient} che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "per favore scrivi a {recipient} che {body}"
+        weight: 0.75
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "vorrei scrivere a {recipient} che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "avrei bisogno di scrivere a {recipient} che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "fammi mandare a {recipient} un messaggio con scritto {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "preparami un messaggio per {recipient} con scritto {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "scrivi un messaggio a {recipient} per dire: {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "scrivi qualcosa a {recipient} per far sapere che {body}"
+        weight: 0.75
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "manda un messaggio a {recipient} dicendo che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "potresti mandare un messaggio a {recipient} per dire che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "mi mandi un messaggio a {recipient} con scritto {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "fai partire un messaggio per {recipient}: {body}"
+        weight: 0.85
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "invia un messaggio a {recipient} per avvertire che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "inoltra a {recipient} un messaggio con scritto {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "manda un messaggino a {recipient} per dire che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "vorrei mandare un messaggio a {recipient} dicendo {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "c'è da mandare un messaggio a {recipient} per dire che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "ho bisogno che tu invii a {recipient} un messaggio con scritto {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "avvisa {recipient} con un messaggio che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "puoi avvisare {recipient} per messaggio che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "fai sapere a {recipient} con un messaggio che {body}"
+        weight: 0.85
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "di' a {recipient} per messaggio che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "comunica a {recipient} con un messaggio che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "informa {recipient} per messaggio che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "contatta {recipient} con un messaggio che dice: {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "chiedi a {recipient} per messaggio se {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "manda un messaggio a {recipient} per chiedere se {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "scrivi a {recipient} e chiedi se {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "puoi domandare a {recipient} per messaggio se {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "vorrei chiedere a {recipient} con un messaggio se {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "fai arrivare a {recipient} un messaggio per sapere se {body}"
+        weight: 0.85
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "manda a {recipient} su {service} il messaggio {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "{service}"
+      - text: "scrivi a {recipient} su {service} che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "{service}"
+      - text: "invia a {recipient} via {service} il messaggio {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "{service}"
+      - text: "manda un messaggio a {recipient} tramite {service} dicendo che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "{service}"
+      - text: "contatta {recipient} con {service} e scrivi: {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "{service}"
+      - text: "per questo messaggio a {recipient} usa {service}: {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "{service}"
+      - text: "vorrei scrivere a {recipient} con {service} per dire che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "{service}"
+      - text: "preparami su {service} un messaggio per {recipient} con scritto {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "{service}"
+      - text: "fai sapere a {recipient} via {service} che {body}"
+        weight: 0.85
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "{service}"
+      - text: "manda un SMS a {recipient} con scritto {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "sms"
+      - text: "invia un'email a {recipient} per dire che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "email"
+      - text: "scrivi a {recipient} su WhatsApp che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "whatsapp"
+      - text: "manda a {recipient} su Telegram il messaggio {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "telegram"
+      - text: "avvisa {recipient} su Signal con il messaggio {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+          service: "signal"
+      - text: "scrivi a {recipient}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+      - text: "preparami un messaggio da mandare a {recipient}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+      - text: "vorrei mandare un messaggio a {recipient}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+      - text: "devo scrivere un messaggio a {recipient}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+      - text: "manda alla {recipient} un messaggio per dire che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "scrivi alla {recipient} il messaggio {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
+      - text: "avvisa la {recipient} con un messaggio che {body}"
+        weight: 0.95
+        args:
+          recipient: "{recipient}"
+          body: "{body}"
       - text: "scrivi a mario che arrivo tardi"
-        args: '{"recipient":"mario","body":"arrivo tardi"}'
+        weight: 0.95
       - text: "manda un messaggio a gail dicendo che sono in ritardo"
-        args: '{"recipient":"gail","body":"sono in ritardo"}'
+        weight: 0.95
       - text: "di a mario che torno presto"
-        args: '{"recipient":"mario","body":"torno presto"}'
+        weight: 0.75
       - text: "avvisa gail che faccio tardi"
-        args: '{"recipient":"gail","body":"faccio tardi"}'
+        weight: 0.95
       - text: "fai sapere a gail che sono sull autobus"
-        args: '{"recipient":"gail","body":"sono sull''autobus"}'
+        weight: 0.6
       - text: "manda un sms a gail ci vediamo alle 8"
-        args: '{"recipient":"gail","body":"ci vediamo alle 8","service":"sms"}'
+        weight: 0.95
       - text: "manda una mail a gail ricordati del latte"
-        args: '{"recipient":"gail","body":"ricordati del latte","service":"email"}'
+        weight: 0.85
       - text: "scrivi a mario buon compleanno su whatsapp"
-        args: '{"recipient":"mario","body":"buon compleanno","service":"whatsapp"}'
-      # Frasi oblique che il parser qui sopra non intercetta di proposito:
-      # sono quelle che il router vede davvero in produzione.
+        weight: 0.95
       - text: "puoi dire a mario che sono in ritardo"
-        args: '{"recipient":"mario","body":"sono in ritardo"}'
+        weight: 0.6
       - text: "vorrei mandare un messaggio a gail"
-        args: '{"recipient":"gail"}'
+        weight: 0.95
       - text: "devo avvisare mario che faccio tardi"
-        args: '{"recipient":"mario","body":"faccio tardi"}'
+        weight: 0.95
       - text: "chiedi a gail se viene stasera"
-        args: '{"recipient":"gail","body":"vieni stasera?"}'
+        weight: 0.85
       - text: "informa gail che l incontro è rimandato"
-        args: '{"recipient":"gail","body":"l''incontro è rimandato"}'
+        weight: 0.75
       - text: "manda due righe a gail che sto arrivando"
-        args: '{"recipient":"gail","body":"sto arrivando"}'
+        weight: 0.85
       - text: "gira un messaggio a mario che sono fuori"
-        args: '{"recipient":"mario","body":"sono fuori"}'
+        weight: 0.95
     wasm:
       module: skill.wasm
       memory_limit_mb: 4

@@ -20,11 +20,170 @@ metadata:
     # "esegui"/"avvia" verrebbero rivendicate dalla skill built-in
     # `open`, quindi qui restano fuori: il router non le vedrebbe mai.
     examples:
+      - text: "prova il modulo wasm echo"
+        weight: 0.95
+      - text: "prova la skill wasm echo"
+        weight: 0.95
+      - text: "prova il caricatore wasm"
+        weight: 0.95
+      - text: "prova il modulo wasm"
+        weight: 0.95
+      - text: "prova l'echo wasm"
+        weight: 0.95
+      - text: "prova la skill di test wasm"
+        weight: 0.95
+      - text: "testa wasm echo"
+        weight: 0.95
+      - text: "testa il modulo wasm echo"
+        weight: 0.95
+      - text: "testa la skill wasm echo"
+        weight: 0.95
+      - text: "testa il loader wasm"
+        weight: 0.95
+      - text: "testa il caricatore wasm"
+        weight: 0.95
+      - text: "testa il modulo wasm"
+        weight: 0.95
+      - text: "testa l'echo wasm"
+        weight: 0.95
+      - text: "testa la skill di test wasm"
+        weight: 0.95
+      - text: "esegui wasm echo"
+        weight: 0.95
+      - text: "esegui il modulo wasm echo"
+        weight: 0.95
+      - text: "esegui l'echo wasm"
+        weight: 0.95
+      - text: "lancia wasm echo"
+        weight: 0.95
+      - text: "lancia il modulo wasm echo"
+        weight: 0.95
+      - text: "lancia la skill wasm echo"
+        weight: 0.95
+      - text: "lancia l'echo wasm"
+        weight: 0.95
+      - text: "avvia wasm echo"
+        weight: 0.95
+      - text: "avvia il modulo wasm echo"
+        weight: 0.95
+      - text: "avvia la skill wasm echo"
+        weight: 0.95
+      - text: "avvia l'echo wasm"
+        weight: 0.95
+      - text: "fai partire wasm echo"
+        weight: 0.95
+      - text: "fai partire il modulo wasm echo"
+        weight: 0.95
+      - text: "fai partire la skill wasm echo"
+        weight: 0.95
+      - text: "fai partire il loader wasm"
+        weight: 0.95
+      - text: "fai partire il caricatore wasm"
+        weight: 0.95
+      - text: "fai partire il modulo wasm"
+        weight: 0.85
+      - text: "fai partire l'echo wasm"
+        weight: 0.95
+      - text: "fai partire la skill di test wasm"
+        weight: 0.95
+      - text: "verifica wasm echo"
+        weight: 0.95
+      - text: "verifica il modulo wasm echo"
+        weight: 0.95
+      - text: "verifica la skill wasm echo"
+        weight: 0.95
+      - text: "verifica il loader wasm"
+        weight: 0.95
+      - text: "verifica il caricatore wasm"
+        weight: 0.95
+      - text: "verifica il modulo wasm"
+        weight: 0.95
+      - text: "verifica l'echo wasm"
+        weight: 0.95
+      - text: "verifica la skill di test wasm"
+        weight: 0.95
+      - text: "fai girare wasm echo"
+        weight: 0.95
+      - text: "fai girare il modulo wasm echo"
+        weight: 0.95
+      - text: "fai girare la skill wasm echo"
+        weight: 0.95
+      - text: "fai girare il loader wasm"
+        weight: 0.95
+      - text: "fai girare il caricatore wasm"
+        weight: 0.95
+      - text: "fai girare il modulo wasm"
+        weight: 0.95
+      - text: "fai girare l'echo wasm"
+        weight: 0.95
+      - text: "fai girare la skill di test wasm"
+        weight: 0.95
+      - text: "carica wasm echo"
+        weight: 0.95
+      - text: "carica il modulo wasm echo"
+        weight: 0.95
+      - text: "carica la skill wasm echo"
+        weight: 0.95
+      - text: "carica il loader wasm"
+        weight: 0.95
+      - text: "carica il caricatore wasm"
+        weight: 0.95
+      - text: "carica il modulo wasm"
+        weight: 0.95
+      - text: "carica l'echo wasm"
+        weight: 0.95
+      - text: "carica la skill di test wasm"
+        weight: 0.95
+      - text: "attiva wasm echo"
+        weight: 0.95
+      - text: "attiva il modulo wasm echo"
+        weight: 0.95
+      - text: "attiva la skill wasm echo"
+        weight: 0.95
+      - text: "attiva il loader wasm"
+        weight: 0.95
+      - text: "attiva il caricatore wasm"
+        weight: 0.95
+      - text: "attiva il modulo wasm"
+        weight: 0.95
+      - text: "attiva l'echo wasm"
+        weight: 0.95
+      - text: "attiva la skill di test wasm"
+        weight: 0.95
+      - text: "dammi il saluto del wasm"
+        weight: 0.95
+      - text: "fammi vedere che il wasm funziona"
+        weight: 0.85
+      - text: "controlla che il loader wasm risponda"
+        weight: 0.95
+      - text: "voglio testare il loader wasm"
+        weight: 0.95
+      - text: "modulo wasm di prova"
+        weight: 0.95
+      - text: "echo di prova wasm"
+        weight: 0.95
+      - text: "il wasm dice ciao"
+        weight: 0.95
+      - text: "fammi sentire il saluto wasm"
+        weight: 0.95
+      - text: "fai un test del modulo wasm"
+        weight: 0.95
+      - text: "provami il caricatore wasm"
+        weight: 0.95
+      - text: "dammi il saluto dal wasm echo"
+        weight: 0.95
+      - text: "controlla il modulo wasm echo"
+        weight: 0.95
       - text: "wasm echo"
+        weight: 0.95
       - text: "prova wasm echo"
+        weight: 0.95
       - text: "prova il loader wasm"
+        weight: 0.95
       - text: "esegui la skill wasm echo"
+        weight: 0.95
       - text: "saluto dal modulo wasm"
+        weight: 0.95
     wasm:
       module: skill.wasm
       memory_limit_mb: 1

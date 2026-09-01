@@ -18,111 +18,257 @@ metadata:
         - regex: "\\b(pause|resume|skip|next|previous|stop|mute|unmute|louder|quieter|volume)\\b"
           weight: 0.9
     examples:
-      - text: "play hotel california"
+      - text: "play {song}"
+        weight: 0.95
         args:
-          query: "hotel california"
-      - text: "play some pink floyd"
+          query: "{song}"
+      - text: "put on the track {song}"
+        weight: 0.75
         args:
-          query: "pink floyd"
-      - text: "put on comfortably numb"
+          query: "{song}"
+      - text: "listen to {song}"
+        weight: 0.95
         args:
-          query: "comfortably numb"
-      - text: "listen to the beatles"
+          query: "{song}"
+      - text: "i want to hear {song}"
+        weight: 0.75
         args:
-          query: "the beatles"
-      - text: "play hotel california on spotify"
+          query: "{song}"
+      - text: "can you play {song}"
+        weight: 0.95
         args:
-          query: "hotel california"
-          service: "spotify"
-      - text: "put on some jazz"
+          query: "{song}"
+      - text: "play {song} on {service}"
+        weight: 0.95
         args:
-          query: "jazz"
-      - text: "play abbey road on apple music"
+          query: "{song}"
+          service: "{service}"
+      - text: "put on {song} on {service}"
+        weight: 0.6
         args:
-          query: "abbey road"
-          service: "apple_music"
-      - text: "listen to radiohead on tidal"
+          query: "{song}"
+          service: "{service}"
+      - text: "stick the song {song} on"
+        weight: 0.95
         args:
-          query: "radiohead"
-          service: "tidal"
-      - text: "play something relaxing"
+          query: "{song}"
+      - text: "play me {song}"
+        weight: 0.95
         args:
-          query: "relaxing music"
-      - text: "put on led zeppelin"
+          query: "{song}"
+      - text: "put the song {song} on"
+        weight: 0.95
         args:
-          query: "led zeppelin"
-      - text: "play thriller on spotify"
+          query: "{song}"
+      - text: "play some {artist}"
+        weight: 0.95
         args:
-          query: "thriller"
-          service: "spotify"
-      # Italian examples — routed here because play/put on/listen to
-      # are English triggers; Italian routing is handled by SKILL.it.md.
-      # These bilingual entries teach FunctionGemma the arg shape.
-      - text: "metti su bohemian rhapsody"
+          query: "{artist}"
+      - text: "put on some {artist}"
+        weight: 0.6
         args:
-          query: "bohemian rhapsody"
-      - text: "ascolta i pink floyd"
+          query: "{artist}"
+      - text: "i fancy some {artist}"
+        weight: 0.95
         args:
-          query: "pink floyd"
-      - text: "metti su qualcosa di rilassante"
+          query: "{artist}"
+      - text: "play a bit of {artist}"
+        weight: 0.95
         args:
-          query: "musica rilassante"
-      - text: "metti su hotel california su spotify"
+          query: "{artist}"
+      - text: "play some {artist} on {service}"
+        weight: 0.95
         args:
-          query: "hotel california"
-          service: "spotify"
-      - text: "ascolta radiohead su tidal"
+          query: "{artist}"
+          service: "{service}"
+      - text: "can we have some {artist}"
+        weight: 0.55
         args:
-          query: "radiohead"
-          service: "tidal"
-      - text: "metti su abbey road su apple music"
+          query: "{artist}"
+      - text: "shuffle some {artist}"
+        weight: 0.95
         args:
-          query: "abbey road"
-          service: "apple_music"
-      - text: "ascolta del jazz"
+          query: "{artist}"
+      - text: "i want to listen to {genre}"
+        weight: 0.95
         args:
-          query: "jazz"
-      - text: "metti su led zeppelin"
+          query: "{genre}"
+      - text: "put on a bit of {genre}"
+        weight: 0.6
         args:
-          query: "led zeppelin"
-      - text: "riproduci thriller su spotify"
+          query: "{genre}"
+      - text: "some {genre} please"
+        weight: 0.55
         args:
-          query: "thriller"
-          service: "spotify"
-      - text: "metti su qualcosa dei beatles"
+          query: "{genre}"
+      - text: "throw on some {genre}"
+        weight: 0.95
         args:
-          query: "beatles"
+          query: "{genre}"
+      - text: "play something {mood}"
+        weight: 0.95
+        args:
+          query: "{mood}"
+      - text: "put on something {mood}"
+        weight: 0.75
+        args:
+          query: "{mood}"
+      - text: "i want something {mood}"
+        weight: 0.75
+        args:
+          query: "{mood}"
       - text: "pause"
+        weight: 0.95
+        args:
+          action: "pause"
+      - text: "pause the music"
+        weight: 0.95
         args:
           action: "pause"
       - text: "resume"
+        weight: 0.95
+        args:
+          action: "resume"
+      - text: "resume the music"
+        weight: 0.95
+        args:
+          action: "resume"
+      - text: "keep playing"
+        weight: 0.95
         args:
           action: "resume"
       - text: "next"
+        weight: 0.95
         args:
           action: "next"
-      - text: "skip this song"
+      - text: "skip this track"
+        weight: 0.95
         args:
           action: "next"
-      - text: "previous"
+      - text: "next song"
+        weight: 0.95
+        args:
+          action: "next"
+      - text: "go back a track"
+        weight: 0.75
         args:
           action: "previous"
-      - text: "stop the music"
+      - text: "previous"
+        weight: 0.95
+        args:
+          action: "previous"
+      - text: "play the last song again"
+        weight: 0.95
+        args:
+          action: "previous"
+      - text: "stop playing"
+        weight: 0.95
         args:
           action: "stop"
+      - text: "turn the music off"
+        weight: 0.95
+        args:
+          action: "stop"
+      - text: "turn the music up"
+        weight: 0.95
+        args:
+          action: "volume_up"
+      - text: "louder"
+        weight: 0.95
+        args:
+          action: "volume_up"
+      - text: "crank it up"
+        weight: 0.95
+        args:
+          action: "volume_up"
+      - text: "turn the music down"
+        weight: 0.95
+        args:
+          action: "volume_down"
+      - text: "quieter"
+        weight: 0.95
+        args:
+          action: "volume_down"
+      - text: "bit quieter please"
+        weight: 0.95
+        args:
+          action: "volume_down"
+      - text: "mute the music"
+        weight: 0.95
+        args:
+          action: "mute"
+      - text: "mute it"
+        weight: 0.95
+        args:
+          action: "mute"
+      - text: "set the volume to 50"
+        weight: 0.95
+        args:
+          action: "volume_set"
+          level: "50"
+      - text: "set the volume to 30"
+        weight: 0.95
+        args:
+          action: "volume_set"
+          level: "30"
+      - text: "set the volume to 70"
+        weight: 0.95
+        args:
+          action: "volume_set"
+          level: "70"
+      - text: "put the volume at 20"
+        weight: 0.95
+        args:
+          action: "volume_set"
+          level: "20"
+      - text: "turn the volume up to 80"
+        weight: 0.95
+        args:
+          action: "volume_set"
+          level: "80"
+      - text: "put on {query}"
+        weight: 0.6
+        args:
+          query: "{query}"
+      - text: "play {query} on apple music"
+        weight: 0.95
+        args:
+          query: "{query}"
+          service: "apple_music"
+      - text: "listen to {query} on {service}"
+        weight: 0.95
+        args:
+          query: "{query}"
+          service: "{service}"
+      - text: "play something relaxing"
+        weight: 0.95
+        args:
+          query: "relaxing music"
+      - text: "{action}"
+        weight: 0.55
+        args:
+          action: "{action}"
+      - text: "skip this song"
+        weight: 0.95
+        args:
+          action: "next"
+      - text: "{action} the music"
+        weight: 0.95
+        args:
+          action: "{action}"
       - text: "volume up"
+        weight: 0.95
         args:
           action: "volume_up"
       - text: "turn it down"
+        weight: 0.6
         args:
           action: "volume_down"
-      - text: "set volume to 50%"
+      - text: "set volume to {level}%"
+        weight: 0.95
         args:
           action: "volume_set"
-          level: 50
-      - text: "mute"
-        args:
-          action: "mute"
+          level: "{level}"
     settings:
       - key: default_service
         label: Default music service

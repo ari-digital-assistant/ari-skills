@@ -55,14 +55,114 @@ metadata:
         - keywords: [termostato, luci]
           weight: 0.7
     examples:
-      - text: "accendi le luci della cucina"
-      - text: "spegni la lampada della camera"
-      - text: "imposta il soggiorno a 21 gradi"
-      - text: "abbassa le luci del corridoio al 30 percento"
-      - text: "chiudi a chiave la porta d'ingresso"
-      - text: "attiva la scena serata film"
+      - text: "accendi {entity}"
+        weight: 0.95
+      - text: "spegni {entity}"
+        weight: 0.95
+      - text: "puoi accendere {entity}"
+        weight: 0.95
+      - text: "puoi spegnere {entity}"
+        weight: 0.95
+      - text: "accendimi {entity}"
+        weight: 0.95
+      - text: "spegnimi {entity}"
+        weight: 0.95
+      - text: "vorrei che accendessi {entity}"
+        weight: 0.95
+      - text: "per favore accendi {entity}"
+        weight: 0.95
+      - text: "per favore spegni {entity}"
+        weight: 0.75
+      - text: "accendi {entity} grazie"
+        weight: 0.95
+      - text: "abbassa {entity}"
+        weight: 0.95
+      - text: "alza {entity}"
+        weight: 0.95
+      - text: "attenua {entity}"
+        weight: 0.95
+      - text: "abbassa {entity} al {percent} percento"
+        weight: 0.95
+      - text: "imposta {entity} al {percent} percento"
+        weight: 0.75
+      - text: "metti {entity} al {percent} percento"
+        weight: 0.75
+      - text: "riduci {entity} al {percent} percento"
+        weight: 0.95
+      - text: "chiudi {cover}"
+        weight: 0.95
+      - text: "puoi aprire {cover}"
+        weight: 0.75
+      - text: "puoi chiudere {cover}"
+        weight: 0.95
+      - text: "tira su {cover}"
+        weight: 0.95
+      - text: "tira giù {cover}"
+        weight: 0.75
+      - text: "imposta {room} a {temperature} gradi"
+        weight: 0.75
+      - text: "metti {room} a {temperature} gradi"
+        weight: 0.75
+      - text: "regola {room} a {temperature} gradi"
+        weight: 0.95
+      - text: "porta {room} a {temperature} gradi"
+        weight: 0.95
+      - text: "imposta il termostato a {temperature} gradi"
+        weight: 0.95
+      - text: "alza il riscaldamento"
+        weight: 0.95
+      - text: "abbassa il riscaldamento"
+        weight: 0.95
+      - text: "fa freddo alza il termostato a {temperature} gradi"
+        weight: 0.95
+      - text: "attiva la scena {scene}"
+        weight: 0.95
+      - text: "metti la scena {scene}"
+        weight: 0.95
       - text: "la porta del garage è aperta"
+        weight: 0.95
+      - text: "la porta d'ingresso è chiusa"
+        weight: 0.95
+      - text: "è tutto spento in casa"
+        weight: 0.95
+      - text: "sono rimaste accese le luci"
+        weight: 0.95
+      - text: "chiudi a chiave la porta d'ingresso"
+        weight: 0.95
+      - text: "blocca la porta d'ingresso"
+        weight: 0.95
+      - text: "sblocca la porta d'ingresso"
+        weight: 0.95
+      - text: "dov'è {person}"
+        weight: 0.95
+      - text: "sai dov'è {person}"
+        weight: 0.95
+      - text: "mi dici dov'è {person}"
+        weight: 0.95
+      - text: "accendi {entity} per favore"
+        weight: 0.95
+      - text: "spegni tutto"
+        weight: 0.95
+      - text: "accendi tutte le luci"
+        weight: 0.95
+      - text: "spegni {entity} adesso"
+        weight: 0.95
+      - text: "accendi anche {entity}"
+        weight: 0.95
+      - text: "spegni pure {entity}"
+        weight: 0.95
+      - text: "accendi le luci della cucina"
+        weight: 0.95
+      - text: "spegni la lampada della camera"
+        weight: 0.75
+      - text: "imposta il soggiorno a 21 gradi"
+        weight: 0.6
+      - text: "abbassa le luci del corridoio al 30 percento"
+        weight: 0.85
+      - text: "attiva la scena serata film"
+        weight: 0.85
       - text: "dov'è keith"
+        weight: 0.95
     settings:
       - key: base_url
         label: "URL di Home Assistant"

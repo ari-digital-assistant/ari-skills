@@ -23,10 +23,91 @@ metadata:
           weight: 0.95
     examples:
       - text: "conta"
-      - text: "aggiungine uno"
-      - text: "incrementa il contatore"
-      - text: "aumenta il contatore"
+        weight: 0.95
+      - text: "contami"
+        weight: 0.95
+      - text: "aggiungine uno al conteggio"
+        weight: 0.95
       - text: "aggiungi uno al contatore"
+        weight: 0.95
+      - text: "incrementa il contatore"
+        weight: 0.95
+      - text: "aumenta il contatore"
+        weight: 0.95
+      - text: "alza il contatore"
+        weight: 0.95
+      - text: "fai salire il contatore"
+        weight: 0.95
+      - text: "segnane uno sul conteggio"
+        weight: 0.95
+      - text: "conta ancora"
+        weight: 0.75
+      - text: "conta di nuovo"
+        weight: 0.75
+      - text: "aggiorna il contatore"
+        weight: 0.95
+      - text: "spingi avanti il contatore"
+        weight: 0.95
+      - text: "fammi contare"
+        weight: 0.95
+      - text: "aggiungi al contatore"
+        weight: 0.95
+      - text: "incrementa"
+        weight: 0.95
+      - text: "conta uno in più"
+        weight: 0.75
+      - text: "segna un altro"
+        weight: 0.95
+      - text: "aumenta il conteggio di uno"
+        weight: 0.95
+      - text: "aggiungine un altro"
+        weight: 0.95
+      - text: "fai un altro conteggio"
+        weight: 0.95
+      - text: "conta su"
+        weight: 0.95
+      - text: "conteggia"
+        weight: 0.95
+      - text: "metti un altro sul contatore"
+        weight: 0.95
+      - text: "aggiungi {count} al contatore"
+        weight: 0.95
+      - text: "aumenta il contatore di {count}"
+        weight: 0.95
+      - text: "incrementa il contatore di {count}"
+        weight: 0.95
+      - text: "segna {count} sul contatore"
+        weight: 0.95
+      - text: "alza il contatore di {count}"
+        weight: 0.95
+      - text: "fai salire il contatore di {count}"
+        weight: 0.95
+      - text: "metti {count} sul contatore"
+        weight: 0.95
+      - text: "aggiungi {count} al conteggio"
+        weight: 0.95
+      - text: "più {count} sul contatore"
+        weight: 0.95
+      - text: "conta fino a {count}"
+        weight: 0.95
+      - text: "aggiorna il contatore di {count}"
+        weight: 0.95
+      - text: "spingi avanti il contatore di {count}"
+        weight: 0.95
+      - text: "aumenta di {count} il contatore"
+        weight: 0.95
+      - text: "incrementa di {count}"
+        weight: 0.95
+      - text: "fai salire il conteggio di {count}"
+        weight: 0.95
+      - text: "registra {count} in più sul conteggio"
+        weight: 0.95
+      - text: "aumenta il conteggio di {count}"
+        weight: 0.95
+      - text: "porta avanti il contatore di {count}"
+        weight: 0.95
+      - text: "aggiungine uno"
+        weight: 0.95
     wasm:
       module: skill.wasm
       memory_limit_mb: 1

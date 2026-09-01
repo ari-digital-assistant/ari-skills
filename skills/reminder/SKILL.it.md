@@ -64,67 +64,316 @@ metadata:
           weight: 1.0
       custom_score: false
     examples:
-      - text: "ricordami di portare fuori il cane alle 17"
+      - text: "imposta un promemoria per {text} {when}"
+        weight: 0.75
         args:
-          title: "portare fuori il cane"
-          when: "alle 17"
-      - text: "ricordami di comprare il latte"
+          title: "{text}"
+          when: "{when}"
+      - text: "crea un promemoria per {text} {when}"
+        weight: 0.95
         args:
-          title: "comprare il latte"
-      - text: "ricordami di portare fuori la spazzatura stasera"
+          title: "{text}"
+          when: "{when}"
+      - text: "fammi un promemoria per {text} {when}"
+        weight: 0.75
         args:
-          title: "portare fuori la spazzatura"
-          when: "stasera"
-      - text: "ricordami alle 9 domani di chiamare il dentista"
+          title: "{text}"
+          when: "{when}"
+      - text: "puoi impostarmi un promemoria per {text} {when}"
+        weight: 0.95
         args:
-          title: "chiamare il dentista"
-          when: "alle 9 domani"
-      - text: "ricordami tra 30 minuti di controllare il forno"
+          title: "{text}"
+          when: "{when}"
+      - text: "vorrei un promemoria per {text} {when}"
+        weight: 0.75
         args:
-          title: "controllare il forno"
-          when: "tra 30 minuti"
-      - text: "imposta un promemoria di mandare email a sara venerdì alle 15"
+          title: "{text}"
+          when: "{when}"
+      - text: "mi serve un promemoria per {text} {when}"
+        weight: 0.75
         args:
-          title: "mandare email a sara"
-          when: "venerdì alle 15"
-      - text: "aggiungi latte alla lista della spesa"
+          title: "{text}"
+          when: "{when}"
+      - text: "ho bisogno di un promemoria per {text} {when}"
+        weight: 0.75
         args:
-          title: "latte"
-          list_hint: "spesa"
-      - text: "metti uova sulla lista della spesa"
+          title: "{text}"
+          when: "{when}"
+      - text: "potresti creare un promemoria per {text} {when}"
+        weight: 0.95
         args:
-          title: "uova"
-          list_hint: "spesa"
-      - text: "aggiungi revisione scadenze alla mia lista lavoro"
+          title: "{text}"
+          when: "{when}"
+      - text: "mi prepari un promemoria per {text} {when}"
+        weight: 0.95
         args:
-          title: "revisione scadenze"
-          list_hint: "lavoro"
-      - text: "ricordami della riunione alle 16"
+          title: "{text}"
+          when: "{when}"
+      - text: "segnami un promemoria per {text} {when}"
+        weight: 0.95
         args:
-          title: "la riunione"
-          when: "alle 16"
-      # Paraphrases without literal "ricordami" / "imposta un
-      # promemoria" / "aggiungi alla lista" triggers — same routing-
-      # teaching rationale as SKILL.en.md.
-      - text: "avvisami alle 17 di portare fuori il cane"
+          title: "{text}"
+          when: "{when}"
+      - text: "programma un promemoria per {text} {when}"
+        weight: 0.95
         args:
-          title: "portare fuori il cane"
-          when: "alle 17"
-      - text: "dimmi alle 9 domani di chiamare il dentista"
+          title: "{text}"
+          when: "{when}"
+      - text: "metti in agenda un promemoria per {text} {when}"
+        weight: 0.95
         args:
-          title: "chiamare il dentista"
-          when: "alle 9 domani"
-      # Niente "svegliami alle X": è compito della skill `alarm`, i cui
-      # pattern vincono l'utterance prima del router — l'esempio
-      # insegnerebbe il contrario di quello che succede in produzione.
-      - text: "avvisami alle 7 di prendere le pastiglie"
+          title: "{text}"
+          when: "{when}"
+      - text: "lasciami un promemoria per {text} {when}"
+        weight: 0.95
         args:
-          title: "prendere le pastiglie"
-          when: "alle 7"
-      - text: "fammi sapere stasera di portare fuori la spazzatura"
+          title: "{text}"
+          when: "{when}"
+      - text: "non farmi dimenticare di {text}: crea un promemoria {when}"
+        weight: 0.95
         args:
-          title: "portare fuori la spazzatura"
-          when: "stasera"
+          title: "{text}"
+          when: "{when}"
+      - text: "assicurati che riceva un promemoria per {text} {when}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "ricordamelo con un promemoria: {text} {when}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "avvisami con un promemoria di {text} {when}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "mandami un promemoria per {text} {when}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "fai comparire un promemoria per {text} {when}"
+        weight: 0.85
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "sarebbe utile avere un promemoria per {text} {when}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "posso avere un promemoria per {text} {when}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "mi imposti un promemoria per {text} {when}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "mi crei un promemoria per {text} {when}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "tienimi da parte un promemoria per {text} {when}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "annota un promemoria per {text} {when}"
+        weight: 0.95
+        args:
+          title: "{text}"
+          when: "{when}"
+      - text: "ricordami di {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "imposta un promemoria per {text}"
+        weight: 0.75
+        args:
+          title: "{text}"
+      - text: "crea un promemoria senza orario per {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "segnami tra i promemoria di {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "aggiungi un promemoria per {text}"
+        weight: 0.75
+        args:
+          title: "{text}"
+      - text: "puoi lasciarmi un promemoria per {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "vorrei ricordarmi di {text}, aggiungi un promemoria"
+        weight: 0.85
+        args:
+          title: "{text}"
+      - text: "mi serve un promemoria senza scadenza per {text}"
+        weight: 0.85
+        args:
+          title: "{text}"
+      - text: "metti {text} nei miei promemoria"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "annota tra i promemoria di {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "fammi trovare un promemoria per {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "non devo dimenticare di {text}, crea un promemoria"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "puoi creare un promemoria non programmato per {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "salva come promemoria: {text}"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "tienimi a mente {text} con un promemoria"
+        weight: 0.95
+        args:
+          title: "{text}"
+      - text: "aggiungi {item} alla {list}"
+        weight: 0.6
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "metti {item} nella {list}"
+        weight: 0.6
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "segna {item} sulla {list}"
+        weight: 0.95
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "puoi aggiungere {item} alla {list}"
+        weight: 0.95
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "mi aggiungi {item} alla {list}"
+        weight: 0.6
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "vorrei {item} nella {list}"
+        weight: 0.6
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "fammi trovare {item} sulla {list}"
+        weight: 0.95
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "annota {item} nella {list}"
+        weight: 0.95
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "inserisci {item} nella {list}"
+        weight: 0.95
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "puoi mettere {item} sulla {list}"
+        weight: 0.6
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "non farmi dimenticare {item}, aggiungilo alla {list}"
+        weight: 0.95
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "mi serve {item} nella {list}"
+        weight: 0.6
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "aggiungimi {item} alla {list}"
+        weight: 0.95
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "scrivi {item} sulla {list}"
+        weight: 0.95
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "ricordati di mettere {item} nella {list}"
+        weight: 0.95
+        args:
+          title: "{item}"
+          list_hint: "{list}"
+      - text: "ricordami di {title} {when}"
+        weight: 0.95
+        args:
+          title: "{title}"
+          when: "{when}"
+      - text: "ricordami {when} di {title}"
+        weight: 0.95
+        args:
+          title: "{title}"
+          when: "{when}"
+      - text: "imposta un promemoria di {title} {when}"
+        weight: 0.75
+        args:
+          title: "{title}"
+          when: "{when}"
+      - text: "aggiungi {title} alla lista della {list_hint}"
+        weight: 0.6
+        args:
+          title: "{title}"
+          list_hint: "{list_hint}"
+      - text: "metti {title} sulla lista della {list_hint}"
+        weight: 0.6
+        args:
+          title: "{title}"
+          list_hint: "{list_hint}"
+      - text: "aggiungi {title} alla mia lista {list_hint}"
+        weight: 0.75
+        args:
+          title: "{title}"
+          list_hint: "{list_hint}"
+      - text: "ricordami del{title} {when}"
+        weight: 0.95
+        args:
+          title: "{title}"
+          when: "{when}"
+      - text: "avvisami {when} di {title}"
+        weight: 0.95
+        args:
+          title: "{title}"
+          when: "{when}"
+      - text: "dimmi {when} di {title}"
+        weight: 0.6
+        args:
+          title: "{title}"
+          when: "{when}"
+      - text: "fammi sapere {when} di {title}"
+        weight: 0.6
+        args:
+          title: "{title}"
+          when: "{when}"
     settings:
       - key: destination
         label: Salva i promemoria in

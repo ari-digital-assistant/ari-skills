@@ -47,69 +47,358 @@ metadata:
     # week): il router della skill mappa quei token, e il modello impara
     # a emetterli dalle frasi italiane.
     examples:
-      - text: "che tempo fa"
+      - text: "Che tempo c'è fuori in questo momento?"
+        weight: 0.85
         args:
           location: ""
           when: "now"
-      - text: "che tempo fa a tokyo"
+      - text: "Mi dici il meteo di oggi?"
+        weight: 0.95
         args:
-          location: "tokyo"
+          location: ""
+          when: "today"
+      - text: "Vorrei conoscere le condizioni meteo attuali."
+        weight: 0.95
+        args:
+          location: ""
           when: "now"
-      - text: "meteo a roma domani"
+      - text: "Dammi un aggiornamento sul tempo qui."
+        weight: 0.75
         args:
-          location: "roma"
+          location: ""
+          when: "now"
+      - text: "Com'è il tempo dalle mie parti?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "now"
+      - text: "Controlla la temperatura esterna adesso."
+        weight: 0.95
+        args:
+          location: ""
+          when: "now"
+      - text: "Che tempo c'è a {location}?"
+        weight: 0.75
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "Quali sono le condizioni meteo a {location}?"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "Com'è il cielo a {location} in questo momento?"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "Fa caldo o freddo a {location} adesso?"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "Qual è la temperatura esterna a {location}?"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "Sta piovendo a {location}?"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "C'è il sole a {location} in questo momento?"
+        weight: 0.85
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "Quanto vento c'è a {location} adesso?"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "Com'è l'umidità a {location}?"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "Qual è l'indice UV attuale a {location}?"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "Fammi vedere le previsioni meteo per oggi."
+        weight: 0.95
+        args:
+          location: ""
+          when: "today"
+      - text: "Pioverà nel corso della giornata?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "today"
+      - text: "Qual è la probabilità di pioggia per oggi?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "today"
+      - text: "È previsto vento oggi?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "today"
+      - text: "Quanto sarà forte il vento oggi?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "today"
+      - text: "Che livello di umidità è previsto oggi?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "today"
+      - text: "Quanto sarà alto l'indice UV oggi?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "today"
+      - text: "Quali temperature massime e minime avremo oggi?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "today"
+      - text: "Farà caldo durante la giornata?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "today"
+      - text: "Oggi farà abbastanza freddo da mettere il cappotto?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "today"
+      - text: "Mi conviene prendere l'ombrello oggi?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "today"
+      - text: "Serve una giacca pesante per il tempo di oggi?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "today"
+      - text: "Posso stendere il bucato fuori oggi o rischia di piovere?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "today"
+      - text: "È una giornata da spiaggia oggi?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "today"
+      - text: "Com'è il meteo a {location} oggi?"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "C'è rischio di pioggia a {location} oggi?"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "Che vento è previsto a {location} oggi?"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "Controlla l'indice UV a {location} per oggi."
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "Che temperature sono previste a {location} oggi?"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "today"
+      - text: "Vorrei le previsioni meteo per domani."
+        weight: 0.95
+        args:
+          location: ""
+          when: "tomorrow"
+      - text: "Come sarà il tempo a {location} domani?"
+        weight: 0.85
+        args:
+          location: "{location}"
+          when: "tomorrow"
+      - text: "Domani dobbiamo aspettarci pioggia?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "tomorrow"
+      - text: "A {location} pioverà domani?"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "tomorrow"
+      - text: "Dovrò portarmi l'ombrello domani?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "tomorrow"
+      - text: "Domani servirà il cappotto per il freddo?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "tomorrow"
+      - text: "Ci sarà una giornata di sole domani?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "tomorrow"
+      - text: "Che vento farà domani?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "tomorrow"
+      - text: "Come sarà l'umidità domani?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "tomorrow"
+      - text: "Che indice UV è previsto per domani?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "tomorrow"
+      - text: "Quanti gradi sono previsti per domani?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "tomorrow"
+      - text: "Il tempo permetterà di pranzare fuori domani?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "tomorrow"
+      - text: "Domani sarà bel tempo per andare al mare?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "tomorrow"
+      - text: "Nevicherà a {location} domani?"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "tomorrow"
+      - text: "Mostrami le previsioni per tutta la settimana."
+        weight: 0.95
+        args:
+          location: ""
+          when: "this week"
+      - text: "Come si metterà il tempo nel corso di questa settimana?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "this week"
+      - text: "Ci saranno giornate di pioggia questa settimana?"
+        weight: 0.95
+        args:
+          location: ""
+          when: "this week"
+      - text: "Come cambieranno le temperature a {location} questa settimana?"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "this week"
+      - text: "È previsto molto vento a {location} questa settimana?"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "this week"
+      - text: "C'è neve in arrivo a {location} questa settimana?"
+        weight: 0.95
+        args:
+          location: "{location}"
+          when: "this week"
+      - text: "che tempo fa"
+        weight: 0.6
+        args:
+          location: ""
+          when: "now"
+      - text: "che tempo fa a {location}"
+        weight: 0.6
+        args:
+          location: "{location}"
+          when: "now"
+      - text: "meteo a {location} domani"
+        weight: 0.95
+        args:
+          location: "{location}"
           when: "tomorrow"
       - text: "previsioni per questa settimana"
+        weight: 0.95
         args:
           location: ""
           when: "this week"
       - text: "pioverà oggi"
+        weight: 0.95
         args:
           location: ""
           when: "today"
       - text: "c'è vento"
+        weight: 0.95
         args:
           location: ""
           when: "now"
       - text: "qual è l'indice uv"
+        weight: 0.95
         args:
           location: ""
           when: "now"
       - text: "c'è umidità oggi"
+        weight: 0.95
         args:
           location: ""
           when: "today"
-      # Frasi oblique che i pattern qui sopra non intercettano di proposito:
-      # sono quelle che il router vede davvero in produzione.
       - text: "mi serve il cappotto oggi"
+        weight: 0.95
         args:
           location: ""
           when: "today"
       - text: "quanto fa caldo fuori"
+        weight: 0.95
         args:
           location: ""
           when: "now"
       - text: "devo portare l'ombrello domani"
+        weight: 0.85
         args:
           location: ""
           when: "tomorrow"
-      - text: "farà freddo a londra domani"
+      - text: "farà freddo a {location} domani"
+        weight: 0.95
         args:
-          location: "londra"
+          location: "{location}"
           when: "tomorrow"
       - text: "serve la crema solare oggi"
+        weight: 0.6
         args:
           location: ""
           when: "today"
-      - text: "c'è il sole a valletta"
+      - text: "c'è il sole a {location}"
+        weight: 0.95
         args:
-          location: "valletta"
+          location: "{location}"
           when: "now"
       - text: "nevicherà questa settimana"
+        weight: 0.95
         args:
           location: ""
           when: "this week"
       - text: "quanti gradi faranno domani"
+        weight: 0.85
         args:
           location: ""
           when: "tomorrow"

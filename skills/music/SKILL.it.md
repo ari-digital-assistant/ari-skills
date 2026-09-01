@@ -24,98 +24,268 @@ metadata:
         - regex: "\\b(pausa|riprendi|prossima|successiva|avanti|salta|precedente|ferma|muto|silenzia|volume)\\b"
           weight: 0.9
     examples:
-      - text: "metti su bohemian rhapsody"
+      - text: "metti su {artist}"
+        weight: 0.6
         args:
-          query: "bohemian rhapsody"
-      - text: "ascolta i pink floyd"
+          query: "{artist}"
+      - text: "ascolta {artist}"
+        weight: 0.95
         args:
-          query: "pink floyd"
+          query: "{artist}"
+      - text: "riproduci {artist}"
+        weight: 0.95
+        args:
+          query: "{artist}"
+      - text: "voglio ascoltare {artist}"
+        weight: 0.95
+        args:
+          query: "{artist}"
+      - text: "voglio sentire {artist}"
+        weight: 0.75
+        args:
+          query: "{artist}"
+      - text: "fammi sentire {artist}"
+        weight: 0.75
+        args:
+          query: "{artist}"
+      - text: "mettimi {artist}"
+        weight: 0.95
+        args:
+          query: "{artist}"
+      - text: "vorrei ascoltare {artist}"
+        weight: 0.95
+        args:
+          query: "{artist}"
+      - text: "puoi mettere {artist}"
+        weight: 0.6
+        args:
+          query: "{artist}"
+      - text: "metti {artist}"
+        weight: 0.6
+        args:
+          query: "{artist}"
+      - text: "metti su {artist} per favore"
+        weight: 0.6
+        args:
+          query: "{artist}"
+      - text: "metti su {artist} adesso"
+        weight: 0.6
+        args:
+          query: "{artist}"
+      - text: "fammi ascoltare {artist}"
+        weight: 0.95
+        args:
+          query: "{artist}"
+      - text: "senti {artist}"
+        weight: 0.6
+        args:
+          query: "{artist}"
+      - text: "metti su un po' di {genre}"
+        weight: 0.6
+        args:
+          query: "{genre}"
+      - text: "ascolta un po' di {genre}"
+        weight: 0.95
+        args:
+          query: "{genre}"
+      - text: "mettimi un po' di {genre}"
+        weight: 0.75
+        args:
+          query: "{genre}"
+      - text: "fammi sentire un po' di {genre}"
+        weight: 0.75
+        args:
+          query: "{genre}"
+      - text: "vorrei un po' di {genre}"
+        weight: 0.6
+        args:
+          query: "{genre}"
+      - text: "riproduci un po' di {genre}"
+        weight: 0.95
+        args:
+          query: "{genre}"
+      - text: "voglio sentire un po' di {genre}"
+        weight: 0.75
+        args:
+          query: "{genre}"
+      - text: "metti su {artist} su spotify"
+        weight: 0.95
+        args:
+          query: "{artist}"
+          service: "spotify"
+      - text: "ascolta {artist} su spotify"
+        weight: 0.95
+        args:
+          query: "{artist}"
+          service: "spotify"
+      - text: "riproduci {artist} su spotify"
+        weight: 0.95
+        args:
+          query: "{artist}"
+          service: "spotify"
+      - text: "riproduci {artist} su apple music"
+        weight: 0.95
+        args:
+          query: "{artist}"
+          service: "apple_music"
+      - text: "metti su {artist} su apple music"
+        weight: 0.95
+        args:
+          query: "{artist}"
+          service: "apple_music"
+      - text: "ascolta {artist} su tidal"
+        weight: 0.95
+        args:
+          query: "{artist}"
+          service: "tidal"
+      - text: "metti su {artist} su deezer"
+        weight: 0.95
+        args:
+          query: "{artist}"
+          service: "deezer"
+      - text: "riproduci {artist} su amazon music"
+        weight: 0.95
+        args:
+          query: "{artist}"
+          service: "amazon_music"
+      - text: "ascolta {artist} su amazon music"
+        weight: 0.95
+        args:
+          query: "{artist}"
+          service: "amazon_music"
+      - text: "metti su {genre} su tidal"
+        weight: 0.95
+        args:
+          query: "{genre}"
+          service: "tidal"
       - text: "metti su qualcosa di rilassante"
+        weight: 0.85
         args:
           query: "musica rilassante"
-      - text: "metti su hotel california su spotify"
+      - text: "metti su qualcosa di allegro"
+        weight: 0.85
         args:
-          query: "hotel california"
-          service: "spotify"
-      - text: "ascolta radiohead su tidal"
+          query: "musica allegra"
+      - text: "fammi sentire qualcosa di allegro"
+        weight: 0.85
         args:
-          query: "radiohead"
-          service: "tidal"
-      - text: "metti su abbey road su apple music"
+          query: "musica allegra"
+      - text: "metti su qualcosa di tranquillo"
+        weight: 0.85
         args:
-          query: "abbey road"
-          service: "apple_music"
-      - text: "ascolta del jazz"
+          query: "musica rilassante"
+      - text: "metti su qualcosa da ballare"
+        weight: 0.85
         args:
-          query: "jazz"
-      - text: "metti su led zeppelin"
-        args:
-          query: "led zeppelin"
-      - text: "riproduci thriller su spotify"
-        args:
-          query: "thriller"
-          service: "spotify"
-      - text: "metti su qualcosa dei beatles"
-        args:
-          query: "beatles"
-      - text: "riproduci comfortably numb"
-        args:
-          query: "comfortably numb"
+          query: "musica dance"
       - text: "pausa"
+        weight: 0.95
         args:
           action: "pause"
       - text: "metti in pausa"
+        weight: 0.95
         args:
           action: "pause"
+      - text: "ferma la musica"
+        weight: 0.95
+        args:
+          action: "stop"
+      - text: "basta musica"
+        weight: 0.95
+        args:
+          action: "stop"
       - text: "riprendi"
+        weight: 0.95
+        args:
+          action: "resume"
+      - text: "riprendi la musica"
+        weight: 0.95
         args:
           action: "resume"
       - text: "prossima"
+        weight: 0.95
+        args:
+          action: "next"
+      - text: "cambia canzone"
+        weight: 0.95
         args:
           action: "next"
       - text: "torna indietro"
+        weight: 0.95
         args:
           action: "previous"
-      - text: "ferma la musica"
+      - text: "canzone precedente"
+        weight: 0.95
         args:
-          action: "stop"
+          action: "previous"
       - text: "alza il volume"
+        weight: 0.95
+        args:
+          action: "volume_up"
+      - text: "più forte"
+        weight: 0.75
         args:
           action: "volume_up"
       - text: "abbassa il volume"
+        weight: 0.95
         args:
           action: "volume_down"
-      - text: "imposta il volume al 40%"
-        args:
-          action: "volume_set"
-          level: 40
       - text: "muto"
+        weight: 0.95
         args:
           action: "mute"
-      # Frasi oblique che i pattern qui sopra non intercettano di proposito:
-      # sono quelle che il router vede davvero in produzione.
-      - text: "vorrei ascoltare i queen"
+      - text: "imposta il volume al 40%"
+        weight: 0.95
         args:
-          query: "queen"
-      - text: "voglio sentire vasco rossi"
+          action: "volume_set"
+          level: "40"
+      - text: "metti il volume al 70%"
+        weight: 0.95
         args:
-          query: "vasco rossi"
-      - text: "fammi sentire qualcosa di allegro"
+          action: "volume_set"
+          level: "70"
+      - text: "ascolta i {query}"
+        weight: 0.95
         args:
-          query: "musica allegra"
-      - text: "un po' di musica classica per favore"
+          query: "{query}"
+      - text: "metti su {query} su {service}"
+        weight: 0.6
         args:
-          query: "musica classica"
-      - text: "basta musica"
+          query: "{query}"
+          service: "{service}"
+      - text: "ascolta {query} su {service}"
+        weight: 0.95
         args:
-          action: "stop"
-      - text: "cambia canzone"
+          query: "{query}"
+          service: "{service}"
+      - text: "ascolta del {query}"
+        weight: 0.95
         args:
-          action: "next"
-      - text: "più forte"
+          query: "{query}"
+      - text: "riproduci {query} su {service}"
+        weight: 0.95
         args:
-          action: "volume_up"
+          query: "{query}"
+          service: "{service}"
+      - text: "metti su qualcosa dei {query}"
+        weight: 0.6
+        args:
+          query: "{query}"
+      - text: "imposta il volume al {level}%"
+        weight: 0.95
+        args:
+          action: "volume_set"
+          level: "{level}"
+      - text: "vorrei ascoltare i {query}"
+        weight: 0.95
+        args:
+          query: "{query}"
+      - text: "un po' di {query} per favore"
+        weight: 0.6
+        args:
+          query: "{query}"
       - text: "torna alla canzone di prima"
+        weight: 0.95
         args:
           action: "previous"
     settings:
