@@ -1,0 +1,38 @@
+name: Suggest a skill
+description: Something Ari should be able to do that it can't yet
+labels: ["skill-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Anyone can write a skill — `docs/tutorial-declarative.md` walks through
+        it end to end, and a declarative skill needs no code at all. Suggesting
+        one here is for ideas you'd like someone else to pick up.
+
+  - type: input
+    id: what
+    attributes:
+      label: What should the skill do?
+      placeholder: "Read out the bus times for a stop I've saved"
+    validations:
+      required: true
+
+  - type: textarea
+    id: utterances
+    attributes:
+      label: What would you say to trigger it?
+      description: A few real phrasings, in whatever language you'd use.
+      placeholder: |
+        when's the next bus
+        how long until the 21
+    validations:
+      required: true
+
+  - type: input
+    id: service
+    attributes:
+      label: Does it need an external service?
+      description: >-
+        Ari prefers open, standard interfaces over tying itself to one
+        provider. Say which service, and whether it has an open API.
+      placeholder: "Any GTFS feed"

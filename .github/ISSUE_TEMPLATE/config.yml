@@ -1,0 +1,13 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ari picked the wrong skill entirely
+    url: https://github.com/ari-digital-assistant/ari-engine/issues/new/choose
+    about: >-
+      Routing between skills is the engine's job. If the right skill exists but
+      Ari never reached it, file it there.
+  - name: Writing a skill
+    url: https://github.com/ari-digital-assistant/ari-skills/blob/main/docs/tutorial-declarative.md
+    about: The tutorial covers the whole thing, including publishing.
+  - name: Questions and ideas
+    url: https://github.com/orgs/ari-digital-assistant/discussions
+    about: For anything that isn't a bug.

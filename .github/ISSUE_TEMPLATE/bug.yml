@@ -1,0 +1,68 @@
+name: Skill bug
+description: A skill misbehaves, or fires when it shouldn't
+labels: ["bug"]
+body:
+  - type: input
+    id: skill
+    attributes:
+      label: Which skill?
+      description: The ID and version, both in Settings › Skills.
+      placeholder: "dev.heyari.home-assistant 0.4.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem?
+      options:
+        - It didn't fire when it should have
+        - It fired when it shouldn't have
+        - It fired, but did the wrong thing
+        - It fired, but the reply was wrong or badly worded
+        - It crashed or errored
+        - A translation is wrong
+    validations:
+      required: true
+
+  - type: input
+    id: utterance
+    attributes:
+      label: What did you say to Ari?
+      description: The exact wording matters — routing is trained on phrasing.
+      placeholder: "turn on the kitchen lights"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect, and what happened instead?
+    validations:
+      required: true
+
+  - type: input
+    id: locale
+    attributes:
+      label: Language
+      placeholder: "en"
+    validations:
+      required: true
+
+  - type: input
+    id: engine
+    attributes:
+      label: Engine version
+      placeholder: "0.7.1"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you file
+      options:
+        - label: I'm on the latest version of this skill
+          required: true
+        - label: I searched the existing issues
+          required: true

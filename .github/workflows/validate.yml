@@ -13,16 +13,17 @@ name: validate
 #
 # We do NOT run on push-to-main — the sign-and-publish workflow covers that
 # path and any failure there is a merge-day incident, not a review gate.
+#
+# Runs on EVERY pull request, deliberately, and decides for itself whether
+# there is anything to check. It used to carry a `paths:` filter, which meant
+# a PR touching only issue templates never produced a `validate` result at all
+# — and auto-merge, which gates on that result, then waited forever for
+# something that was never coming. A check that gates merging has to report on
+# every PR. When nothing relevant changed this job passes in seconds without
+# building anything.
 
 on:
   pull_request:
-    paths:
-      - 'skills/**'
-      - 'templates/**'
-      - 'sdk/**'
-      - 'tools/**'
-      - 'models.json'
-      - '.github/workflows/**'
 
 permissions:
   contents: read
@@ -47,7 +48,31 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Decide whether there is anything to validate
+        id: scope
+        run: |
+          set -uo pipefail
+          relevant=false
+          while IFS= read -r f; do
+            [[ -n "$f" ]] || continue
+            case "$f" in
+              skills/*|templates/*|sdk/*|tools/*|models.json|.github/workflows/*)
+                relevant=true
+                break
+                ;;
+            esac
+          done < <(git diff --name-only \
+                     "${{ github.event.pull_request.base.sha }}" \
+                     "${{ github.event.pull_request.head.sha }}")
+          echo "relevant=$relevant" >> "$GITHUB_OUTPUT"
+          if [[ "$relevant" == "true" ]]; then
+            echo "this PR touches validated paths — running the full check"
+          else
+            echo "nothing here needs validating — passing, so auto-merge is not left waiting"
+          fi
+
       - name: Check out ari-engine (validator source)
+        if: steps.scope.outputs.relevant == 'true'
         uses: actions/checkout@v5
         with:
           repository: ari-digital-assistant/ari-engine
@@ -55,6 +80,7 @@ jobs:
           path: ari-engine-src
 
       - name: Cache cargo
+        if: steps.scope.outputs.relevant == 'true'
         uses: actions/cache@v5
         with:
           path: |
@@ -66,10 +92,12 @@ jobs:
             ${{ runner.os }}-cargo-validate-
 
       - name: Build ari-skill-validate
+        if: steps.scope.outputs.relevant == 'true'
         working-directory: ari-engine-src
         run: cargo build --release -p ari-skill-validate
 
       - name: Identify changed skill directories
+        if: steps.scope.outputs.relevant == 'true'
         id: changed
         run: |
           set -euo pipefail
@@ -107,6 +135,7 @@ jobs:
       # ever moves. #80 shipped exactly that — a settings fix that was live in
       # the registry and unreachable on every phone.
       - name: Require a version bump for every changed skill
+        if: steps.scope.outputs.relevant == 'true'
         id: versions
         run: |
           set -uo pipefail
@@ -140,6 +169,7 @@ jobs:
           echo "status=$rc" >> "$GITHUB_OUTPUT"
 
       - name: Run validator
+        if: steps.scope.outputs.relevant == 'true'
         id: validate
         run: |
           set -euo pipefail
@@ -157,6 +187,7 @@ jobs:
       # debug. --no-default-features drops ari-ffi's `llm` feature, whose
       # llama-cpp-sys needs libclang the runner doesn't have.
       - name: Check for router-example poaching
+        if: steps.scope.outputs.relevant == 'true'
         id: poaching
         working-directory: ari-engine-src
         env:
@@ -176,7 +207,7 @@ jobs:
           echo "status=$rc" >> "$GITHUB_OUTPUT"
 
       - name: Add the poaching result to the comment
-        if: steps.poaching.outputs.status != '0'
+        if: steps.scope.outputs.relevant == 'true' && steps.poaching.outputs.status != '0'
         run: |
           {
             echo
@@ -195,7 +226,7 @@ jobs:
           } >> comment.md
 
       - name: Add the version result to the comment
-        if: steps.versions.outputs.status != '0'
+        if: steps.scope.outputs.relevant == 'true' && steps.versions.outputs.status != '0'
         run: |
           {
             echo
@@ -221,6 +252,7 @@ jobs:
       # SDK the way the previous doc set did — a manifest schema change or an
       # SDK break turns this red instead of quietly rotting the tutorials.
       - name: Build and validate the templates
+        if: steps.scope.outputs.relevant == 'true'
         id: templates
         run: |
           set -uo pipefail
@@ -242,7 +274,7 @@ jobs:
           echo "status=$rc" >> "$GITHUB_OUTPUT"
 
       - name: Add the template result to the comment
-        if: steps.templates.outputs.status != '0'
+        if: steps.scope.outputs.relevant == 'true' && steps.templates.outputs.status != '0'
         run: |
           {
             echo
@@ -258,6 +290,7 @@ jobs:
           } >> comment.md
 
       - name: Post PR comment
+        if: steps.scope.outputs.relevant == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -265,10 +298,15 @@ jobs:
             --repo "${{ github.repository }}" \
             --body-file comment.md
 
+      # The scope guard is load-bearing, not decoration: with every step above
+      # skipped, each of those outputs is the empty string, and '' != '0' is
+      # true — so without it this step fails the job on exactly the PRs the
+      # skip exists to wave through.
       - name: Fail the job if validation failed
         if: >-
-          steps.validate.outputs.status != '0'
-          || steps.versions.outputs.status != '0'
-          || steps.poaching.outputs.status != '0'
-          || steps.templates.outputs.status != '0'
+          steps.scope.outputs.relevant == 'true'
+          && (steps.validate.outputs.status != '0'
+              || steps.versions.outputs.status != '0'
+              || steps.poaching.outputs.status != '0'
+              || steps.templates.outputs.status != '0')
         run: exit 1
