@@ -99,6 +99,46 @@ jobs:
           echo "$changed" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
+      # A skill only ever reaches a device by version. `check_updates` in
+      # ari-skill-loader reports an index entry whose version is *strictly*
+      # newer than the installed one, so changing a skill's files without
+      # bumping its version republishes a bundle nothing can fetch:
+      # sign-and-publish goes green, the registry looks right, and no device
+      # ever moves. #80 shipped exactly that — a settings fix that was live in
+      # the registry and unreachable on every phone.
+      - name: Require a version bump for every changed skill
+        id: versions
+        run: |
+          set -uo pipefail
+          base_sha="${{ github.event.pull_request.base.sha }}"
+          head_sha="${{ github.event.pull_request.head.sha }}"
+          version_of() {
+            sed -nE 's/^[[:space:]]*version:[[:space:]]*"?([^"]+)"?[[:space:]]*$/\1/p' | head -1
+          }
+          rc=0
+          : > versions.log
+          while IFS= read -r dir; do
+            [[ -n "$dir" ]] || continue
+            manifest="$dir/SKILL.en.md"
+            # Deleted skill — nothing left to version.
+            [[ -f "$manifest" ]] || continue
+            # Brand-new skill — no prior version to compare against.
+            git cat-file -e "$base_sha:$manifest" 2>/dev/null || continue
+            before=$(git show "$base_sha:$manifest" | version_of)
+            after=$(version_of < "$manifest")
+            if [[ -z "$after" ]]; then
+              echo "$dir — no version found in SKILL.en.md" >> versions.log
+              rc=1
+            elif [[ "$before" == "$after" ]]; then
+              echo "$dir — files changed but version is still $after" >> versions.log
+              rc=1
+            fi
+          done < <(git diff --name-only "$base_sha" "$head_sha" -- skills/ \
+                     | awk -F/ '/^skills\/[^\/]+\//{print $1 "/" $2}' \
+                     | sort -u)
+          cat versions.log
+          echo "status=$rc" >> "$GITHUB_OUTPUT"
+
       - name: Run validator
         id: validate
         run: |
@@ -154,6 +194,27 @@ jobs:
             echo "Re-word the example, or tighten the poaching skill's patterns."
           } >> comment.md
 
+      - name: Add the version result to the comment
+        if: steps.versions.outputs.status != '0'
+        run: |
+          {
+            echo
+            echo '### ❌ Version bump'
+            echo
+            echo "These skills changed but kept their version:"
+            echo
+            echo '```'
+            cat versions.log
+            echo '```'
+            echo
+            echo "A device only picks up a skill whose registry version is strictly"
+            echo "newer than the one it has installed. Republishing under the same"
+            echo "version puts the new bundle in the registry where nothing can reach"
+            echo "it — the publish succeeds and no phone ever sees the change."
+            echo
+            echo "Bump the version in **both** \`SKILL.en.md\` and \`SKILL.it.md\`."
+          } >> comment.md
+
       # The templates are the endpoints of the two tutorials in docs/, and the
       # code blocks in those tutorials are excerpts of these files. Building
       # and validating them here is what stops the docs drifting away from the
@@ -207,6 +268,7 @@ jobs:
       - name: Fail the job if validation failed
         if: >-
           steps.validate.outputs.status != '0'
+          || steps.versions.outputs.status != '0'
           || steps.poaching.outputs.status != '0'
           || steps.templates.outputs.status != '0'
         run: exit 1
