@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-09-02T09:19:58Z",
+  "generated_at": "2026-09-02T09:30:44Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -76,7 +76,7 @@
     },
     {
       "id": "dev.heyari.homeassistant",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "name": "home-assistant",
       "description": "Controls your Home Assistant smart home — turn devices on and off, set brightness or temperature, run scenes, check status, and ask where people are. Use for any smart-home or home-automation request.",
       "type": "skill",
@@ -92,10 +92,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.homeassistant-0.3.1.tar.gz",
-      "signature": "bundles/dev.heyari.homeassistant-0.3.1.tar.gz.sig",
-      "sha256": "2feae361688ea67ca4a820f2bf358900d22bf7b7c86ac01f0b07cae146850fff",
-      "manifest": "manifests/dev.heyari.homeassistant-0.3.1.md",
+      "bundle": "bundles/dev.heyari.homeassistant-0.3.2.tar.gz",
+      "signature": "bundles/dev.heyari.homeassistant-0.3.2.tar.gz.sig",
+      "sha256": "2e65e8f42cda0820bf2dafb7f5100f331aab642f55ea11b19cc8c6abf6d0444a",
+      "manifest": "manifests/dev.heyari.homeassistant-0.3.2.md",
       "localizations": {
         "it": {
           "name": "home-assistant",
@@ -104,10 +104,10 @@
       },
       "screenshots": {
         "android": [
-          "screenshots/dev.heyari.homeassistant-0.3.1/android/01-light-on.webp",
-          "screenshots/dev.heyari.homeassistant-0.3.1/android/02-brightness-control.webp",
-          "screenshots/dev.heyari.homeassistant-0.3.1/android/03-query.webp",
-          "screenshots/dev.heyari.homeassistant-0.3.1/android/04-settings.webp"
+          "screenshots/dev.heyari.homeassistant-0.3.2/android/01-light-on.webp",
+          "screenshots/dev.heyari.homeassistant-0.3.2/android/02-brightness-control.webp",
+          "screenshots/dev.heyari.homeassistant-0.3.2/android/03-query.webp",
+          "screenshots/dev.heyari.homeassistant-0.3.2/android/04-settings.webp"
         ]
       }
     },
@@ -408,7 +408,7 @@
     },
     {
       "id": "dev.heyari.message",
-      "version": "0.2.2",
+      "version": "0.2.3",
       "name": "message",
       "description": "Send a message to someone through SMS, WhatsApp, Telegram, Signal, Messenger, Slack, Matrix or email. Say who and what, and Ari either sends it or opens the app with your message ready to go.\n",
       "type": "skill",
@@ -425,10 +425,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.message-0.2.2.tar.gz",
-      "signature": "bundles/dev.heyari.message-0.2.2.tar.gz.sig",
-      "sha256": "d574ac5486df78a249040d4dc108755806349f7ce267c72ed1c78fbd5b09a5a5",
-      "manifest": "manifests/dev.heyari.message-0.2.2.md",
+      "bundle": "bundles/dev.heyari.message-0.2.3.tar.gz",
+      "signature": "bundles/dev.heyari.message-0.2.3.tar.gz.sig",
+      "sha256": "9efac744e9de2499fb1a69fe27232f6b550eb61e97a04db3b131df6a238b9975",
+      "manifest": "manifests/dev.heyari.message-0.2.3.md",
       "localizations": {
         "it": {
           "name": "message",
