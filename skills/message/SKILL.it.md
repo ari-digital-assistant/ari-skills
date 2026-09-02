@@ -12,7 +12,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.message
-    version: "0.2.2"
+    version: "0.2.3"
     type: skill
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari-skills
