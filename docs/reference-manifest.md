@@ -332,6 +332,7 @@ Each entry declares one field on the skill's settings screen.
         label: "Server URL"
         type: text
         required: true
+        keyboard: url
         help_text: "e.g. http://homeassistant.local:8123"
 ```
 
@@ -348,8 +349,24 @@ Each entry declares one field on the skill's settings screen.
 | `depends_on` | `[]` | Sibling keys whose values a query needs. |
 | `help_text` | — | Explanatory line under the field. |
 | `collapsed_group` | — | Puts the field in a collapsible section with this heading. |
+| `keyboard` | — | Soft-keyboard hint for `text` fields. Only `url` so far. See below. |
 
 Values are always persisted as strings. Parse them yourself.
+
+### `keyboard`
+
+Set `keyboard: url` on any field holding a server address. Without it the
+phone keyboard treats the value as prose: it capitalises the first letter and
+inserts a space after every dot, so `ha.example.com` gets typed as
+`Ha. example. com`.
+
+It is a hint on top of `type: text`, not a type of its own, and that is
+deliberate. A frontend skips a field whose *type* it doesn't recognise, so a
+`type: url` field would disappear entirely on any install older than the
+frontend that learned the type — which for a required server address means the
+skill can't be set up at all. An unrecognised `keyboard:` is ignored instead
+and the field still renders as ordinary text, so you can add this today
+without stranding anyone.
 
 ### Settings fields
 

@@ -44,6 +44,7 @@ metadata:
       - key: matrix_homeserver
         label: Matrix server
         type: text
+        keyboard: url
       - key: matrix_token
         label: Matrix access token
         type: secret
