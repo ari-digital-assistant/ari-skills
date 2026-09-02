@@ -178,6 +178,7 @@ metadata:
         label: "URL di Home Assistant"
         type: text
         required: true
+        keyboard: url
       - key: sign_in
         label: "Accedi con Home Assistant"
         type: action

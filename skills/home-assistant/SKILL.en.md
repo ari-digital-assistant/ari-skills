@@ -156,6 +156,7 @@ metadata:
         label: "Home Assistant URL"
         type: text
         required: true
+        keyboard: url
       - key: sign_in
         label: "Sign in with Home Assistant"
         type: action

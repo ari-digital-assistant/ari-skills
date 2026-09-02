@@ -57,6 +57,7 @@ metadata:
       - key: matrix_homeserver
         label: Server Matrix
         type: text
+        keyboard: url
       - key: matrix_token
         label: Token di accesso Matrix
         type: secret
