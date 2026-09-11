@@ -26,7 +26,7 @@ When you (a maintainer) review a skill PR, you are the human gate in the trust c
 3. **The specificity is right.** `high` is for narrow, confident matches. `low` is for catch-alls. Don't let a catch-all skill claim `high` to win the scoring round.
 4. **The namespace claim is plausible.** `metadata.ari.id` is reverse-DNS. The contributor should have at least a token claim to the prefix. `dev.heyari.*` is reserved for the core team. Anyone else needs a domain or org they can defend.
 5. **Capabilities match what's needed.** A skill declaring `[http]` should genuinely need HTTP. Over-asking is a red flag. The bot's PR comment lists declared caps and the WASM imports they correspond to — they should line up.
-6. **No hidden lock-in.** A skill shouldn't hard-code dependencies on a specific proprietary service when a generic API exists. ([antislop rule 3](../antislop.md).)
+6. **No hidden lock-in.** A skill shouldn't hard-code dependencies on a specific proprietary service when a generic API exists. (antislop rule 34.)
 7. **License is OSI-approved.** And explicitly stated in the manifest.
 
 The [PR template](.github/PULL_REQUEST_TEMPLATE.md) mirrors this checklist so contributors can self-check before submitting.
