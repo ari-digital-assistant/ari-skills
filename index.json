@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-09-05T08:31:05Z",
+  "generated_at": "2026-09-14T10:18:42Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -179,7 +179,7 @@
     },
     {
       "id": "dev.heyari.message",
-      "version": "0.2.3",
+      "version": "0.2.4",
       "name": "message",
       "description": "Send a message to someone through SMS, WhatsApp, Telegram, Signal, Messenger, Slack, Matrix or email. Say who and what, and Ari either sends it or opens the app with your message ready to go.\n",
       "type": "skill",
@@ -196,17 +196,23 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.message-0.2.3.tar.gz",
-      "signature": "bundles/dev.heyari.message-0.2.3.tar.gz.sig",
-      "sha256": "9efac744e9de2499fb1a69fe27232f6b550eb61e97a04db3b131df6a238b9975",
-      "manifest": "manifests/dev.heyari.message-0.2.3.md",
+      "bundle": "bundles/dev.heyari.message-0.2.4.tar.gz",
+      "signature": "bundles/dev.heyari.message-0.2.4.tar.gz.sig",
+      "sha256": "016eb460d18f83d112066c53a1d428f98e355d2063a549c0fe1098c016049eaf",
+      "manifest": "manifests/dev.heyari.message-0.2.4.md",
       "localizations": {
         "it": {
           "name": "message",
           "description": "Manda un messaggio a qualcuno via SMS, WhatsApp, Telegram, Signal, Messenger, Slack, Matrix o email. Dici a chi e cosa, e Ari lo invia oppure apre l'app con il messaggio già pronto.\n"
         }
       },
-      "screenshots": {}
+      "screenshots": {
+        "android": [
+          "screenshots/dev.heyari.message-0.2.4/android/01-query.webp",
+          "screenshots/dev.heyari.message-0.2.4/android/02-reply.webp",
+          "screenshots/dev.heyari.message-0.2.4/android/03-settings.webp"
+        ]
+      }
     },
     {
       "id": "dev.heyari.timer",
