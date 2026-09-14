@@ -199,8 +199,20 @@ git commit -m "Add my-skill"
 git push -u origin my-skill
 ```
 
-CI runs the validator and the no-poaching test, and posts the result as a
-comment. Both must be green.
+CI runs four checks and posts the result as a comment. All four must be green:
+
+| Check | Fails when |
+|---|---|
+| **Version bump** | You changed an existing skill without raising `metadata.ari.version`. New skills are exempt — there's nothing to compare against. |
+| **Validator** | The manifest is malformed, or declares something the loader won't accept. |
+| **No poaching** | One of your `examples` is already won by your own keyword patterns. See [above](#the-no-poaching-gate). |
+| **Templates** | The starter skills stopped building. Not your fault, but it blocks the merge. |
+
+A fifth job, **locale parity**, runs whenever you touch a `SKILL.<locale>.md` or
+a `strings/*.json`. It checks that every locale in `metadata.ari.languages` is
+actually implemented, with the same key set as English. An English-only skill
+warns and passes — shipping one language is a welcome thing to do. See
+[i18n.md](i18n.md).
 
 ## Review criteria
 
@@ -236,7 +248,10 @@ Within minutes your skill is installable from Settings → Skills → Browse.
 
 ## Updates
 
-Bump `metadata.ari.version` and open another PR.
+Bump `metadata.ari.version` and open another PR. CI fails the PR if you changed
+a skill and left the version alone — an unbumped skill is invisible to every
+device that already has the old one, so this is the difference between shipping
+your fix and thinking you did.
 
 Once merged, installed copies update themselves — the engine diffs
 `index.json` against what's installed on cold start, and daily in the
