@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-05T08:22:22Z",
+  "generated_at": "2026-09-23T09:20:06Z",
   "source": "https://models.dev/api.json",
   "include_preview": true,
   "providers": {
     "openai": {
       "fast": {
-        "id": "gpt-5.6-luna",
-        "name": "GPT-5.6 Luna",
+        "id": "gpt-6-luna",
+        "name": "GPT-6 Luna",
         "family": "gpt-luna",
-        "release_date": "2026-07-09",
-        "last_updated": "2026-07-09",
+        "release_date": "2026-09-22",
+        "last_updated": "2026-09-22",
         "preview": false,
         "omit_params": [
           "temperature",
@@ -18,8 +18,8 @@
           "top_k"
         ],
         "pricing_per_million_tokens": {
-          "input": 0.2,
-          "output": 1.2
+          "input": 0.1,
+          "output": 0.5
         },
         "context_tokens": 1050000,
         "selection_method": "semantic-name",
@@ -46,11 +46,11 @@
         "confidence": "high"
       },
       "smartest": {
-        "id": "gpt-5.6-sol",
-        "name": "GPT-5.6 Sol",
+        "id": "gpt-6-sol",
+        "name": "GPT-6 Sol",
         "family": "gpt-sol",
-        "release_date": "2026-07-09",
-        "last_updated": "2026-07-09",
+        "release_date": "2026-09-22",
+        "last_updated": "2026-09-22",
         "preview": false,
         "omit_params": [
           "temperature",
@@ -58,8 +58,8 @@
           "top_k"
         ],
         "pricing_per_million_tokens": {
-          "input": 4,
-          "output": 20
+          "input": 2,
+          "output": 10
         },
         "context_tokens": 1050000,
         "selection_method": "semantic-name",
@@ -104,11 +104,11 @@
         "confidence": "high"
       },
       "smartest": {
-        "id": "claude-fable-5-1",
-        "name": "Claude Fable 5.1",
-        "family": "claude-fable",
-        "release_date": "2026-09-01",
-        "last_updated": "2026-09-01",
+        "id": "claude-opus-5-5",
+        "name": "Claude Opus 5.5",
+        "family": "claude-opus",
+        "release_date": "2026-09-22",
+        "last_updated": "2026-09-22",
         "preview": false,
         "omit_params": [
           "temperature",
@@ -116,8 +116,8 @@
           "top_k"
         ],
         "pricing_per_million_tokens": {
-          "input": 10,
-          "output": 50
+          "input": 4,
+          "output": 20
         },
         "context_tokens": 1000000,
         "selection_method": "semantic-name",
