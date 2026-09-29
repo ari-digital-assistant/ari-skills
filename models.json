@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-25T09:38:03Z",
+  "generated_at": "2026-09-29T10:42:56Z",
   "source": "https://models.dev/api.json",
   "include_preview": true,
   "providers": {
@@ -84,11 +84,11 @@
         "confidence": "high"
       },
       "balanced": {
-        "id": "claude-sonnet-5",
-        "name": "Claude Sonnet 5",
+        "id": "claude-sonnet-5-5",
+        "name": "Claude Sonnet 5.5",
         "family": "claude-sonnet",
-        "release_date": "2026-06-29",
-        "last_updated": "2026-06-30",
+        "release_date": "2026-09-28",
+        "last_updated": "2026-09-28",
         "preview": false,
         "omit_params": [
           "temperature",
