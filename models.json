@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-30T10:31:05Z",
+  "generated_at": "2026-10-08T11:23:46Z",
   "source": "https://models.dev/api.json",
   "include_preview": true,
   "providers": {
@@ -68,18 +68,22 @@
     },
     "anthropic": {
       "fast": {
-        "id": "claude-haiku-4-5",
-        "name": "Claude Haiku 4.5 (latest)",
+        "id": "claude-haiku-5-5",
+        "name": "Claude Haiku 5.5",
         "family": "claude-haiku",
-        "release_date": "2025-10-15",
-        "last_updated": "2025-10-15",
+        "release_date": "2026-10-07",
+        "last_updated": "2026-10-07",
         "preview": false,
-        "omit_params": [],
+        "omit_params": [
+          "temperature",
+          "top_p",
+          "top_k"
+        ],
         "pricing_per_million_tokens": {
-          "input": 1,
-          "output": 5
+          "input": 0.1,
+          "output": 0.5
         },
-        "context_tokens": 200000,
+        "context_tokens": 1000000,
         "selection_method": "semantic-name",
         "confidence": "high"
       },
