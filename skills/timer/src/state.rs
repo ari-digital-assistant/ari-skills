@@ -45,13 +45,14 @@ impl State {
     }
 
     /// Remove every timer whose end time is at or before `now`. Returns the
-    /// ids that were pruned, which callers emit as `cancel` events so the
-    /// frontend can dismiss any lingering card/notification.
-    pub fn prune_expired(&mut self, now: i64) -> Vec<String> {
+    /// pruned timers: callers emit dismissals for their ids so the frontend
+    /// can drop any lingering card/notification/alert, and read their end
+    /// times to tell a timer that's still ringing from one long finished.
+    pub fn prune_expired(&mut self, now: i64) -> Vec<Timer> {
         let mut pruned = Vec::new();
         self.timers.retain(|t| {
             if t.end_ts_ms <= now {
-                pruned.push(t.id.clone());
+                pruned.push(t.clone());
                 false
             } else {
                 true
