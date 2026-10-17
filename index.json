@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-10-17T11:46:04Z",
+  "generated_at": "2026-10-17T12:06:18Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -348,7 +348,7 @@
     },
     {
       "id": "dev.heyari.timer",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "name": "timer",
       "description": "Sets, queries, and cancels named timers. Supports natural phrasing like \"set a pasta timer for 8 minutes\" or \"set a 4 minute pasta timer\". Handles multiple simultaneous timers.",
       "type": "skill",
@@ -363,10 +363,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.timer-0.2.0.tar.gz",
-      "signature": "bundles/dev.heyari.timer-0.2.0.tar.gz.sig",
-      "sha256": "0a0c28af4dc2f90b6e87627926fd965fe779ca4a8a32f0f923592c089ac1cb0e",
-      "manifest": "manifests/dev.heyari.timer-0.2.0.md",
+      "bundle": "bundles/dev.heyari.timer-0.2.1.tar.gz",
+      "signature": "bundles/dev.heyari.timer-0.2.1.tar.gz.sig",
+      "sha256": "3f2d4e94f69c22d7cfdba11a24e0e7d88a8586ac65c2ee0deda59fdd335d8953",
+      "manifest": "manifests/dev.heyari.timer-0.2.1.md",
       "localizations": {
         "it": {
           "name": "timer",
@@ -375,9 +375,9 @@
       },
       "screenshots": {
         "android": [
-          "screenshots/dev.heyari.timer-0.2.0/android/01-timer.webp",
-          "screenshots/dev.heyari.timer-0.2.0/android/02-timer-ringing.webp",
-          "screenshots/dev.heyari.timer-0.2.0/android/03-multiple-timers.webp"
+          "screenshots/dev.heyari.timer-0.2.1/android/01-timer.webp",
+          "screenshots/dev.heyari.timer-0.2.1/android/02-timer-ringing.webp",
+          "screenshots/dev.heyari.timer-0.2.1/android/03-multiple-timers.webp"
         ]
       }
     },
