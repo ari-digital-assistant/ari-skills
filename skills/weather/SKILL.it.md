@@ -9,7 +9,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.weather
-    version: "0.2.1"
+    version: "0.2.2"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"

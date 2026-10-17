@@ -79,9 +79,14 @@ fn current_card(f: &Forecast, place: &Option<String>, sys: System, l: &dyn L10n)
     let cond_label = l.t(f.current.condition.label_key(), &[]);
     let title = place.clone().unwrap_or_else(|| l.t("card.current_location", &[]));
     let headline = alloc::format!("{}°", temp(sys, f.current.temp_c, l));
+    let caption = match f.daily.first() {
+        Some(today) => l.t("card.caption_high_low", &[("cond", &cond_label),
+            ("hi", &temp(sys, today.temp_max_c, l)), ("lo", &temp(sys, today.temp_min_c, l))]),
+        None => cond_label,
+    };
 
     let mut stat = p::Stat::new(headline)
-        .caption(cond_label)
+        .caption(caption)
         .pill(p::IconText::new(l.t("card.feels_like", &[("temp", &temp(sys, f.current.feels_like_c, l))]))
             .icon(p::Asset::new("ui/thermometer.webp")))
         .metric(p::IconText::new(l.t("card.metric_wind", &[("speed", &wind(sys, f.current.wind_speed_ms, l))]))
@@ -124,6 +129,14 @@ fn forecast_card(f: &Forecast, place: &Option<String>, sys: System, l: &dyn L10n
     }
     list = list.footer(p::IconText::new(ATTRIBUTION).icon(p::Asset::new("ui/shield.webp")));
     p::Card::new("weather_forecast").title(title).subtitle(subtitle).list(list)
+}
+
+/// "Today's high is 18, with a low of 9." Omitted when the provider sent no
+/// daily series.
+fn high_low_sentence(f: &Forecast, sys: System, l: &dyn L10n) -> Option<String> {
+    let today = f.daily.first()?;
+    Some(l.t("speak.detail_high_low", &[
+        ("hi", &temp(sys, today.temp_max_c, l)), ("lo", &temp(sys, today.temp_min_c, l))]))
 }
 
 /// "There's a 40% chance of rain, mostly around 3pm." Omitted entirely when
@@ -280,7 +293,7 @@ pub fn build(f: &Forecast, when: When, facet: Facet, sys: System, _locale: &str,
         None => l.t("speak.current_no_place",
             &[("temp", &temp_s), ("cond", &cond_label), ("feels", &feels_s)]),
     };
-    for sentence in [rain_sentence(f, l), air_sentence(f, sys, l)].into_iter().flatten() {
+    for sentence in [high_low_sentence(f, sys, l), rain_sentence(f, l), air_sentence(f, sys, l)].into_iter().flatten() {
         speak.push(' ');
         speak.push_str(&sentence);
     }
@@ -419,6 +432,22 @@ mod tests {
         f.current.humidity_pct = None;
         let env = build(&f, When::Now, Facet::None, System::Metric, "en", &Fakes);
         assert!(!env.contains("speak.detail_"));
+    }
+
+    #[test]
+    fn current_conditions_carry_the_days_high_and_low() {
+        // "What will the high be today" lands here with no facet, so the
+        // current-conditions answer has to say it: daily[0] is 30 / 20.
+        let env = build(&with_daily(), When::Today, Facet::None, System::Metric, "en", &Fakes);
+        assert!(env.contains("speak.detail_high_low 30 20"));
+        assert!(env.contains("\"caption\":\"card.caption_high_low cond.partly_cloudy 30 20\""));
+    }
+
+    #[test]
+    fn current_conditions_without_a_daily_series_skip_the_high_and_low() {
+        let env = build(&current_only(), When::Now, Facet::None, System::Metric, "en", &Fakes);
+        assert!(!env.contains("high_low"));
+        assert!(env.contains("\"caption\":\"cond.partly_cloudy\""));
     }
 
     #[test]
@@ -612,6 +641,7 @@ mod tests {
         let env = build(&f, When::Now, Facet::None, System::Metric, "en", &RealStrings("en"));
         assert_eq!(spoken(&env),
             "It's 15 degrees and cloudy, feeling like 15. \
+Today's high is 30, with a low of 20. \
 80% chance of rain, mostly around 3pm. \
 Wind is northwest at 10 km/h and humidity is 60%.");
     }
@@ -627,7 +657,8 @@ Wind is northwest at 10 km/h and humidity is 60%.");
         f.current.humidity_pct = None;
         for h in f.hourly.iter_mut() { h.precip_probability = Some(0.0); }
         let env = build(&f, When::Now, Facet::None, System::Metric, "en", &RealStrings("en"));
-        assert_eq!(spoken(&env), "It's 15 degrees and clear, feeling like 15.");
+        assert_eq!(spoken(&env), "It's 15 degrees and clear, feeling like 15. \
+Today's high is 30, with a low of 20.");
     }
 
     #[test]
@@ -641,6 +672,7 @@ Wind is northwest at 10 km/h and humidity is 60%.");
         let env = build(&f, When::Now, Facet::None, System::Metric, "it", &RealStrings("it"));
         assert_eq!(spoken(&env),
             "Ci sono 15 gradi, nuvoloso, percepiti 15. \
+Oggi massima 30, minima 20. \
 80% di probabilità di pioggia, soprattutto verso le 15. \
 Il vento soffia da nord-ovest a 10 km/h, umidità 60%.");
     }
