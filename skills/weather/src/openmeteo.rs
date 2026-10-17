@@ -124,6 +124,13 @@ pub fn parse_forecast(body: &str, place_label: Option<String>) -> Result<Forecas
     // `timezone=auto` means every timestamp in the response is already local
     // to the forecast location, so hour-of-day needs no conversion.
     let local_now = cur.get("time").and_then(|x| x.as_str()).unwrap_or("").to_string();
+    // The daily extremes and the current reading come from different series,
+    // so on a hot afternoon "now" can sit outside today's range. Widen the
+    // range to take it in, or Ari says "it's 19, today's high is 18".
+    if let Some(today) = days.iter_mut().find(|d| !d.date.is_empty() && local_now.starts_with(&d.date)) {
+        today.temp_max_c = today.temp_max_c.max(current.temp_c);
+        today.temp_min_c = today.temp_min_c.min(current.temp_c);
+    }
     let hourly = parse_hourly(&v);
     Ok(Forecast { place_label, local_now, current, daily: days, hourly })
 }
@@ -225,5 +232,24 @@ mod tests {
         let f = parse_forecast(body, None).unwrap();
         assert!(f.hourly.is_empty());
         assert_eq!(f.daily.len(), 1);
+    }
+
+    #[test]
+    fn todays_range_takes_in_the_current_reading() {
+        let daily = r#""daily":{"time":["2026-08-18","2026-08-19"],
+            "temperature_2m_max":[18.2,17.0],"temperature_2m_min":[9.0,8.0]}"#;
+        let hot = alloc::format!(r#"{{"current":{{"time":"2026-08-18T15:15","temperature_2m":19.4}},{daily}}}"#);
+        let f = parse_forecast(&hot, None).unwrap();
+        assert_eq!((f.daily[0].temp_max_c, f.daily[0].temp_min_c), (19.4, 9.0));
+        assert_eq!((f.daily[1].temp_max_c, f.daily[1].temp_min_c), (17.0, 8.0));
+
+        let cold = alloc::format!(r#"{{"current":{{"time":"2026-08-18T05:00","temperature_2m":7.5}},{daily}}}"#);
+        let f = parse_forecast(&cold, None).unwrap();
+        assert_eq!((f.daily[0].temp_max_c, f.daily[0].temp_min_c), (18.2, 7.5));
+        assert_eq!((f.daily[1].temp_max_c, f.daily[1].temp_min_c), (17.0, 8.0));
+
+        let within = alloc::format!(r#"{{"current":{{"time":"2026-08-18T12:00","temperature_2m":15.0}},{daily}}}"#);
+        let f = parse_forecast(&within, None).unwrap();
+        assert_eq!((f.daily[0].temp_max_c, f.daily[0].temp_min_c), (18.2, 9.0));
     }
 }
