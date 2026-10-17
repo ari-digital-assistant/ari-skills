@@ -18,6 +18,9 @@ use state::{State, Timer};
 #[cfg(target_arch = "wasm32")]
 use state::STATE_KEY;
 
+/// How long a finished timer's alert rings before it stops by itself.
+const RING_MS: i64 = 120_000;
+
 // ---------------------------------------------------------------------------
 // Thin i18n shim — on wasm32 we go through the host's strings table;
 // on native (unit tests) we always return None so every call site falls
@@ -86,21 +89,27 @@ fn dispatch(input: &str, now_ms: i64, state: &mut State) -> String {
     // Prune expired timers and surface dismissals for any cards/notifs/alerts
     // we previously asked the frontend to show. Self-healing across app kills
     // and missed alarm fires.
-    let pruned_ids: Vec<String> = state.prune_expired(now_ms);
+    let pruned: Vec<Timer> = state.prune_expired(now_ms);
 
     let mut envelope = p::Envelope::new();
-    for id in &pruned_ids {
+    for timer in &pruned {
         envelope = envelope
-            .dismiss_card(card_id_for(id))
-            .dismiss_notification(notif_id_for(id))
-            .dismiss_alert(alert_id_for(id));
+            .dismiss_card(card_id_for(&timer.id))
+            .dismiss_notification(notif_id_for(&timer.id))
+            .dismiss_alert(alert_id_for(&timer.id));
     }
+    // A timer that finished inside its alert's ring window is the one a
+    // "stop the timer" said over the alarm is about.
+    let ringing: Vec<Timer> = pruned
+        .into_iter()
+        .filter(|ti| now_ms - ti.end_ts_ms < RING_MS)
+        .collect();
 
     match parse::classify(input) {
         Intent::Create(segments) => handle_create(segments, now_ms, state, envelope),
         Intent::Query(name) => handle_query(name, now_ms, state, envelope),
-        Intent::Cancel(name) => handle_cancel(name, state, envelope),
-        Intent::CancelAll => handle_cancel_all(state, envelope),
+        Intent::Cancel(name) => handle_cancel(name, &ringing, state, envelope),
+        Intent::CancelAll => handle_cancel_all(&ringing, state, envelope),
         Intent::List => handle_list(now_ms, state, envelope),
         Intent::Unintelligible => envelope
             .speak(
@@ -224,9 +233,22 @@ fn handle_query(
 
 fn handle_cancel(
     name: Option<String>,
+    ringing: &[Timer],
     state: &mut State,
     mut envelope: p::Envelope,
 ) -> String {
+    // A ringing timer is what "stop the timer" means, even with others still
+    // running. Pruning has already dismissed its alert; only the reply is left.
+    let rang = match &name {
+        Some(n) => ringing
+            .iter()
+            .any(|ti| ti.name.as_deref().is_some_and(|tn| tn.eq_ignore_ascii_case(n))),
+        None => !ringing.is_empty(),
+    };
+    if rang {
+        return envelope.speak(stopped_sentence(ringing)).to_json();
+    }
+
     let speak = match name {
         Some(n) => match state.remove_by_name(&n) {
             Some(id) => {
@@ -240,7 +262,11 @@ fn handle_cancel(
                 .unwrap_or_else(|| format!("No {} timer to cancel.", n)),
         },
         None => {
-            if state.timers.len() == 1 {
+            if state.timers.is_empty() {
+                t("cancel.none", &[])
+                    .unwrap_or("No timers to cancel.")
+                    .to_string()
+            } else if state.timers.len() == 1 {
                 let id = state.timers.remove(0).id;
                 envelope = dismiss_all_for(envelope, &id);
                 t("cancel.anonymous_success", &[])
@@ -261,15 +287,16 @@ fn handle_cancel(
     envelope.speak(speak).to_json()
 }
 
-fn handle_cancel_all(state: &mut State, mut envelope: p::Envelope) -> String {
+fn handle_cancel_all(ringing: &[Timer], state: &mut State, mut envelope: p::Envelope) -> String {
     if state.timers.is_empty() {
-        return envelope
-            .speak(
-                t("cancel.none", &[])
-                    .unwrap_or("No timers to cancel.")
-                    .to_string(),
-            )
-            .to_json();
+        let speak = if ringing.is_empty() {
+            t("cancel.none", &[])
+                .unwrap_or("No timers to cancel.")
+                .to_string()
+        } else {
+            stopped_sentence(ringing)
+        };
+        return envelope.speak(speak).to_json();
     }
     let n = state.timers.len();
     let ids: Vec<String> = state.timers.iter().map(|ti| ti.id.clone()).collect();
@@ -286,6 +313,24 @@ fn handle_cancel_all(state: &mut State, mut envelope: p::Envelope) -> String {
         .map(|s| s.to_string())
         .unwrap_or_else(|| format!("Cancelled {}.", summary));
     envelope.speak(speak).to_json()
+}
+
+/// The reply when a cancel lands on timers that had finished and were still
+/// ringing.
+fn stopped_sentence(ringing: &[Timer]) -> String {
+    match ringing {
+        [ti] => match &ti.name {
+            Some(n) => t("cancel.stopped_named", &[("name", n)])
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| format!("Stopped the {} timer.", n)),
+            None => t("cancel.stopped_anonymous", &[])
+                .unwrap_or("Stopped your timer.")
+                .to_string(),
+        },
+        _ => t("cancel.stopped_many", &[])
+            .unwrap_or("Stopped your timers.")
+            .to_string(),
+    }
 }
 
 fn handle_list(now_ms: i64, state: &State, envelope: p::Envelope) -> String {
@@ -353,7 +398,7 @@ fn build_alert(timer_id: &str, name: &Option<String>) -> p::Alert {
         .title(title)
         .urgency(p::Urgency::Critical)
         .sound(p::Sound::asset("timer.mp3"))
-        .auto_stop_ms(120_000)
+        .auto_stop_ms(RING_MS as u64)
         .max_cycles(12)
         .full_takeover(true)
         .icon(p::Asset::new("timer_icon.png"))
@@ -713,6 +758,77 @@ mod tests {
         assert_eq!(dismiss_cards.len(), 1);
         assert_eq!(dismiss_cards[0], format!("card_{timer_id}"));
         assert_eq!(env["speak"], "No timers running.");
+    }
+
+    fn timer_id_at(state_json: &str, i: usize) -> String {
+        serde_json::from_str::<Value>(state_json).unwrap()["timers"][i]["id"]
+            .as_str()
+            .unwrap()
+            .to_string()
+    }
+
+    #[test]
+    fn stopping_a_ringing_named_timer_says_it_stopped() {
+        let (_, s1) = handle_once("set a pasta timer for 1 minute", 0, "");
+        let id = timer_id_at(&s1, 0);
+        // Five seconds into the ring.
+        let (env, _) = handle_once("stop the pasta timer", 65_000, &s1);
+        assert_eq!(env["speak"], "Stopped the pasta timer.");
+        assert_eq!(env["dismiss"]["alerts"][0], format!("alert_{id}"));
+    }
+
+    #[test]
+    fn stopping_a_ringing_anonymous_timer_says_it_stopped() {
+        let (_, s1) = handle_once("set a timer for 1 minute", 0, "");
+        let (env, _) = handle_once("stop the timer", 65_000, &s1);
+        assert_eq!(env["speak"], "Stopped your timer.");
+    }
+
+    #[test]
+    fn an_unnamed_stop_goes_to_the_ringing_timer_not_the_running_one() {
+        let (_, s1) = handle_once("set a pasta timer for 1 minute", 0, "");
+        let (_, s2) = handle_once("set an egg timer for 10 minutes", 0, &s1);
+        let egg = timer_id_at(&s2, 1);
+        let (env, s3) = handle_once("stop the timer", 65_000, &s2);
+        assert_eq!(env["speak"], "Stopped the pasta timer.");
+        let alerts = env["dismiss"]["alerts"].as_array().unwrap();
+        assert_eq!(alerts.len(), 1);
+        assert_ne!(alerts[0], format!("alert_{egg}"));
+        // The egg timer is untouched.
+        assert_eq!(timer_id_at(&s3, 0), egg);
+    }
+
+    #[test]
+    fn stopping_two_ringing_timers_says_both() {
+        let (_, s1) = handle_once("set a pasta timer for 1 minute", 0, "");
+        let (_, s2) = handle_once("set an egg timer for 1 minute", 0, &s1);
+        let (env, _) = handle_once("stop the timer", 65_000, &s2);
+        assert_eq!(env["speak"], "Stopped your timers.");
+        assert_eq!(env["dismiss"]["alerts"].as_array().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn cancel_all_over_a_ringing_timer_says_it_stopped() {
+        let (_, s1) = handle_once("set a pasta timer for 1 minute", 0, "");
+        let (env, _) = handle_once("cancel all timers", 65_000, &s1);
+        assert_eq!(env["speak"], "Stopped the pasta timer.");
+    }
+
+    #[test]
+    fn a_timer_past_its_ring_window_is_not_stopped_but_gone() {
+        let (_, s1) = handle_once("set a timer for 1 minute", 0, "");
+        // Exactly RING_MS after it finished: the alert has stopped by itself.
+        let (env, _) = handle_once("cancel my timer", 60_000 + RING_MS, &s1);
+        assert_eq!(env["speak"], "No timers to cancel.");
+        let (env, _) = handle_once("cancel my timer", 60_000 + RING_MS - 1, &s1);
+        assert_eq!(env["speak"], "Stopped your timer.");
+    }
+
+    #[test]
+    fn cancel_with_no_timers_says_there_are_none() {
+        // Regression: this used to answer "You have several timers".
+        let (env, _) = handle_once("cancel my timer", 0, "");
+        assert_eq!(env["speak"], "No timers to cancel.");
     }
 
     #[test]
