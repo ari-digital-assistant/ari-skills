@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-19T09:57:08Z",
+  "generated_at": "2026-10-21T09:23:10Z",
   "source": "https://models.dev/api.json",
   "include_preview": true,
   "providers": {
@@ -162,8 +162,8 @@
         "confidence": "high"
       },
       "smartest": {
-        "id": "gemini-3.1-pro-preview",
-        "name": "Gemini 3.1 Pro Preview",
+        "id": "gemini-3.1-pro-preview-customtools",
+        "name": "Gemini 3.1 Pro Preview Custom Tools",
         "family": "gemini-pro",
         "release_date": "2026-02-19",
         "last_updated": "2026-02-19",
