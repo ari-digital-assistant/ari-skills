@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-26T10:10:40Z",
+  "generated_at": "2026-10-27T09:50:18Z",
   "source": "https://models.dev/api.json",
   "include_preview": true,
   "providers": {
@@ -26,11 +26,11 @@
         "confidence": "high"
       },
       "balanced": {
-        "id": "gpt-5.6-terra",
-        "name": "GPT-5.6 Terra",
+        "id": "gpt-6.1-terra",
+        "name": "GPT-6.1 Terra",
         "family": "gpt-terra",
-        "release_date": "2026-07-09",
-        "last_updated": "2026-07-09",
+        "release_date": "2026-10-26",
+        "last_updated": "2026-10-26",
         "preview": false,
         "omit_params": [
           "temperature",
@@ -38,8 +38,8 @@
           "top_k"
         ],
         "pricing_per_million_tokens": {
-          "input": 2,
-          "output": 12
+          "input": 1,
+          "output": 5
         },
         "context_tokens": 1050000,
         "selection_method": "semantic-name",
@@ -162,8 +162,8 @@
         "confidence": "high"
       },
       "smartest": {
-        "id": "gemini-3.1-pro-preview",
-        "name": "Gemini 3.1 Pro Preview",
+        "id": "gemini-3.1-pro-preview-customtools",
+        "name": "Gemini 3.1 Pro Preview Custom Tools",
         "family": "gemini-pro",
         "release_date": "2026-02-19",
         "last_updated": "2026-02-19",
