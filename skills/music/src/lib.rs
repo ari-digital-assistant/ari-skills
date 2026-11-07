@@ -5,6 +5,7 @@ mod parse;
 mod action;
 mod resolve;
 mod transport;
+mod spotify;
 
 use ari_skill_sdk as ari;
 
@@ -151,10 +152,7 @@ pub extern "C" fn execute(ptr: i32, len: i32) -> i64 {
     // handle it directly — it must NOT be re-parsed as a fresh "play" request.
     if let Some(reply) = ari::parse_reply(input) {
         return match resolve_reply(&reply.context, &reply.text) {
-            ReplyOutcome::Play { query, service } => {
-                let _ = ari::storage_set("last_service", &service);
-                ari::respond_action(&action::play_action_json(&query, &service))
-            }
+            ReplyOutcome::Play { query, service } => play(&query, &service),
             ReplyOutcome::Unrecognized => {
                 ari::respond_text(
                     ari::t("reply_unrecognized", &[])
@@ -182,10 +180,7 @@ pub extern "C" fn execute(ptr: i32, len: i32) -> i64 {
     let installed = ari::media_services();
 
     match resolve::decide(parsed, &default_setting, last_used, &installed) {
-        resolve::Decision::Play { query, service } => {
-            let _ = ari::storage_set("last_service", &service);
-            ari::respond_action(&action::play_action_json(&query, &service))
-        }
+        resolve::Decision::Play { query, service } => play(&query, &service),
         resolve::Decision::Ask { query, installed } => {
             ari::respond_action(&build_picker(&query, &installed))
         }
@@ -196,6 +191,146 @@ pub extern "C" fn execute(ptr: i32, len: i32) -> i64 {
             ari::respond_text(ari::t("no_music_app", &[]).unwrap_or("I couldn't find a music app installed."))
         }
     }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn play(query: &str, service: &str) -> i64 {
+    let _ = ari::storage_set("last_service", service);
+    if service == "spotify" {
+        return play_on_spotify(query);
+    }
+    ari::respond_action(&action::play_action_json(query, service))
+}
+
+#[cfg(target_arch = "wasm32")]
+fn play_on_spotify(query: &str) -> i64 {
+    use ari_skill_sdk::presentation as p;
+    use spotify::LookupError;
+
+    let client_id = ari::setting_get("spotify_client_id").map(str::trim).unwrap_or("");
+    if client_id.is_empty() {
+        return ari::respond_text(ari::t("spotify_needs_key", &[]).unwrap_or(
+            "To play songs on Spotify I need your Spotify Client ID. Add it in the Music skill's settings, then sign in.",
+        ));
+    }
+    match spotify::find_track(client_id, query) {
+        Ok(track) => {
+            let speak = ari::t("spotify_playing", &[("title", &track.name), ("artist", &track.artist)])
+                .unwrap_or("Playing it on Spotify.");
+            ari::respond_action(&p::Envelope::new().speak(speak).open_url(track.uri).to_json())
+        }
+        Err(LookupError::NotSignedIn) => ari::respond_text(ari::t("spotify_not_signed_in", &[]).unwrap_or(
+            "Sign in to Spotify in the Music skill's settings first.",
+        )),
+        Err(LookupError::SignInExpired) => ari::respond_text(ari::t("spotify_sign_in_expired", &[]).unwrap_or(
+            "Your Spotify sign-in has stopped working. Sign in again in the Music skill's settings.",
+        )),
+        Err(LookupError::NotFound) => ari::respond_text(
+            ari::t("spotify_not_found", &[("query", query)]).unwrap_or("I couldn't find that on Spotify."),
+        ),
+        Err(LookupError::NoConnection) => ari::respond_text(
+            ari::t("spotify_no_connection", &[]).unwrap_or("I couldn't reach Spotify. Check your internet connection."),
+        ),
+        Err(LookupError::Unavailable) => ari::respond_text(
+            ari::t("spotify_unavailable", &[]).unwrap_or("Spotify isn't answering right now. Try again in a minute."),
+        ),
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+#[no_mangle]
+pub extern "C" fn settings_action(ptr: i32, len: i32) -> i64 {
+    let input = unsafe { ari::input(ptr, len) };
+    ari::respond_action(&handle_settings_action(input))
+}
+
+#[cfg(target_arch = "wasm32")]
+fn handle_settings_action(input: &str) -> alloc::string::String {
+    use alloc::string::ToString;
+    use ari::settings::{parse_action_input, SettingsResult};
+    let t_or = |key: &str, args: &[(&str, &str)], fallback: &str| ari::t(key, args).unwrap_or(fallback).to_string();
+
+    let a = match parse_action_input(input) {
+        Some(a) => a,
+        None => return SettingsResult::error("bad action input").to_json(),
+    };
+    if a.action != "spotify_sign_in" {
+        return SettingsResult::error("unknown action").to_json();
+    }
+    let client_id = match a.value("spotify_client_id").map(str::trim).filter(|s| !s.is_empty()) {
+        Some(s) => s.to_string(),
+        None => {
+            return SettingsResult::error(&t_or("spotify_sign_in_needs_id", &[], "Paste your Spotify Client ID first."))
+                .to_json()
+        }
+    };
+
+    let verifier = random_urlsafe::<32>();
+    let state = random_urlsafe::<16>();
+    let redirect_uri = ari::oauth_redirect_uri();
+    let auth_url = spotify::authorize_url(&client_id, &redirect_uri, &state, &spotify::pkce_challenge(&verifier));
+
+    // Spotify reports a wrong Client ID or an unregistered redirect on its own
+    // page and never redirects back, so both surface here as an incomplete
+    // sign-in. Name the two things to check.
+    let res = ari::authorize(&auth_url, &redirect_uri, spotify::SIGN_IN_TIMEOUT_MS);
+    if !res.ok || res.get("error").is_some() {
+        let msg = if res.error.as_deref() == Some("no_browser") {
+            t_or("spotify_sign_in_no_browser", &[], "I couldn't open a browser to sign in.")
+        } else {
+            t_or(
+                "spotify_sign_in_incomplete",
+                &[("redirect", &redirect_uri)],
+                "Sign-in didn't complete. Check your Client ID, and that your Spotify app lists Ari's Redirect URI.",
+            )
+        };
+        return SettingsResult::error(&msg).to_json();
+    }
+    let unverified = || {
+        SettingsResult::error(&t_or("spotify_sign_in_unverified", &[], "Spotify sign-in couldn't be verified. Please try again."))
+            .to_json()
+    };
+    if res.get("state") != Some(state.as_str()) {
+        return unverified();
+    }
+    let code = match res.get("code") {
+        Some(c) if !c.is_empty() => c.to_string(),
+        _ => return unverified(),
+    };
+
+    let resp = ari::http_request(
+        "POST",
+        spotify::TOKEN_URL,
+        &[("Content-Type", "application/x-www-form-urlencoded")],
+        Some(&spotify::exchange_body(&code, &client_id, &verifier, &redirect_uri)),
+    );
+    if resp.status == 0 {
+        return SettingsResult::error(&t_or(
+            "spotify_no_connection",
+            &[],
+            "I couldn't reach Spotify. Check your internet connection.",
+        ))
+        .to_json();
+    }
+    let refresh = match resp.body.as_deref().filter(|_| resp.status == 200).and_then(spotify::parse_tokens) {
+        Some(spotify::Tokens { refresh_token: Some(r), .. }) => r,
+        _ => return unverified(),
+    };
+    if !spotify::store_refresh_token(&refresh) {
+        return unverified();
+    }
+    SettingsResult::validated(&t_or("spotify_signed_in", &[], "Signed in to Spotify.")).with_refresh().to_json()
+}
+
+/// CSPRNG bytes as base64url: 32 bytes make a 43-char PKCE verifier, 16 a
+/// 128-bit state.
+#[cfg(target_arch = "wasm32")]
+fn random_urlsafe<const N: usize>() -> alloc::string::String {
+    let mut bytes = [0u8; N];
+    for chunk in bytes.chunks_mut(8) {
+        chunk.copy_from_slice(&ari::rand_u64().to_le_bytes()[..chunk.len()]);
+    }
+    ari::crypto::base64url_nopad(&bytes)
 }
 
 #[cfg(target_arch = "wasm32")]
