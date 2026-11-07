@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-11-07T11:14:51Z",
+  "generated_at": "2026-11-07T17:51:36Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -186,7 +186,7 @@
     },
     {
       "id": "dev.heyari.music",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "name": "music",
       "description": "Plays music by name in a music app, optionally on a named service.",
       "type": "skill",
@@ -196,16 +196,18 @@
       "capabilities": [
         "media_control",
         "media_services",
-        "storage_kv"
+        "storage_kv",
+        "http",
+        "authorize"
       ],
       "languages": [
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.music-0.1.1.tar.gz",
-      "signature": "bundles/dev.heyari.music-0.1.1.tar.gz.sig",
-      "sha256": "c813ab0f6460bbba97d7b8e6159067b1eea0d9ec93f1d936fe5d982639114075",
-      "manifest": "manifests/dev.heyari.music-0.1.1.md",
+      "bundle": "bundles/dev.heyari.music-0.2.0.tar.gz",
+      "signature": "bundles/dev.heyari.music-0.2.0.tar.gz.sig",
+      "sha256": "43def2fa046461459333477b17938a84cef2aba2c62a41ba4e02120df3a7dcc2",
+      "manifest": "manifests/dev.heyari.music-0.2.0.md",
       "localizations": {
         "it": {
           "name": "music",
@@ -214,10 +216,10 @@
       },
       "screenshots": {
         "android": [
-          "screenshots/dev.heyari.music-0.1.1/android/01-song-request.webp",
-          "screenshots/dev.heyari.music-0.1.1/android/02-transport-control.webp",
-          "screenshots/dev.heyari.music-0.1.1/android/03-playing-result.webp",
-          "screenshots/dev.heyari.music-0.1.1/android/04-settings.webp"
+          "screenshots/dev.heyari.music-0.2.0/android/01-song-request.webp",
+          "screenshots/dev.heyari.music-0.2.0/android/02-transport-control.webp",
+          "screenshots/dev.heyari.music-0.2.0/android/03-playing-result.webp",
+          "screenshots/dev.heyari.music-0.2.0/android/04-settings.webp"
         ]
       }
     },
