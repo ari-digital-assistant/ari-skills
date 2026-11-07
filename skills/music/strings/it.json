@@ -7,5 +7,17 @@
   "service_apple_music": "Apple Music",
   "service_tidal": "Tidal",
   "service_deezer": "Deezer",
-  "service_amazon_music": "Amazon Music"
+  "service_amazon_music": "Amazon Music",
+  "spotify_needs_key": "Per riprodurre brani su Spotify mi serve il tuo Client ID di Spotify. Aggiungilo nelle impostazioni della skill Musica, poi accedi.",
+  "spotify_not_signed_in": "Prima accedi a Spotify nelle impostazioni della skill Musica.",
+  "spotify_sign_in_expired": "L'accesso a Spotify non funziona più. Accedi di nuovo nelle impostazioni della skill Musica.",
+  "spotify_playing": "Riproduco {title} di {artist} su Spotify.",
+  "spotify_not_found": "Non ho trovato {query} su Spotify.",
+  "spotify_no_connection": "Non riesco a raggiungere Spotify. Controlla la connessione a internet.",
+  "spotify_unavailable": "Spotify non risponde in questo momento. Riprova tra un minuto.",
+  "spotify_sign_in_needs_id": "Prima incolla il tuo Client ID di Spotify.",
+  "spotify_sign_in_no_browser": "Non riesco ad aprire un browser per l'accesso.",
+  "spotify_sign_in_incomplete": "L'accesso non è stato completato. Controlla il Client ID e che la tua app Spotify abbia {redirect} tra i Redirect URI.",
+  "spotify_sign_in_unverified": "Non è stato possibile verificare l'accesso a Spotify. Riprova.",
+  "spotify_signed_in": "Accesso a Spotify riuscito."
 }

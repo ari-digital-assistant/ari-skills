@@ -7,5 +7,17 @@
   "service_apple_music": "Apple Music",
   "service_tidal": "Tidal",
   "service_deezer": "Deezer",
-  "service_amazon_music": "Amazon Music"
+  "service_amazon_music": "Amazon Music",
+  "spotify_needs_key": "To play songs on Spotify I need your Spotify Client ID. Add it in the Music skill's settings, then sign in.",
+  "spotify_not_signed_in": "Sign in to Spotify in the Music skill's settings first.",
+  "spotify_sign_in_expired": "Your Spotify sign-in has stopped working. Sign in again in the Music skill's settings.",
+  "spotify_playing": "Playing {title} by {artist} on Spotify.",
+  "spotify_not_found": "I couldn't find {query} on Spotify.",
+  "spotify_no_connection": "I couldn't reach Spotify. Check your internet connection.",
+  "spotify_unavailable": "Spotify isn't answering right now. Try again in a minute.",
+  "spotify_sign_in_needs_id": "Paste your Spotify Client ID first.",
+  "spotify_sign_in_no_browser": "I couldn't open a browser to sign in.",
+  "spotify_sign_in_incomplete": "Sign-in didn't complete. Check your Client ID, and that your Spotify app lists {redirect} as a Redirect URI.",
+  "spotify_sign_in_unverified": "Spotify sign-in couldn't be verified. Please try again.",
+  "spotify_signed_in": "Signed in to Spotify."
 }

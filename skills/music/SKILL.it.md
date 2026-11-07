@@ -9,10 +9,10 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.music
-    version: "0.1.1"
+    version: "0.2.0"
     author: Ari core team
     engine: ">=0.3"
-    capabilities: [media_control, media_services, storage_kv]
+    capabilities: [media_control, media_services, storage_kv, http, authorize]
     languages: [en, it]
     specificity: medium
     matching:
@@ -309,6 +309,14 @@ metadata:
             label: Deezer
           - value: amazon_music
             label: Amazon Music
+      - key: spotify_client_id
+        label: Client ID di Spotify
+        type: text
+        help_text: "Serve per riprodurre brani su Spotify. Crea un'app su developer.spotify.com/dashboard con il Redirect URI https://heyari.dev/oauth/callback e la Web API selezionata, incolla qui il suo Client ID, poi accedi."
+      - key: spotify_sign_in
+        label: "Accedi con Spotify"
+        type: action
+        depends_on: [spotify_client_id]
     wasm:
       module: skill.wasm
       memory_limit_mb: 2
