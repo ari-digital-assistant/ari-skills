@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-07T11:05:51Z",
+  "generated_at": "2026-11-10T12:41:49Z",
   "source": "https://models.dev/api.json",
   "include_preview": true,
   "providers": {
@@ -108,11 +108,11 @@
         "confidence": "high"
       },
       "smartest": {
-        "id": "claude-opus-5-5",
-        "name": "Claude Opus 5.5",
-        "family": "claude-opus",
-        "release_date": "2026-09-22",
-        "last_updated": "2026-09-22",
+        "id": "claude-fable-5-2",
+        "name": "Claude Fable 5.2",
+        "family": "claude-fable",
+        "release_date": "2026-11-09",
+        "last_updated": "2026-11-09",
         "preview": false,
         "omit_params": [
           "temperature",
@@ -120,8 +120,8 @@
           "top_k"
         ],
         "pricing_per_million_tokens": {
-          "input": 4,
-          "output": 20
+          "input": 8,
+          "output": 40
         },
         "context_tokens": 1000000,
         "selection_method": "semantic-name",
