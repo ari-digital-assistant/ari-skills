@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-11T11:54:33Z",
+  "generated_at": "2026-11-13T12:16:02Z",
   "source": "https://models.dev/api.json",
   "include_preview": true,
   "providers": {
@@ -12,11 +12,7 @@
         "release_date": "2026-09-22",
         "last_updated": "2026-09-22",
         "preview": false,
-        "omit_params": [
-          "temperature",
-          "top_p",
-          "top_k"
-        ],
+        "omit_params": [],
         "pricing_per_million_tokens": {
           "input": 0.1,
           "output": 0.5
@@ -32,11 +28,7 @@
         "release_date": "2026-10-26",
         "last_updated": "2026-10-26",
         "preview": false,
-        "omit_params": [
-          "temperature",
-          "top_p",
-          "top_k"
-        ],
+        "omit_params": [],
         "pricing_per_million_tokens": {
           "input": 1,
           "output": 5
@@ -162,8 +154,8 @@
         "confidence": "high"
       },
       "smartest": {
-        "id": "gemini-3.1-pro-preview-customtools",
-        "name": "Gemini 3.1 Pro Preview Custom Tools",
+        "id": "gemini-3.1-pro-preview",
+        "name": "Gemini 3.1 Pro Preview",
         "family": "gemini-pro",
         "release_date": "2026-02-19",
         "last_updated": "2026-02-19",
