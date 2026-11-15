@@ -8,7 +8,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.timer
-    version: "0.2.1"
+    version: "0.2.2"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
@@ -22,6 +22,10 @@ metadata:
         - regex: "\\b(imposta|avvia|metti|crea) (un )?timer\\b"
           weight: 0.95
         - regex: "\\btimer .* (di|per) \\d+ (second|minut|or)"
+          weight: 0.9
+        # No verb: "timer 5 minuti", "un timer da cinque minuti". Italian
+        # number words reach the skill as words, hence \S+ over \d+.
+        - regex: "\\btimer( di| da| per)? \\S+ (second|minut|or)"
           weight: 0.9
         - regex: "\\bquanto (tempo )?manca\\b"
           weight: 0.85

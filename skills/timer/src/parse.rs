@@ -9,6 +9,7 @@
 //! and the prepositional form ("set a pasta timer for 4 minutes") both
 //! collapse to the same shape once the duration span is stripped out.
 
+use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec;
 use alloc::vec::Vec;
@@ -37,16 +38,42 @@ pub enum Intent {
 /// doesn't extract "for" as a name.
 const NAME_STOPWORDS: &[&str] = &[
     "a", "an", "the", "my", "another", "new", "for", "of", "please", "me",
+    "il", "lo", "la", "i", "gli", "le", "l", "un", "uno", "una", "mio", "mia",
+    "miei", "mie", "tuo", "tua", "altro", "nuovo", "di", "da", "tra", "fra",
+    "in", "più", "piu", "adesso", "subito", "favore", "grazie",
+];
+
+/// Italian prepositions that introduce a timer's name: "per la pasta",
+/// "il timer della pasta", "quanto manca alla pasta".
+const IT_NAME_MARKERS: &[&str] = &[
+    "per", "del", "dello", "della", "dei", "degli", "delle", "al", "allo", "alla",
+    "ai", "agli", "alle",
+];
+
+/// The parser reads English and Italian together, like the alarm and
+/// reminder parsers: the two vocabularies don't collide, so nothing needs
+/// the locale. The Italian verbs are kept apart only because
+/// [`extract_name`] uses them to recognise an Italian phrase.
+const EN_CREATE_VERBS: &[&str] = &["set", "start", "create", "add", "make"];
+const IT_CREATE_VERBS: &[&str] = &[
+    "imposta", "avvia", "metti", "mettimi", "crea", "fai", "fammi", "dammi",
+    "avvisami", "suona", "parti", "aggiungi",
+];
+const EN_CANCEL_VERBS: &[&str] = &["cancel", "stop", "remove", "delete", "clear", "kill"];
+const IT_CANCEL_VERBS: &[&str] = &[
+    "annulla", "cancella", "elimina", "rimuovi", "togli", "ferma", "spegni",
+    "disattiva",
 ];
 
 /// Words that unambiguously signal "cancel every timer" when combined with
 /// a cancel verb. `all`, `every`, `all of` → cancel_all.
 fn is_cancel_all_qualifier(tok: &str) -> bool {
-    matches!(tok, "all" | "every" | "everything")
+    matches!(tok, "all" | "every" | "everything" | "tutti" | "tutto")
 }
 
 pub fn classify(input: &str) -> Intent {
-    let input = input.trim();
+    let input = expand_italian_idioms(input.trim());
+    let input = input.as_str();
 
     // Easier to reason about with pre-split tokens. We still keep the raw
     // string around for regex-ish searches below.
@@ -75,21 +102,62 @@ pub fn classify(input: &str) -> Intent {
         return Intent::Create(parse_create_segments(input));
     }
 
+    // No verb, but a timer and a duration ("timer 5 minuti", "a 5 minute
+    // timer") can only mean one thing.
+    if tokens.iter().any(|t| *t == "timer") {
+        let segments = parse_create_segments(input);
+        if !segments.is_empty() {
+            return Intent::Create(segments);
+        }
+    }
+
     Intent::Unintelligible
 }
 
+/// Rewrite the Italian duration idioms, and the "conto alla rovescia"
+/// synonym for a timer, into shapes the rest of the parser already reads.
+/// The engine has split the elisions by now, so "un quarto d'ora" arrives
+/// as "un quarto d ora".
+fn expand_italian_idioms(input: &str) -> String {
+    const IDIOMS: &[(&str, &str)] = &[
+        (" conto alla rovescia ", " timer "),
+        (" tre quarti d ora ", " 45 minuti "),
+        (" un quarto d ora ", " 15 minuti "),
+        (" quarto d ora ", " 15 minuti "),
+        (" mezz ora ", " 30 minuti "),
+        (" mezzora ", " 30 minuti "),
+        (" mezza ora ", " 30 minuti "),
+        (" ora e mezza ", " ora e 30 minuti "),
+        (" ore e mezza ", " ore e 30 minuti "),
+    ];
+    let mut padded = format!(" {input} ");
+    for (from, to) in IDIOMS {
+        padded = padded.replace(from, to);
+    }
+    padded.trim().to_string()
+}
+
 fn has_list_phrasing(tokens: &[&str]) -> bool {
-    // "what timers do i have", "list my timers", "show my timers"
+    // "what timers do i have", "list my timers", "show my timers",
+    // "quali timer ho", "elenca i miei timer", "mostrami i timer attivi"
     let lower = tokens.join(" ");
     lower.contains("what timers")
         || lower.contains("list")
         || (lower.contains("show") && lower.contains("timer"))
         || lower.contains("timers do i")
+        || lower.contains("elenca")
+        || (lower.contains("mostra") && lower.contains("timer"))
+        || lower.contains("quali timer")
+        || lower.contains("che timer")
+        || lower.contains("quanti timer")
 }
 
 fn find_cancel_verb(tokens: &[&str]) -> Option<usize> {
-    tokens.iter().position(|t| {
-        matches!(*t, "cancel" | "stop" | "remove" | "delete" | "clear" | "kill")
+    tokens.iter().enumerate().position(|(i, t)| {
+        EN_CANCEL_VERBS.contains(t)
+            || IT_CANCEL_VERBS.contains(t)
+            // "non mi serve più il timer della pasta"
+            || (*t == "serve" && i >= 2 && tokens[i - 2] == "non" && tokens[i - 1] == "mi")
     })
 }
 
@@ -100,34 +168,60 @@ fn has_query_phrasing(tokens: &[&str]) -> bool {
         || lower.contains("time left")
         || lower.contains("time remaining")
         || lower.contains("how many")
+        || lower.contains("ancora molto")
+        || tokens.iter().any(|t| {
+            matches!(
+                *t,
+                "quanto" | "manca" | "mancano" | "resta" | "restano" | "rimane" | "rimangono"
+            )
+        })
 }
 
 fn has_create_verb(tokens: &[&str]) -> bool {
     tokens
         .iter()
-        .any(|t| matches!(*t, "set" | "start" | "create" | "add" | "make"))
+        .any(|t| EN_CREATE_VERBS.contains(t) || IT_CREATE_VERBS.contains(t))
+}
+
+fn is_verb(tok: &str) -> bool {
+    [EN_CREATE_VERBS, IT_CREATE_VERBS, EN_CANCEL_VERBS, IT_CANCEL_VERBS]
+        .iter()
+        .any(|verbs| verbs.contains(&tok))
+}
+
+/// Could this token be a timer's name? Rules out the words that sit around
+/// one: articles, numbers, units, verbs and the Italian name prepositions.
+fn is_name(tok: &str) -> bool {
+    !is_stopword(tok)
+        && !looks_like_number(tok)
+        && !looks_like_unit(tok)
+        && !is_verb(tok)
+        && !IT_NAME_MARKERS.contains(&tok)
 }
 
 /// Pull a timer name out of a token slice. Strategy: find the word "timer"
 /// and take the token immediately before it; reject if it's a stopword.
 /// Also tolerates "pasta timer" and "timer pasta" and bare "pasta".
 pub fn extract_name(tokens: &[&str]) -> Option<String> {
+    let timer_pos = tokens.iter().position(|t| *t == "timer" || *t == "timers");
+
     // First preference: `<word> timer`.
-    if let Some(pos) = tokens.iter().position(|t| *t == "timer" || *t == "timers") {
+    if let Some(pos) = timer_pos {
         if pos > 0 {
             let candidate = tokens[pos - 1];
-            if !is_stopword(candidate) && !looks_like_number(candidate) && !looks_like_unit(candidate) {
+            if is_name(candidate) {
                 return Some(candidate.to_string());
             }
         }
     }
 
-    // Second preference: first non-stopword, non-number, non-unit token
-    // after "on"/"my" that isn't "timer" itself. This catches phrasings
-    // like "how much time is left on pasta" where "timer" may be absent.
+    // Second preference: first name-like token after "on"/"my" or an
+    // Italian name preposition that isn't "timer" itself. This catches
+    // phrasings like "how much time is left on pasta" where "timer" may be
+    // absent, and "imposta un timer per la pasta".
     let mut after_marker = false;
     for tok in tokens {
-        if matches!(*tok, "on" | "my") {
+        if matches!(*tok, "on" | "my") || IT_NAME_MARKERS.contains(tok) {
             after_marker = true;
             continue;
         }
@@ -137,10 +231,27 @@ pub fn extract_name(tokens: &[&str]) -> Option<String> {
         if *tok == "timer" || *tok == "timers" {
             continue;
         }
-        if is_stopword(tok) || looks_like_number(tok) || looks_like_unit(tok) {
+        if !is_name(tok) {
             continue;
         }
         return Some((*tok).to_string());
+    }
+
+    // Third preference: Italian puts the name after the noun, "il timer
+    // pasta", which is also how the skill's own Italian strings name a timer
+    // ("annulla il mio timer {name}"). Read only inside an Italian phrase:
+    // English never names a timer that way, and "stop the timer now" must
+    // not find a timer called "now".
+    if let Some(pos) = timer_pos {
+        let italian = pos > 0
+            && (matches!(tokens[pos - 1], "il" | "un" | "mio" | "tuo" | "quel" | "questo")
+                || IT_CREATE_VERBS.contains(&tokens[pos - 1])
+                || IT_CANCEL_VERBS.contains(&tokens[pos - 1]));
+        if let Some(next) = tokens.get(pos + 1) {
+            if italian && is_name(next) {
+                return Some((*next).to_string());
+            }
+        }
     }
 
     None
@@ -151,7 +262,53 @@ fn is_stopword(tok: &str) -> bool {
 }
 
 fn looks_like_number(tok: &str) -> bool {
-    !tok.is_empty() && tok.chars().all(|c| c.is_ascii_digit())
+    number(tok).is_some()
+}
+
+/// A count from a digit token ("5") or an Italian number word ("cinque").
+/// English number words never reach us: the engine turns them into digits,
+/// but it leaves Italian ones alone.
+fn number(tok: &str) -> Option<u64> {
+    if !tok.is_empty() && tok.chars().all(|c| c.is_ascii_digit()) {
+        return tok.parse().ok();
+    }
+    it_num(tok)
+}
+
+/// Italian cardinal 0–99. The tens drop their final vowel before uno and
+/// otto ("ventuno", "trentotto"), and 23, 33… are written with an accent
+/// ("ventitré") the tables don't carry.
+fn it_num(tok: &str) -> Option<u64> {
+    const UNITS: [&str; 20] = [
+        "zero", "uno", "due", "tre", "quattro", "cinque", "sei", "sette", "otto",
+        "nove", "dieci", "undici", "dodici", "tredici", "quattordici", "quindici",
+        "sedici", "diciassette", "diciotto", "diciannove",
+    ];
+    const TENS: [&str; 8] = [
+        "venti", "trenta", "quaranta", "cinquanta", "sessanta", "settanta",
+        "ottanta", "novanta",
+    ];
+    let tok = tok.replace('é', "e");
+    if let Some(n) = UNITS.iter().position(|w| *w == tok) {
+        return Some(n as u64);
+    }
+    for (i, tens) in TENS.iter().enumerate() {
+        let value = 20 + 10 * i as u64;
+        if tok == *tens {
+            return Some(value);
+        }
+        let unit = match tok.strip_prefix(tens) {
+            Some(unit) => unit,
+            None => match tok.strip_prefix(&tens[..tens.len() - 1]) {
+                Some(unit) if unit == "uno" || unit == "otto" => unit,
+                _ => continue,
+            },
+        };
+        if let Some(n) = UNITS[1..10].iter().position(|w| *w == unit) {
+            return Some(value + n as u64 + 1);
+        }
+    }
+    None
 }
 
 fn looks_like_unit(tok: &str) -> bool {
@@ -172,6 +329,12 @@ fn looks_like_unit(tok: &str) -> bool {
             | "sec"
             | "secs"
             | "s"
+            | "ora"
+            | "ore"
+            | "minuto"
+            | "minuti"
+            | "secondo"
+            | "secondi"
     )
 }
 
@@ -224,6 +387,25 @@ fn split_segments(input: &str) -> Vec<String> {
                 continue;
             }
         }
+        // Italian: "... e un altro di 15 minuti", "... e uno di 15 minuti",
+        // "... e per 15 minuti". "1 ora e 30 minuti" stays one segment.
+        if tokens[i] == "e" && i + 1 < tokens.len() {
+            let skip = match &tokens[i + 1..] {
+                ["un", "altro", ..] => 3,
+                ["altro", ..] => 2,
+                [next, ..] if *next == "uno" || *next == "per" || IT_CREATE_VERBS.contains(next) => 1,
+                _ => 0,
+            };
+            if skip > 0 {
+                let segment = tokens[current_start..i].join(" ");
+                if !segment.is_empty() {
+                    segments.push(segment);
+                }
+                current_start = i + skip;
+                i = current_start;
+                continue;
+            }
+        }
         i += 1;
     }
 
@@ -244,8 +426,11 @@ fn parse_single_segment(input: &str) -> Option<(Option<String>, u64)> {
     let mut consumed: Vec<bool> = vec![false; tokens.len()];
     let mut i = 0;
     while i + 1 < tokens.len() {
-        if looks_like_number(tokens[i]) && looks_like_unit(tokens[i + 1]) {
-            let n: u64 = tokens[i].parse().unwrap_or(0);
+        // Italian "un"/"una" is a count only in front of a unit ("un
+        // minuto"), and "un secondo timer" is a second timer, not one second.
+        let n = number(tokens[i]).or(matches!(tokens[i], "un" | "una").then_some(1));
+        let ordinal = tokens[i + 1] == "secondo" && tokens.get(i + 2) == Some(&"timer");
+        if let (Some(n), false) = (n, ordinal) {
             if let Some(ms) = unit_to_ms(tokens[i + 1], n) {
                 total_ms = total_ms.saturating_add(ms);
                 consumed[i] = true;
@@ -272,9 +457,9 @@ fn parse_single_segment(input: &str) -> Option<(Option<String>, u64)> {
 
 fn unit_to_ms(unit: &str, n: u64) -> Option<u64> {
     let per = match unit {
-        "hour" | "hours" | "hr" | "hrs" | "h" => 3_600_000,
-        "minute" | "minutes" | "min" | "mins" | "m" => 60_000,
-        "second" | "seconds" | "sec" | "secs" | "s" => 1_000,
+        "hour" | "hours" | "hr" | "hrs" | "h" | "ora" | "ore" => 3_600_000,
+        "minute" | "minutes" | "min" | "mins" | "m" | "minuto" | "minuti" => 60_000,
+        "second" | "seconds" | "sec" | "secs" | "s" | "secondo" | "secondi" => 1_000,
         _ => return None,
     };
     Some(n.saturating_mul(per))
@@ -380,5 +565,163 @@ mod tests {
     fn list() {
         assert_eq!(classify("what timers do i have"), Intent::List);
         assert_eq!(classify("list my timers"), Intent::List);
+    }
+
+    #[test]
+    fn a_verb_is_never_a_name() {
+        assert_eq!(create("set timer for 5 minutes"), vec![(None, 300_000)]);
+    }
+
+    #[test]
+    fn a_word_after_an_english_timer_is_not_a_name() {
+        assert_eq!(classify("stop the timer now"), Intent::Cancel(None));
+    }
+
+    #[test]
+    fn a_bare_duration_timer_creates() {
+        assert_eq!(create("a 5 minute timer"), vec![(None, 300_000)]);
+    }
+
+    // --- Italian, as the engine hands it over: lowercased, punctuation and
+    //     sentence stop gone, elisions split, number words left as words ---
+
+    #[test]
+    fn it_the_utterances_from_issue_35() {
+        assert_eq!(create("imposta un timer per 5 minuti"), vec![(None, 300_000)]);
+        assert_eq!(create("imposta un timer per cinque minuti"), vec![(None, 300_000)]);
+        assert_eq!(create("imposta timer 5 minuti"), vec![(None, 300_000)]);
+        assert_eq!(create("timer 5 minuti"), vec![(None, 300_000)]);
+    }
+
+    #[test]
+    fn it_create_verbs() {
+        assert_eq!(create("avvia un timer di 4 minuti"), vec![(None, 240_000)]);
+        assert_eq!(create("metti un timer di 10 minuti"), vec![(None, 600_000)]);
+        assert_eq!(create("crea un timer da 3 minuti"), vec![(None, 180_000)]);
+        assert_eq!(create("fai partire un timer di 2 minuti"), vec![(None, 120_000)]);
+        assert_eq!(create("parti con un timer di 6 minuti"), vec![(None, 360_000)]);
+        assert_eq!(create("imposta un timer di 30 secondi"), vec![(None, 30_000)]);
+        assert_eq!(create("metti 7 minuti"), vec![(None, 420_000)]);
+        assert_eq!(create("avvisami tra dieci minuti"), vec![(None, 600_000)]);
+        assert_eq!(create("suona tra 20 minuti"), vec![(None, 1_200_000)]);
+        assert_eq!(
+            create("fammi sapere quando sono passati venti minuti"),
+            vec![(None, 1_200_000)]
+        );
+    }
+
+    #[test]
+    fn it_named_timers() {
+        let pasta = |ms| vec![(Some(String::from("pasta")), ms)];
+        assert_eq!(create("imposta un timer per la pasta di 8 minuti"), pasta(480_000));
+        assert_eq!(create("avvia un timer di 4 minuti per la pasta"), pasta(240_000));
+        assert_eq!(create("imposta un timer per pasta da 5 minuti"), pasta(300_000));
+        assert_eq!(create("mettimi otto minuti per la pasta"), pasta(480_000));
+        assert_eq!(create("dammi 9 minuti per pasta"), pasta(540_000));
+        assert_eq!(create("avvisami tra 10 minuti per la pasta"), pasta(600_000));
+        assert_eq!(create("un timer da 5 minuti per la pasta"), pasta(300_000));
+        assert_eq!(
+            create("avvia il conto alla rovescia di 12 minuti per la pasta"),
+            pasta(720_000)
+        );
+    }
+
+    #[test]
+    fn it_number_words() {
+        assert_eq!(create("imposta un timer di ventuno minuti"), vec![(None, 1_260_000)]);
+        assert_eq!(create("imposta un timer di trentotto minuti"), vec![(None, 2_280_000)]);
+        assert_eq!(create("imposta un timer di ventitré minuti"), vec![(None, 1_380_000)]);
+        assert_eq!(create("imposta un timer di novanta minuti"), vec![(None, 5_400_000)]);
+        assert_eq!(create("imposta un timer di un minuto"), vec![(None, 60_000)]);
+        assert_eq!(create("imposta un timer di due ore"), vec![(None, 7_200_000)]);
+    }
+
+    #[test]
+    fn it_idioms() {
+        assert_eq!(create("suona tra un quarto d ora"), vec![(None, 900_000)]);
+        assert_eq!(create("imposta un timer di tre quarti d ora"), vec![(None, 2_700_000)]);
+        assert_eq!(create("imposta un timer di mezz ora"), vec![(None, 1_800_000)]);
+        assert_eq!(create("imposta un timer di un ora"), vec![(None, 3_600_000)]);
+        assert_eq!(create("imposta un timer di un ora e mezza"), vec![(None, 5_400_000)]);
+        assert_eq!(create("conto alla rovescia di 5 minuti"), vec![(None, 300_000)]);
+    }
+
+    #[test]
+    fn it_compound_duration_is_one_timer() {
+        assert_eq!(
+            create("imposta un timer di 1 ora e 30 minuti"),
+            vec![(None, 5_400_000)]
+        );
+    }
+
+    #[test]
+    fn it_a_second_timer_is_not_one_second() {
+        assert_eq!(
+            create("imposta un secondo timer per la pizza di 10 minuti"),
+            vec![(Some(String::from("pizza")), 600_000)]
+        );
+    }
+
+    #[test]
+    fn it_multi_create() {
+        assert_eq!(
+            create("imposta un timer per 5 minuti e un altro per 15 minuti"),
+            vec![(None, 300_000), (None, 900_000)]
+        );
+        assert_eq!(
+            create("metti un timer di 5 minuti e uno di 15 minuti"),
+            vec![(None, 300_000), (None, 900_000)]
+        );
+    }
+
+    #[test]
+    fn it_set_without_duration_asks_for_one() {
+        assert_eq!(create("imposta il timer per la pasta"), vec![]);
+    }
+
+    #[test]
+    fn it_query() {
+        let pasta = Intent::Query(Some(String::from("pasta")));
+        assert_eq!(classify("quanto manca al timer per pasta"), pasta);
+        assert_eq!(classify("quanto manca al mio timer della pasta"), pasta);
+        assert_eq!(classify("quanto resta alla pasta"), pasta);
+        assert_eq!(classify("quanti minuti mancano al timer per la pasta"), pasta);
+        assert_eq!(classify("ancora molto per la pasta"), pasta);
+        assert_eq!(
+            classify("ancora quanto per le uova"),
+            Intent::Query(Some(String::from("uova")))
+        );
+        assert_eq!(classify("quanto manca"), Intent::Query(None));
+    }
+
+    #[test]
+    fn it_cancel() {
+        let pasta = Intent::Cancel(Some(String::from("pasta")));
+        assert_eq!(classify("annulla il mio timer della pasta"), pasta);
+        assert_eq!(classify("cancella il timer per la pasta"), pasta);
+        assert_eq!(classify("togli il timer per pasta"), pasta);
+        assert_eq!(classify("non mi serve più il timer della pasta"), pasta);
+        assert_eq!(classify("ferma il timer"), Intent::Cancel(None));
+        assert_eq!(classify("annulla il timer di 5 minuti"), Intent::Cancel(None));
+        assert_eq!(classify("cancella tutti i timer"), Intent::CancelAll);
+    }
+
+    #[test]
+    fn it_cancel_button_utterances_round_trip() {
+        // What strings/it.json puts on the card's cancel button.
+        assert_eq!(
+            classify("annulla il mio timer pasta"),
+            Intent::Cancel(Some(String::from("pasta")))
+        );
+        assert_eq!(classify("annulla il mio timer"), Intent::Cancel(None));
+    }
+
+    #[test]
+    fn it_list() {
+        assert_eq!(classify("quali timer ho"), Intent::List);
+        assert_eq!(classify("che timer ho attivi"), Intent::List);
+        assert_eq!(classify("elenca i miei timer"), Intent::List);
+        assert_eq!(classify("mostrami i timer attivi"), Intent::List);
+        assert_eq!(classify("quanti timer ho attivi"), Intent::List);
     }
 }
