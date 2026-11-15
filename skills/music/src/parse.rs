@@ -14,9 +14,13 @@ const SERVICE_ALIASES: &[(&str, &str)] = &[
     ("deezer", "deezer"),
 ];
 
+/// Tried in order, and the first that matches anywhere wins, so a verb must
+/// come before any trigger it could follow: "vorrei" is last because "vorrei
+/// ascoltare X" means X, not "ascoltare X".
 const TRIGGERS: &[&str] = &[
     "listen to", "put on", "fai partire",
-    "play", "riproduci", "metti", "ascolta", "suona",
+    "play", "riproduci", "mettimi", "mettere", "metti", "ascoltare", "ascolta",
+    "sentire", "senti", "suona", "vorrei",
 ];
 
 const CONNECTORS: &[&str] = &["on", "su"];
@@ -76,6 +80,12 @@ fn split_service(raw: &str) -> (String, Option<String>) {
 pub fn parse(input: &str) -> Parsed {
     match after_trigger(input) {
         Some(raw) => {
+            // "metti su X" is Italian for "put on X"; the "su" is part of the
+            // verb unless a service follows it ("metti su spotify").
+            let raw = match raw.strip_prefix("su ") {
+                Some(rest) if canonical_service(rest).is_none() => rest,
+                _ => raw,
+            };
             let (query, service) = split_service(raw);
             Parsed {
                 query: if query.is_empty() { None } else { Some(query) },
@@ -116,6 +126,31 @@ mod tests {
         let p = parse("metti hotel california su spotify");
         assert_eq!(p.query.as_deref(), Some("hotel california"));
         assert_eq!(p.service.as_deref(), Some("spotify"));
+    }
+
+    #[test]
+    fn italian_metti_su_is_put_on() {
+        assert_eq!(parse("metti su vasco rossi").query.as_deref(), Some("vasco rossi"));
+        let p = parse("metti su vasco rossi su spotify");
+        assert_eq!(p.query.as_deref(), Some("vasco rossi"));
+        assert_eq!(p.service.as_deref(), Some("spotify"));
+        let p = parse("metti su spotify");
+        assert_eq!(p.query, None);
+        assert_eq!(p.service.as_deref(), Some("spotify"));
+    }
+
+    #[test]
+    fn italian_want_to_hear() {
+        let q = |i| parse(i).query;
+        assert_eq!(q("voglio ascoltare vasco rossi").as_deref(), Some("vasco rossi"));
+        assert_eq!(q("vorrei ascoltare i pink floyd").as_deref(), Some("i pink floyd"));
+        assert_eq!(q("voglio sentire vasco rossi").as_deref(), Some("vasco rossi"));
+        assert_eq!(q("fammi sentire un po di jazz").as_deref(), Some("un po di jazz"));
+        assert_eq!(q("fammi ascoltare vasco rossi").as_deref(), Some("vasco rossi"));
+        assert_eq!(q("mettimi vasco rossi").as_deref(), Some("vasco rossi"));
+        assert_eq!(q("puoi mettere vasco rossi").as_deref(), Some("vasco rossi"));
+        assert_eq!(q("senti vasco rossi").as_deref(), Some("vasco rossi"));
+        assert_eq!(q("vorrei un po di jazz").as_deref(), Some("un po di jazz"));
     }
 
     #[test]
