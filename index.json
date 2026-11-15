@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-11-15T13:19:51Z",
+  "generated_at": "2026-11-15T13:29:06Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -26,7 +26,7 @@
       ],
       "bundle": "bundles/dev.heyari.timer-0.2.2.tar.gz",
       "signature": "bundles/dev.heyari.timer-0.2.2.tar.gz.sig",
-      "sha256": "1c4b95214584e8feb34841b0148026ef053ad9902243c2669d5ad4c26f11c9c1",
+      "sha256": "1d17543f843b612700612d51c852ff902fe0ece86ea3d4346dfe1d2e4c4b77a1",
       "manifest": "manifests/dev.heyari.timer-0.2.2.md",
       "localizations": {
         "it": {
@@ -113,7 +113,7 @@
     },
     {
       "id": "dev.heyari.navigation",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "name": "navigation",
       "description": "Starts navigation to a place by handing off to your maps app. Understands destinations (\"take me to McDonald's\", \"navigate to Asda\", \"how do I get to the station\") and \"take me home\". A setting chooses between your default maps app and turn-by-turn navigation.",
       "type": "skill",
@@ -127,10 +127,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.navigation-0.1.1.tar.gz",
-      "signature": "bundles/dev.heyari.navigation-0.1.1.tar.gz.sig",
-      "sha256": "4a077f8beb07743fcc16c1958b7ebaa495ca6addf16b187e9697f9acacbd14f6",
-      "manifest": "manifests/dev.heyari.navigation-0.1.1.md",
+      "bundle": "bundles/dev.heyari.navigation-0.1.2.tar.gz",
+      "signature": "bundles/dev.heyari.navigation-0.1.2.tar.gz.sig",
+      "sha256": "cbd2de9cdf08b42d58ba81b4551352216470c8fb985976182ef39307b06becbb",
+      "manifest": "manifests/dev.heyari.navigation-0.1.2.md",
       "localizations": {
         "it": {
           "name": "navigation",
@@ -139,11 +139,11 @@
       },
       "screenshots": {
         "android": [
-          "screenshots/dev.heyari.navigation-0.1.1/android/01-london-query.webp",
-          "screenshots/dev.heyari.navigation-0.1.1/android/02-london-response.webp",
-          "screenshots/dev.heyari.navigation-0.1.1/android/03-mcdonalds-query.webp",
-          "screenshots/dev.heyari.navigation-0.1.1/android/04-mcdonalds-response.webp",
-          "screenshots/dev.heyari.navigation-0.1.1/android/05-settings.webp"
+          "screenshots/dev.heyari.navigation-0.1.2/android/01-london-query.webp",
+          "screenshots/dev.heyari.navigation-0.1.2/android/02-london-response.webp",
+          "screenshots/dev.heyari.navigation-0.1.2/android/03-mcdonalds-query.webp",
+          "screenshots/dev.heyari.navigation-0.1.2/android/04-mcdonalds-response.webp",
+          "screenshots/dev.heyari.navigation-0.1.2/android/05-settings.webp"
         ]
       }
     },
@@ -206,7 +206,7 @@
       ],
       "bundle": "bundles/dev.heyari.music-0.2.1.tar.gz",
       "signature": "bundles/dev.heyari.music-0.2.1.tar.gz.sig",
-      "sha256": "fc7669427c10a53d5fd1ca9123c1a079bd77bf8b501d7d83b4b7ee61316f8828",
+      "sha256": "c1ab390d8670e4b7727b334226eaaccbc08e30c958684c7fbb2796f6a861d75b",
       "manifest": "manifests/dev.heyari.music-0.2.1.md",
       "localizations": {
         "it": {
@@ -335,7 +335,7 @@
       ],
       "bundle": "bundles/dev.heyari.alarm-0.1.2.tar.gz",
       "signature": "bundles/dev.heyari.alarm-0.1.2.tar.gz.sig",
-      "sha256": "f1cd0448eb67bea31ec515365d61ed721c72bfde92292c84794949fad715f612",
+      "sha256": "dbe53979bd413be813573f59a97e0053c6809e29c62125402a0a332f6ef96b29",
       "manifest": "manifests/dev.heyari.alarm-0.1.2.md",
       "localizations": {
         "it": {
@@ -438,7 +438,7 @@
       ],
       "bundle": "bundles/dev.heyari.weather-0.2.2.tar.gz",
       "signature": "bundles/dev.heyari.weather-0.2.2.tar.gz.sig",
-      "sha256": "ce8f8f0c7dc403038566adae1badcf3ceccd5525b8d32232d97506fc147fcf00",
+      "sha256": "28998ca89394d60ca50a622189c581f4f521b5a7dc9dd7f8a48a1440a40563e7",
       "manifest": "manifests/dev.heyari.weather-0.2.2.md",
       "localizations": {
         "it": {
