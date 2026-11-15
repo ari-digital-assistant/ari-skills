@@ -289,6 +289,11 @@ Persistent shade entries.
 `mode` is `"default_app"` (the default) or `"turn_by_turn"`. `destination` is
 free text, already lowercased by normalisation; the frontend URL-encodes it.
 
+`place` is optional. `"home"` means the user's saved home, as their maps app
+knows it (`Navigate::to(…).saved_home()` in the SDK). Android honours it in
+`turn_by_turn` mode by asking Google Maps for `place=home`; anywhere else the
+frontend navigates to `destination`, so always set that too.
+
 ### `media`
 
 ```json

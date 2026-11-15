@@ -23,12 +23,24 @@ fn t(_key: &str, _args: &[(&str, &str)]) -> Option<String> {
     None
 }
 
-pub fn handle(input: &str, mode: &str) -> String {
+/// `home_address` is the user's own setting, empty when unset.
+pub fn handle(input: &str, mode: &str, home_address: &str) -> String {
     match classify(input) {
         Intent::Navigate { destination } => {
             let speak = t("navigate_confirm", &[("destination", &destination)])
                 .unwrap_or_else(|| format!("Taking you to {destination}."));
             let nav = p::Navigate::to(destination).mode(mode);
+            p::Envelope::new().speak(speak).navigate(nav).to_json()
+        }
+        Intent::Home { said } => {
+            let speak = t("navigate_home", &[]).unwrap_or_else(|| "Taking you home.".to_string());
+            // An address the user typed works with any maps app. Without one,
+            // name the saved home for a maps app that keeps one (Google Maps,
+            // turn-by-turn), and search for the word they said everywhere else.
+            let nav = match home_address.trim() {
+                "" => p::Navigate::to(said).mode(mode).saved_home(),
+                address => p::Navigate::to(address).mode(mode),
+            };
             p::Envelope::new().speak(speak).navigate(nav).to_json()
         }
         Intent::NeedDestination => {
@@ -52,7 +64,8 @@ pub extern "C" fn execute(ptr: i32, len: i32) -> i64 {
     // Read the user's navigation-style preference; default to the neutral
     // default-maps-app behaviour when unset.
     let mode = ari::setting_get("navigation_mode").unwrap_or("default_app");
-    ari::respond_action(&handle(input, mode))
+    let home_address = ari::setting_get("home_address").unwrap_or("");
+    ari::respond_action(&handle(input, mode, home_address))
 }
 
 #[cfg(test)]
@@ -60,7 +73,7 @@ mod tests {
     use super::handle;
 
     fn v(input: &str, mode: &str) -> serde_json::Value {
-        serde_json::from_str(&handle(input, mode)).unwrap()
+        serde_json::from_str(&handle(input, mode, "")).unwrap()
     }
 
     #[test]
@@ -82,6 +95,30 @@ mod tests {
     fn home_phrase_navigates_home() {
         let j = v("take me home", "default_app");
         assert_eq!(j["navigate"]["destination"], "home");
+        assert_eq!(j["navigate"]["place"], "home");
+        assert_eq!(j["speak"], "Taking you home.");
+    }
+
+    #[test]
+    fn italian_home_keeps_the_word_said() {
+        let j = v("portami a casa", "turn_by_turn");
+        assert_eq!(j["navigate"]["destination"], "casa");
+        assert_eq!(j["navigate"]["place"], "home");
+        assert_eq!(j["navigate"]["mode"], "turn_by_turn");
+    }
+
+    #[test]
+    fn a_home_address_setting_wins_over_the_saved_place() {
+        let j: serde_json::Value =
+            serde_json::from_str(&handle("take me home", "turn_by_turn", " 10 Downing Street, London ")).unwrap();
+        assert_eq!(j["navigate"]["destination"], "10 Downing Street, London");
+        assert!(j["navigate"].get("place").is_none());
+    }
+
+    #[test]
+    fn other_destinations_carry_no_place() {
+        let j = v("take me to mcdonalds", "turn_by_turn");
+        assert!(j["navigate"].get("place").is_none());
     }
 
     #[test]

@@ -262,20 +262,30 @@ impl Alarm {
 /// A navigation command. Semantic only — carries no platform intent knowledge.
 /// `mode` is a frontend-neutral hint: `default_app` opens the destination in the
 /// user's default maps app; `turn_by_turn` starts turn-by-turn navigation.
+/// `place` names one of the user's saved places, which a frontend whose maps
+/// app knows them routes to directly; any other frontend uses `destination`.
 #[derive(Serialize, Default)]
 pub struct Navigate {
     destination: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     mode: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    place: Option<&'static str>,
 }
 
 impl Navigate {
     pub fn to(destination: impl Into<String>) -> Self {
-        Navigate { destination: destination.into(), mode: None }
+        Navigate { destination: destination.into(), mode: None, place: None }
     }
 
     pub fn mode(mut self, mode: impl Into<String>) -> Self {
         self.mode = Some(mode.into());
+        self
+    }
+
+    /// The destination is the user's saved home, as their maps app knows it.
+    pub fn saved_home(mut self) -> Self {
+        self.place = Some("home");
         self
     }
 }
@@ -1370,6 +1380,15 @@ mod tests {
         let v: serde_json::Value = serde_json::from_str(&env.to_json()).unwrap();
         assert_eq!(v["navigate"]["destination"], "asda");
         assert!(v["navigate"].get("mode").is_none());
+        assert!(v["navigate"].get("place").is_none());
+    }
+
+    #[test]
+    fn navigate_saved_home_sets_place() {
+        let env = Envelope::new().navigate(Navigate::to("casa").saved_home());
+        let v: serde_json::Value = serde_json::from_str(&env.to_json()).unwrap();
+        assert_eq!(v["navigate"]["destination"], "casa");
+        assert_eq!(v["navigate"]["place"], "home");
     }
 
     #[test]

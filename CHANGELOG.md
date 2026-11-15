@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- navigation 0.1.2: a Home address setting. "Take me home" and "portami a casa" go
+  there in any maps app; left blank, turn-by-turn asks Google Maps for the home saved
+  in the user's account.
+- SDK: `Navigate::saved_home()`, which sets the navigate action's new `place: "home"`.
+
 ### Fixed
 
 - music 0.2.1: Italian phrasings the manifest already listed now work. "Metti su Vasco
@@ -14,7 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and "puoi mettere" asked what to play; "più forte" never matched because the engine
   keeps the accent; "cambia canzone", "basta musica" and "torna alla canzone di prima"
   weren't recognised.
-
 - timer 0.2.2: Italian works. The parser only knew English, so every Italian request
   ("imposta un timer per 5 minuti") reached the skill and got "non ho capito". It now
   reads Italian verbs, units, number words ("cinque", "ventitré"), "un quarto d'ora",
@@ -27,3 +33,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the English examples and 41 of the Italian ones answered "Where would you like to
   go?", including "I want to go to Rome", "navigate home", "voglio andare a casa",
   "naviga verso Milano" and "accompagnami in ufficio".
+- navigation 0.1.2: "start navigation to…" and "avvia il navigatore…" reach navigation
+  instead of opening an app called "navigation to…".

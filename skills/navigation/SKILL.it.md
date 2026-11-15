@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.navigation
-    version: "0.1.1"
+    version: "0.1.2"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
@@ -22,6 +22,9 @@ metadata:
           weight: 0.9
         - regex: "\\b(vai|andiamo) (a|al|allo|alla|ai|agli|alle|in)\\b"
           weight: 0.8
+        # "avvia il navigatore X" otherwise goes to the built-in `open` skill.
+        - regex: "\\b(avvia|avviami|attiva|fai partire) (la |il )?(navigazione|navigatore)\\b"
+          weight: 0.9
       custom_score: false
     examples:
       - text: "avviami la navigazione {destination}"
@@ -299,6 +302,10 @@ metadata:
             label: Apri nella mia app mappe predefinita
           - value: turn_by_turn
             label: Avvia la navigazione passo-passo
+      - key: home_address
+        label: Indirizzo di casa
+        type: text
+        help_text: "Dove ti porta «portami a casa», con qualsiasi app mappe. Se lo lasci vuoto, la navigazione passo-passo usa la casa salvata in Google Maps; l'app mappe predefinita cerca «casa»."
     wasm:
       module: skill.wasm
       memory_limit_mb: 2
