@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-11-15T13:01:05Z",
+  "generated_at": "2026-11-15T13:14:38Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -186,7 +186,7 @@
     },
     {
       "id": "dev.heyari.music",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "name": "music",
       "description": "Plays music by name in a music app, optionally on a named service.",
       "type": "skill",
@@ -204,10 +204,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.music-0.2.0.tar.gz",
-      "signature": "bundles/dev.heyari.music-0.2.0.tar.gz.sig",
-      "sha256": "43def2fa046461459333477b17938a84cef2aba2c62a41ba4e02120df3a7dcc2",
-      "manifest": "manifests/dev.heyari.music-0.2.0.md",
+      "bundle": "bundles/dev.heyari.music-0.2.1.tar.gz",
+      "signature": "bundles/dev.heyari.music-0.2.1.tar.gz.sig",
+      "sha256": "fc7669427c10a53d5fd1ca9123c1a079bd77bf8b501d7d83b4b7ee61316f8828",
+      "manifest": "manifests/dev.heyari.music-0.2.1.md",
       "localizations": {
         "it": {
           "name": "music",
@@ -216,10 +216,10 @@
       },
       "screenshots": {
         "android": [
-          "screenshots/dev.heyari.music-0.2.0/android/01-song-request.webp",
-          "screenshots/dev.heyari.music-0.2.0/android/02-transport-control.webp",
-          "screenshots/dev.heyari.music-0.2.0/android/03-playing-result.webp",
-          "screenshots/dev.heyari.music-0.2.0/android/04-settings.webp"
+          "screenshots/dev.heyari.music-0.2.1/android/01-song-request.webp",
+          "screenshots/dev.heyari.music-0.2.1/android/02-transport-control.webp",
+          "screenshots/dev.heyari.music-0.2.1/android/03-playing-result.webp",
+          "screenshots/dev.heyari.music-0.2.1/android/04-settings.webp"
         ]
       }
     },
