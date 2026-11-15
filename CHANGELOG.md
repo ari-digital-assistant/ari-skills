@@ -17,3 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([ari-android#35](https://github.com/ari-digital-assistant/ari-android/issues/35)).
 - timer 0.2.2: the confirmation no longer capitalises mid-sentence ("Set A timer for 5
   minutes").
+- navigation 0.1.1: the phrasings the manifests list now find the destination. 36 of
+  the English examples and 41 of the Italian ones answered "Where would you like to
+  go?", including "I want to go to Rome", "navigate home", "voglio andare a casa",
+  "naviga verso Milano" and "accompagnami in ufficio".

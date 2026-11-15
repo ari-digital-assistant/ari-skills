@@ -1,4 +1,5 @@
 use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Intent {
@@ -6,111 +7,125 @@ pub enum Intent {
     NeedDestination,
 }
 
-/// English trigger phrases whose tail (everything after the phrase) is the
-/// destination. Longest-first: a longer phrase that contains a shorter one must
-/// be tried first. Each ends with a trailing space so a bare "take me to" (no
-/// destination) does NOT match.
-const EN_PREFIXES: &[&str] = &[
-    "show me the way to ",
-    "how do i get to ",
-    "take me to ",
-    "bring me to ",
-    "drive me to ",
-    "get me to ",
-    "navigate to ",
-    "directions to ",
-    "route to ",
-    "the way to ",
+/// English words that introduce the destination. Tried in this order, so
+/// " to " wins over " for " when a sentence has both.
+const EN_MARKERS: &[&str] = &[" to ", " towards ", " for "];
+
+/// A marker followed by one of these is part of the request, not the
+/// destination: "i want to GO to the station", "show me how to GET to it".
+const EN_MOTION_VERBS: &[&str] = &["go", "get", "drive", "head", "navigate", "find", "reach"];
+
+/// English phrasings with no marker word, whose tail is the destination:
+/// "take me the station", "fastest route the station".
+const EN_BARE_PREFIXES: &[&str] = &["take me ", "fastest route ", "quickest route "];
+
+/// Italian navigation verbs and nouns, as token runs. The destination follows
+/// the LAST one in the utterance: "qual è la strada più veloce per arrivare a
+/// X" names X after "arrivare", not after "strada".
+const IT_TRIGGERS: &[&[&str]] = &[
+    &["come", "ci", "si", "arriva"],
+    &["come", "si", "arriva"],
+    &["come", "ci", "arrivo"],
+    &["come", "arrivo"],
+    &["indicazioni", "per"],
+    &["portami"], &["riportami"], &["portaci"], &["portarmi"], &["porti"],
+    &["accompagnami"], &["guidami"], &["conducimi"],
+    &["naviga"], &["navigatore"], &["navigazione"],
+    &["andare"], &["andiamo"], &["vai"],
+    &["arrivare"], &["tornare"], &["torna"], &["raggiungere"],
+    &["strada"], &["rotta"],
 ];
 
-/// Italian trigger verbs. Longest-first so "come ci arrivo" is tried before
-/// "come arrivo". The tail after the verb is the destination, but Italian
-/// contracts the preposition with the article, so a leading connector (below)
-/// must be stripped from that tail before cleaning.
-const IT_VERBS: &[&str] = &[
-    "come ci arrivo",
-    "come arrivo",
-    "indicazioni per",
-    "portami",
-    "andiamo",
-    "vai",
+/// Leading words to drop between an Italian trigger and the destination:
+/// prepositions and their contractions (al = a+il, all = a+l', …), plus the
+/// fillers that sit there ("fino al", "di nuovo a", "più veloce per").
+const IT_LEADING: &[&str] = &[
+    "a", "ad", "al", "allo", "alla", "ai", "agli", "alle", "all",
+    "in", "nel", "nello", "nella", "nei", "negli", "nelle",
+    "per", "verso", "fino", "da", "di", "nuovo",
+    "più", "piu", "veloce", "breve", "rapida", "migliore", "subito", "velocemente",
 ];
 
-/// Leading Italian prepositions/contractions to strip off the tail after an
-/// IT verb (al = a+il, alla = a+la, allo = a+lo, all' = a+l', ai = a+i,
-/// agli = a+gli, alle = a+le, plus in/per/a and the "nel*" family for "in").
-/// Longest-first so "al " is tried before "a ". Each ends with a trailing space
-/// so we only strip a genuine leading preposition, not a word that starts with
-/// one (e.g. destination "asda" is untouched by "a ").
-const IT_CONNECTORS: &[&str] = &[
-    "allo ", "alla ", "agli ", "alle ", "all ",
-    "nello ", "nella ", "negli ", "nelle ", "nei ",
-    "ai ", "al ", "nel ", "in ", "per ", "a ",
-];
-
-/// "Take me home" style phrases (no explicit destination token) → "home".
-/// (Italian "portami a casa" is caught by the "portami a " prefix → "casa",
-/// which the maps app resolves as home.)
-const HOME_PHRASES: &[&str] = &[
-    "take me home", "bring me home", "drive me home", "get me home",
-    "take me back home",
+/// Trailing modifiers that describe the trip, not the place.
+const TRAILING: &[&str] = &[
+    " il prima possibile", " entro un ora", " in macchina", " in auto", " da qui",
+    " adesso", " subito", " please", " thanks", " grazie", " per favore",
 ];
 
 /// Leading articles to strip off an extracted destination (both languages).
 const ARTICLES: &[&str] = &["the ", "a ", "an ", "il ", "la ", "lo ", "l "];
 
-/// Trailing politeness to strip.
-const POLITE_TAILS: &[&str] = &[" please", " thanks", " grazie", " per favore"];
-
 pub fn classify(input: &str) -> Intent {
     let text = input.trim();
 
-    if let Some(dest) = extract_destination(text) {
-        if dest.is_empty() {
-            return Intent::NeedDestination;
-        }
-        return Intent::Navigate { destination: dest };
-    }
+    let destination = en_after_marker(text)
+        .or_else(|| en_sat_nav(text))
+        .or_else(|| {
+            // "navigate home", "quickest way home", "how do i get home from
+            // here": no marker, but "home" says where.
+            text.split_whitespace().any(|w| w == "home").then(|| "home".to_string())
+        })
+        .or_else(|| {
+            EN_BARE_PREFIXES
+                .iter()
+                .find_map(|p| text.find(p).map(|i| clean(&text[i + p.len()..])))
+        })
+        .or_else(|| it_after_trigger(text));
 
-    if HOME_PHRASES.iter().any(|p| text.contains(p)) {
-        return Intent::Navigate { destination: "home".to_string() };
+    match destination {
+        Some(dest) if !dest.is_empty() => Intent::Navigate { destination: dest },
+        // Routed here (matched the skill's patterns) but nothing names a place.
+        _ => Intent::NeedDestination,
     }
-
-    // Routed here (matched the skill patterns) but no destination parsed.
-    Intent::NeedDestination
 }
 
-/// Find the first trigger present in `text` and return the cleaned destination.
-/// Returns `None` only when no trigger matched at all; a matched-but-empty tail
-/// yields `Some("")` so the caller can ask for a destination.
-fn extract_destination(text: &str) -> Option<String> {
-    // English: verb + "to " — the tail is the destination directly.
-    for prefix in EN_PREFIXES {
-        if let Some(idx) = text.find(prefix) {
-            return Some(clean(&text[idx + prefix.len()..]));
-        }
-    }
-    // Italian: trigger verb, then strip a leading contracted preposition.
-    for verb in IT_VERBS {
-        if let Some(idx) = text.find(verb) {
-            let tail = text[idx + verb.len()..].trim_start();
-            return Some(clean(strip_connector(tail)));
+/// The text after the first marker that isn't followed by a motion verb.
+/// `Some("")` for a bare "take me to", so the caller asks where.
+fn en_after_marker(text: &str) -> Option<String> {
+    let padded = alloc::format!(" {text} ");
+    for marker in EN_MARKERS {
+        for (i, _) in padded.match_indices(marker) {
+            let tail = &padded[i + marker.len()..];
+            let first = tail.split_whitespace().next().unwrap_or("");
+            if !EN_MOTION_VERBS.contains(&first) {
+                return Some(clean(tail));
+            }
         }
     }
     None
 }
 
-/// Strip one leading Italian preposition/contraction (longest-first) from a tail.
-fn strip_connector(tail: &str) -> &str {
-    for c in IT_CONNECTORS {
-        if let Some(rest) = tail.strip_prefix(c) {
-            return rest;
-        }
-    }
-    tail
+/// "put the station in the sat nav", "put the station in my sat nav".
+fn en_sat_nav(text: &str) -> Option<String> {
+    let rest = &text[text.find("put ")? + 4..];
+    let end = rest.find(" in the sat nav").or_else(|| rest.find(" in my sat nav"))?;
+    Some(clean(&rest[..end]))
 }
 
-/// Trim leading articles and trailing politeness off a raw destination.
+fn it_after_trigger(text: &str) -> Option<String> {
+    let tokens: Vec<&str> = text.split_whitespace().collect();
+    let end = IT_TRIGGERS
+        .iter()
+        .filter_map(|trigger| {
+            tokens
+                .windows(trigger.len())
+                .rposition(|w| w == *trigger)
+                .map(|start| start + trigger.len())
+        })
+        .max()?;
+    // "prima" is filler only before a preposition: "come arrivo prima a
+    // casa" (soonest), but "portami a prima porta" (a place in Rome).
+    let rest = &tokens[end..];
+    let skip = (0..rest.len())
+        .take_while(|&i| {
+            IT_LEADING.contains(&rest[i])
+                || (rest[i] == "prima" && rest.get(i + 1).is_some_and(|n| IT_LEADING.contains(n)))
+        })
+        .count();
+    Some(clean(&tokens[end + skip..].join(" ")))
+}
+
+/// Trim leading articles and trailing trip modifiers off a raw destination.
 fn clean(raw: &str) -> String {
     let mut s = raw.trim();
     for art in ARTICLES {
@@ -119,11 +134,8 @@ fn clean(raw: &str) -> String {
             break;
         }
     }
-    for tail in POLITE_TAILS {
-        if let Some(head) = s.strip_suffix(tail) {
-            s = head.trim_end();
-            break;
-        }
+    while let Some(head) = TRAILING.iter().find_map(|tail| s.strip_suffix(tail)) {
+        s = head.trim_end();
     }
     s.to_string()
 }
@@ -135,7 +147,7 @@ mod tests {
     fn dest(i: &str) -> String {
         match classify(i) {
             Intent::Navigate { destination } => destination,
-            other => panic!("expected Navigate, got {other:?}"),
+            other => panic!("expected Navigate for {i:?}, got {other:?}"),
         }
     }
 
@@ -154,6 +166,51 @@ mod tests {
         assert_eq!(classify("take me to"), Intent::NeedDestination);
     }
 
+    #[test] fn nothing_named_needs_destination() {
+        assert_eq!(classify("start navigation"), Intent::NeedDestination);
+    }
+
+    // --- English phrasings from the manifest ---
+    #[test] fn en_motion_verb_after_to_is_skipped() {
+        assert_eq!(dest("i want to go to the train station"), "train station");
+        assert_eq!(dest("i need to get to the station"), "station");
+        assert_eq!(dest("show me how to get to the station"), "station");
+        assert_eq!(dest("what is the best way to get to the station"), "station");
+        assert_eq!(dest("i want to drive over to my office"), "my office");
+    }
+    #[test] fn en_other_to_phrasings() {
+        assert_eq!(dest("guide me to the station"), "station");
+        assert_eq!(dest("plot a course to the station"), "station");
+        assert_eq!(dest("lets head to the station"), "station");
+        assert_eq!(dest("whats the best way to the station"), "station");
+        assert_eq!(dest("navigate me to the station"), "station");
+        assert_eq!(dest("sat nav to the station"), "station");
+        assert_eq!(dest("directions please to the station"), "station");
+        assert_eq!(dest("can you map out a journey to the station"), "station");
+    }
+    #[test] fn en_for_and_towards() {
+        assert_eq!(dest("get directions for the station"), "station");
+        assert_eq!(dest("head for the station"), "station");
+        assert_eq!(dest("fire up the sat nav for the station"), "station");
+        assert_eq!(dest("point me towards the station"), "station");
+    }
+    #[test] fn en_sat_nav() {
+        assert_eq!(dest("put the station in the sat nav"), "station");
+        assert_eq!(dest("put the station in my sat nav"), "station");
+    }
+    #[test] fn en_home_without_a_marker() {
+        assert_eq!(dest("navigate home"), "home");
+        assert_eq!(dest("quickest way home"), "home");
+        assert_eq!(dest("i want to head home"), "home");
+        assert_eq!(dest("how do i get home from here"), "home");
+        assert_eq!(dest("route me home"), "home");
+        assert_eq!(dest("get me back home"), "home");
+    }
+    #[test] fn en_bare_prefixes() {
+        assert_eq!(dest("take me the station"), "station");
+        assert_eq!(dest("fastest route the station"), "station");
+    }
+
     // --- Italian ---
     #[test] fn it_portami_a() { assert_eq!(dest("portami a asda"), "asda"); }
     #[test] fn it_portami_a_casa() { assert_eq!(dest("portami a casa"), "casa"); }
@@ -168,4 +225,44 @@ mod tests {
     #[test] fn it_vai_alla() { assert_eq!(dest("vai alla stazione"), "stazione"); }
     #[test] fn it_andiamo_al() { assert_eq!(dest("andiamo al mare"), "mare"); }
     #[test] fn it_portami_still_works() { assert_eq!(dest("portami al lavoro"), "lavoro"); }
+
+    // --- Italian phrasings from the manifest ---
+    #[test] fn it_more_verbs() {
+        assert_eq!(dest("voglio andare a casa"), "casa");
+        assert_eq!(dest("voglio andare alla stazione centrale"), "stazione centrale");
+        assert_eq!(dest("accompagnami in ufficio"), "ufficio");
+        assert_eq!(dest("guidami fino al museo"), "museo");
+        assert_eq!(dest("conducimi alla stazione per favore"), "stazione");
+        assert_eq!(dest("mi porti alla stazione"), "stazione");
+        assert_eq!(dest("puoi portarmi alla stazione"), "stazione");
+        assert_eq!(dest("portaci al mare"), "mare");
+        assert_eq!(dest("naviga verso milano"), "milano");
+        assert_eq!(dest("naviga fino a milano"), "milano");
+        assert_eq!(dest("come si arriva a milano"), "milano");
+        assert_eq!(dest("come ci si arriva alla stazione"), "stazione");
+        assert_eq!(dest("devo raggiungere la stazione"), "stazione");
+        assert_eq!(dest("voglio tornare a casa"), "casa");
+        assert_eq!(dest("fammi da navigatore per la stazione"), "stazione");
+        assert_eq!(dest("imposta la rotta per milano"), "milano");
+        assert_eq!(dest("trovami la strada per la stazione"), "stazione");
+    }
+    #[test] fn it_last_trigger_wins() {
+        assert_eq!(dest("qual è la strada più veloce per arrivare alla stazione"), "stazione");
+        assert_eq!(dest("qual è la strada più veloce per la stazione"), "stazione");
+        assert_eq!(dest("quanto ci metto ad arrivare in stazione"), "stazione");
+        assert_eq!(dest("che strada faccio per arrivare alla stazione"), "stazione");
+        assert_eq!(dest("mi indichi come arrivare al museo"), "museo");
+    }
+    #[test] fn it_trip_modifiers_are_dropped() {
+        assert_eq!(dest("voglio andare alla stazione in macchina"), "stazione");
+        assert_eq!(dest("voglio andare alla stazione adesso"), "stazione");
+        assert_eq!(dest("portami di nuovo a casa"), "casa");
+        assert_eq!(dest("devo raggiungere la stazione entro un ora"), "stazione");
+        assert_eq!(dest("portami alla stazione il prima possibile"), "stazione");
+    }
+    #[test] fn it_prima_is_filler_only_before_a_preposition() {
+        assert_eq!(dest("come arrivo prima a casa"), "casa");
+        assert_eq!(dest("portami a prima porta"), "prima porta");
+    }
+    #[test] fn it_riportami() { assert_eq!(dest("riportami a casa"), "casa"); }
 }
