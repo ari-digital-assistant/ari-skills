@@ -16,7 +16,8 @@ pub enum Transport {
 }
 
 /// Ordered longest-first within each group so multi-word triggers win.
-/// Matched against fully-normalised input (lowercase, no apostrophes).
+/// Matched against normalised input: lowercase and no apostrophes, but
+/// accents kept, so "più" arrives as "più".
 pub fn parse(input: &str) -> Option<Transport> {
     let s = input.trim();
 
@@ -35,13 +36,18 @@ pub fn parse(input: &str) -> Option<Transport> {
     // mute ("togli il muto" contains "muto"), volume down/up before bare.
     const UNMUTE: &[&str] = &["unmute", "togli il muto", "riattiva l audio", "riattiva audio"];
     const MUTE: &[&str] = &["mute", "muto", "silenzia"];
-    const VOL_UP: &[&str] = &["volume up", "louder", "alza il volume", "piu forte"];
-    const VOL_DOWN: &[&str] = &["volume down", "quieter", "abbassa il volume", "piu piano"];
+    const VOL_UP: &[&str] = &["volume up", "louder", "alza il volume", "più forte", "piu forte"];
+    const VOL_DOWN: &[&str] = &["volume down", "quieter", "abbassa il volume", "più piano", "piu piano"];
     const PAUSE: &[&str] = &["metti in pausa", "pause", "pausa"];
     const RESUME: &[&str] = &["riprendi la musica", "riprendi", "resume"];
-    const NEXT: &[&str] = &["next", "skip", "prossima", "successiva", "avanti", "salta"];
-    const PREVIOUS: &[&str] = &["previous", "back", "precedente", "torna indietro"];
-    const STOP: &[&str] = &["stop", "ferma la musica", "ferma"];
+    const NEXT: &[&str] = &[
+        "next", "skip", "prossima", "successiva", "avanti", "salta", "cambia canzone",
+        "cambia brano",
+    ];
+    const PREVIOUS: &[&str] = &[
+        "previous", "back", "precedente", "torna indietro", "canzone di prima", "brano di prima",
+    ];
+    const STOP: &[&str] = &["stop", "ferma la musica", "ferma", "basta musica", "basta con la musica"];
 
     let matches = |group: &[&str]| group.iter().any(|t| phrase_hit(s, t));
 
@@ -148,6 +154,15 @@ mod tests {
         assert_eq!(parse("silenzia"), Some(Transport::Mute));
         assert_eq!(parse("togli il muto"), Some(Transport::Unmute));
         assert_eq!(parse("imposta il volume al 40%"), Some(Transport::VolumeSet(40)));
+    }
+
+    #[test]
+    fn it_phrases_from_the_manifest() {
+        assert_eq!(parse("più forte"), Some(Transport::VolumeUp));
+        assert_eq!(parse("più piano"), Some(Transport::VolumeDown));
+        assert_eq!(parse("cambia canzone"), Some(Transport::Next));
+        assert_eq!(parse("basta musica"), Some(Transport::Stop));
+        assert_eq!(parse("torna alla canzone di prima"), Some(Transport::Previous));
     }
 
     #[test]
