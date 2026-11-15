@@ -153,9 +153,9 @@ fn handle_create(
         state.timers.push(timer);
         let dur = describe_duration(duration_ms);
         let phrase = match &name {
-            Some(n) => t("create.phrase_named", &[("name", n), ("time", &dur)])
+            Some(n) => t("create.phrase_named", &[("name", &capitalise(n)), ("time", &dur)])
                 .map(|s| s.to_string())
-                .unwrap_or_else(|| format!("{} timer for {}", n, dur)),
+                .unwrap_or_else(|| format!("{} timer for {}", capitalise(n), dur)),
             None => t("create.phrase_anonymous", &[("time", &dur)])
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| format!("a timer for {}", dur)),
@@ -163,10 +163,9 @@ fn handle_create(
         created_phrases.push(phrase);
     }
 
-    let raw_phrase = match created_phrases.len() {
-        1 => capitalise(&created_phrases[0]),
-        _ => join_with_and(&created_phrases),
-    };
+    // Capitalise the name, never the phrase: the phrase lands mid-sentence
+    // ("Set a timer…", "Impostato un timer…").
+    let raw_phrase = join_with_and(&created_phrases);
     let speak = t("create.success", &[("phrase", &raw_phrase)])
         .map(|s| s.to_string())
         .unwrap_or_else(|| format!("Set {}.", raw_phrase));
@@ -844,6 +843,6 @@ mod tests {
         let (env, _) = handle_once("set a timer for 1 hour and 30 minutes", 0, "");
         // 1h30m = 5400000 ms
         assert_eq!(env["cards"][0]["countdown_to_ts_ms"], 5_400_000);
-        assert_eq!(env["speak"], "Set A timer for 1 hour 30 minutes.");
+        assert_eq!(env["speak"], "Set a timer for 1 hour 30 minutes.");
     }
 }
