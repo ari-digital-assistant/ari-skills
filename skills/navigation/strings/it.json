@@ -1,4 +1,5 @@
 {
   "navigate_confirm": "Ti porto a {destination}.",
-  "need_destination": "Dove vuoi andare?"
+  "need_destination": "Dove vuoi andare?",
+  "navigate_home": "Ti porto a casa."
 }

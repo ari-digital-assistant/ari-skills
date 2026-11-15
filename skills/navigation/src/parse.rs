@@ -4,8 +4,14 @@ use alloc::vec::Vec;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Intent {
     Navigate { destination: String },
+    /// The user's own home. `said` is the word they used ("home", "casa"),
+    /// for a maps app that knows no saved home and can only search for it.
+    Home { said: String },
     NeedDestination,
 }
+
+/// Destinations that mean the user's own home, after [`clean`].
+const HOME_WORDS: &[&str] = &["home", "my home", "casa", "casa mia", "mia casa"];
 
 /// English words that introduce the destination. Tried in this order, so
 /// " to " wins over " for " when a sentence has both.
@@ -73,6 +79,7 @@ pub fn classify(input: &str) -> Intent {
         .or_else(|| it_after_trigger(text));
 
     match destination {
+        Some(dest) if HOME_WORDS.contains(&dest.as_str()) => Intent::Home { said: dest },
         Some(dest) if !dest.is_empty() => Intent::Navigate { destination: dest },
         // Routed here (matched the skill's patterns) but nothing names a place.
         _ => Intent::NeedDestination,
@@ -151,14 +158,30 @@ mod tests {
         }
     }
 
+    fn home(i: &str) -> String {
+        match classify(i) {
+            Intent::Home { said } => said,
+            other => panic!("expected Home for {i:?}, got {other:?}"),
+        }
+    }
+
+    #[test] fn a_named_place_with_home_in_it_is_not_home() {
+        assert_eq!(dest("navigate to home depot"), "home depot");
+        assert_eq!(dest("portami a casa di marco"), "casa di marco");
+    }
+    #[test] fn my_home_is_home() {
+        assert_eq!(home("take me to my home"), "my home");
+        assert_eq!(home("portami alla mia casa"), "mia casa");
+    }
+
     #[test] fn take_me_to() { assert_eq!(dest("take me to mcdonalds"), "mcdonalds"); }
     #[test] fn navigate_to_strips_article() { assert_eq!(dest("navigate to the science museum"), "science museum"); }
     #[test] fn directions_to() { assert_eq!(dest("directions to asda"), "asda"); }
     #[test] fn route_to() { assert_eq!(dest("route to the airport"), "airport"); }
     #[test] fn show_me_the_way_to() { assert_eq!(dest("show me the way to the station"), "station"); }
     #[test] fn how_do_i_get_to() { assert_eq!(dest("how do i get to the airport"), "airport"); }
-    #[test] fn take_me_home() { assert_eq!(dest("take me home"), "home"); }
-    #[test] fn drive_me_home() { assert_eq!(dest("drive me home"), "home"); }
+    #[test] fn take_me_home() { assert_eq!(home("take me home"), "home"); }
+    #[test] fn drive_me_home() { assert_eq!(home("drive me home"), "home"); }
     #[test] fn take_me_to_work() { assert_eq!(dest("take me to work"), "work"); }
     #[test] fn trailing_please_stripped() { assert_eq!(dest("take me to the o2 please"), "o2"); }
 
@@ -199,12 +222,12 @@ mod tests {
         assert_eq!(dest("put the station in my sat nav"), "station");
     }
     #[test] fn en_home_without_a_marker() {
-        assert_eq!(dest("navigate home"), "home");
-        assert_eq!(dest("quickest way home"), "home");
-        assert_eq!(dest("i want to head home"), "home");
-        assert_eq!(dest("how do i get home from here"), "home");
-        assert_eq!(dest("route me home"), "home");
-        assert_eq!(dest("get me back home"), "home");
+        assert_eq!(home("navigate home"), "home");
+        assert_eq!(home("quickest way home"), "home");
+        assert_eq!(home("i want to head home"), "home");
+        assert_eq!(home("how do i get home from here"), "home");
+        assert_eq!(home("route me home"), "home");
+        assert_eq!(home("get me back home"), "home");
     }
     #[test] fn en_bare_prefixes() {
         assert_eq!(dest("take me the station"), "station");
@@ -213,7 +236,7 @@ mod tests {
 
     // --- Italian ---
     #[test] fn it_portami_a() { assert_eq!(dest("portami a asda"), "asda"); }
-    #[test] fn it_portami_a_casa() { assert_eq!(dest("portami a casa"), "casa"); }
+    #[test] fn it_portami_a_casa() { assert_eq!(home("portami a casa"), "casa"); }
     #[test] fn it_portami_al_lavoro() { assert_eq!(dest("portami al lavoro"), "lavoro"); }
     #[test] fn it_come_arrivo_a() { assert_eq!(dest("come arrivo a mcdonalds"), "mcdonalds"); }
     #[test] fn it_come_ci_arrivo_a() { assert_eq!(dest("come ci arrivo a asda"), "asda"); }
@@ -228,7 +251,7 @@ mod tests {
 
     // --- Italian phrasings from the manifest ---
     #[test] fn it_more_verbs() {
-        assert_eq!(dest("voglio andare a casa"), "casa");
+        assert_eq!(home("voglio andare a casa"), "casa");
         assert_eq!(dest("voglio andare alla stazione centrale"), "stazione centrale");
         assert_eq!(dest("accompagnami in ufficio"), "ufficio");
         assert_eq!(dest("guidami fino al museo"), "museo");
@@ -241,7 +264,7 @@ mod tests {
         assert_eq!(dest("come si arriva a milano"), "milano");
         assert_eq!(dest("come ci si arriva alla stazione"), "stazione");
         assert_eq!(dest("devo raggiungere la stazione"), "stazione");
-        assert_eq!(dest("voglio tornare a casa"), "casa");
+        assert_eq!(home("voglio tornare a casa"), "casa");
         assert_eq!(dest("fammi da navigatore per la stazione"), "stazione");
         assert_eq!(dest("imposta la rotta per milano"), "milano");
         assert_eq!(dest("trovami la strada per la stazione"), "stazione");
@@ -256,13 +279,13 @@ mod tests {
     #[test] fn it_trip_modifiers_are_dropped() {
         assert_eq!(dest("voglio andare alla stazione in macchina"), "stazione");
         assert_eq!(dest("voglio andare alla stazione adesso"), "stazione");
-        assert_eq!(dest("portami di nuovo a casa"), "casa");
+        assert_eq!(home("portami di nuovo a casa"), "casa");
         assert_eq!(dest("devo raggiungere la stazione entro un ora"), "stazione");
         assert_eq!(dest("portami alla stazione il prima possibile"), "stazione");
     }
     #[test] fn it_prima_is_filler_only_before_a_preposition() {
-        assert_eq!(dest("come arrivo prima a casa"), "casa");
+        assert_eq!(home("come arrivo prima a casa"), "casa");
         assert_eq!(dest("portami a prima porta"), "prima porta");
     }
-    #[test] fn it_riportami() { assert_eq!(dest("riportami a casa"), "casa"); }
+    #[test] fn it_riportami() { assert_eq!(home("riportami a casa"), "casa"); }
 }

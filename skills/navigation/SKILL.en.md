@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.navigation
-    version: "0.1.1"
+    version: "0.1.2"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
@@ -22,7 +22,10 @@ metadata:
           weight: 0.9
         - regex: "\\b(show me the way|the way) to\\b"
           weight: 0.85
-        - regex: "\\b(take|bring|get|drive) me home\\b"
+        - regex: "\\b(take|bring|get|drive|driving) me home\\b"
+          weight: 0.9
+        # "start navigation to X" otherwise goes to the built-in `open` skill.
+        - regex: "\\b(start|begin) (the )?(navigation|sat nav)\\b"
           weight: 0.9
       custom_score: false
     examples:
@@ -301,6 +304,10 @@ metadata:
             label: Open in my default maps app
           - value: turn_by_turn
             label: Start turn-by-turn navigation
+      - key: home_address
+        label: Home address
+        type: text
+        help_text: "Where “take me home” goes, in any maps app. Leave it blank and turn-by-turn uses the home saved in Google Maps; your default maps app searches for “home”."
     wasm:
       module: skill.wasm
       memory_limit_mb: 2
@@ -315,7 +322,9 @@ The maps app owns routing, the map, and live traffic.
 
 - `take me to McDonald's` / `navigate to Asda` — navigate to a place
 - `how do I get to the station` / `show me the way to the museum`
-- `take me home` — navigate to home (resolved by your maps app's saved places)
+- `take me home`: navigates to the **Home address** setting if you've set one,
+  otherwise to the home saved in Google Maps (turn-by-turn) or a search for
+  "home" (default maps app)
 
 ## Notes
 
