@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-11-18T11:49:13Z",
+  "generated_at": "2026-11-18T12:01:27Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -34,60 +34,7 @@
           "description": "Imposta, interroga e annulla timer con nome. Supporta frasi naturali come \"imposta un timer per la pasta di 8 minuti\". Gestisce più timer contemporaneamente."
         }
       },
-      "matching": {
-        "en": [
-          {
-            "regex": "\\b(set|start|create|add)\\b.*\\btimer\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\btimer\\b.*\\b(for|of)\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\b(how much|how long|time left|time remaining|how many)\\b.*\\btimer\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\b(cancel|stop|remove|delete|clear)\\b.*\\btimer\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\bwhat timers\\b|\\blist.*timer|\\btimers do i\\b",
-            "weight": 0.9
-          }
-        ],
-        "it": [
-          {
-            "regex": "\\b(imposta|avvia|metti|crea) (un )?timer\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\btimer .* (di|per) \\d+ (second|minut|or)",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\btimer( di| da| per)? \\S+ (second|minut|or)",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\bquanto (tempo )?manca\\b",
-            "weight": 0.85
-          },
-          {
-            "regex": "\\b(annulla|cancella) .*timer\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\b(elenca|mostra) .*timer\\b",
-            "weight": 0.85
-          },
-          {
-            "regex": "\\bquali .*timer\\b",
-            "weight": 0.85
-          }
-        ]
-      },
+      "suggest": {},
       "screenshots": {
         "android": [
           "screenshots/dev.heyari.timer-0.2.2/android/01-timer.webp",
@@ -122,32 +69,7 @@
           "description": "Conta quante volte gli hai chiesto di contare, mantenendo il valore tra una chiamata e l'altra. Contatore ASCII a una cifra che torna da 9 a 1. Skill WASM di riferimento per gli import host storage_kv."
         }
       },
-      "matching": {
-        "en": [
-          {
-            "regex": "^count( up)?$",
-            "weight": 0.95
-          },
-          {
-            "regex": "^tick$",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\bcounter\\b",
-            "weight": 0.95
-          }
-        ],
-        "it": [
-          {
-            "regex": "^conta$",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\bcontatore\\b",
-            "weight": 0.95
-          }
-        ]
-      },
+      "suggest": {},
       "screenshots": {
         "android": [
           "screenshots/dev.heyari.counter-0.1.1/android/01-count.webp"
@@ -182,82 +104,7 @@
           "description": "Controlla la tua casa intelligente con Home Assistant — accendi e spegni i dispositivi, imposta luminosità o temperatura, avvia le scene, controlla lo stato e chiedi dove si trovano le persone. Usa questa skill per qualsiasi richiesta di domotica o casa intelligente."
         }
       },
-      "matching": {
-        "en": [
-          {
-            "regex": "\\b(turn|switch) (on|off)\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\bturn (the |my )?.+ (on|off)\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\b(dim|brighten)\\b",
-            "weight": 0.85
-          },
-          {
-            "regex": "\\bset (the |my )?.+ (to|brightness|temperature)\\b",
-            "weight": 0.85
-          },
-          {
-            "regex": "\\b(open|close|lock|unlock)\\b",
-            "weight": 0.8
-          },
-          {
-            "regex": "\\b(activate|run) (the )?scene\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\bwhere (is|are)\\b",
-            "weight": 0.75
-          },
-          {
-            "keywords": [
-              "thermostat",
-              "lights"
-            ],
-            "weight": 0.7
-          }
-        ],
-        "it": [
-          {
-            "regex": "\\b(accendi|spegni)\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\b(accendere|spegnere)\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\b(abbassa|alza|attenua|aumenta|riduci) (le |la |il |l )?(luc[ei]|luminosit(a|à))\\b",
-            "weight": 0.85
-          },
-          {
-            "regex": "\\b(imposta|regola|metti) (il |la |lo |l |i |le )?.+ (a|al|alla)\\b",
-            "weight": 0.85
-          },
-          {
-            "regex": "\\b(apri|chiudi|blocca|sblocca|apert[oaie]|chius[oaie])\\b",
-            "weight": 0.8
-          },
-          {
-            "regex": "\\b(attiva|avvia|esegui|lancia) (la |le )?scen[ae]\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\bdove? (e|è|sono|si trova|si trovano)\\b",
-            "weight": 0.75
-          },
-          {
-            "keywords": [
-              "termostato",
-              "luci"
-            ],
-            "weight": 0.7
-          }
-        ]
-      },
+      "suggest": {},
       "screenshots": {
         "android": [
           "screenshots/dev.heyari.homeassistant-0.3.2/android/01-light-on.webp",
@@ -293,56 +140,7 @@
           "description": "Avvia la navigazione verso un luogo passando all'app mappe. Capisce le destinazioni (\"portami a Asda\", \"come arrivo alla stazione\", \"indicazioni per il museo\") e \"portami a casa\". Un'impostazione sceglie tra l'app mappe predefinita e la navigazione passo-passo."
         }
       },
-      "matching": {
-        "en": [
-          {
-            "regex": "\\b(navigate|directions|route) to\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\b(take|bring|get|drive) me to\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\bhow do i get to\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\b(show me the way|the way) to\\b",
-            "weight": 0.85
-          },
-          {
-            "regex": "\\b(take|bring|get|drive|driving) me home\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\b(start|begin) (the )?(navigation|sat nav)\\b",
-            "weight": 0.9
-          }
-        ],
-        "it": [
-          {
-            "regex": "\\bindicazioni per\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\bportami (a|al|allo|alla|ai|agli|alle|in)\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\bcome (ci )?arrivo\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\b(vai|andiamo) (a|al|allo|alla|ai|agli|alle|in)\\b",
-            "weight": 0.8
-          },
-          {
-            "regex": "\\b(avvia|avviami|attiva|fai partire) (la |il )?(navigazione|navigatore)\\b",
-            "weight": 0.9
-          }
-        ]
-      },
+      "suggest": {},
       "screenshots": {
         "android": [
           "screenshots/dev.heyari.navigation-0.1.2/android/01-london-query.webp",
@@ -380,104 +178,7 @@
           "description": "Imposta promemoria con orario e voci di lista senza orario. Indirizza all'app delle attività dell'utente (predefinita), al calendario, o a entrambi, con liste personalizzate vocalmente come \"aggiungi latte alla lista della spesa\"."
         }
       },
-      "matching": {
-        "en": [
-          {
-            "regex": "\\bremind me\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\b(set|create) (a |me )?reminder\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\b(add|put) .+ (to|on) (my |the )?(shopping|grocery|todo|to-do|task|tasks|reminders?) list\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\b(add|put) .+ (to|on) my \\w+ list\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\b(add|put) .+ (to|on) (my |the |our |your |their )?[\\w]+( [\\w]+)? list\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "^add .+ to .+",
-            "weight": 0.65
-          },
-          {
-            "regex": "\\bwhat is (my|the) next reminder\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\bwhat reminders? do i have\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\b(do i have any|any|got any|have i got any) reminders?\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\bwhat is (coming up|on my list|on today|on tomorrow)\\b",
-            "weight": 0.85
-          },
-          {
-            "regex": "^aricancelreminder\\b",
-            "weight": 1
-          },
-          {
-            "regex": "^ariconfirmreminder\\b",
-            "weight": 1
-          }
-        ],
-        "it": [
-          {
-            "regex": "\\bricordami\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\b(imposta|crea) un promemoria\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\b(aggiungi|metti) .+ (alla|sulla|nella|alle|sulle|nelle) (lista|spesa)\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\b(aggiungi|metti) .+ (alla|sulla|nella) \\w+\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\bprossimo promemoria\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\bche promemoria (ho|ho per)\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\bquali promemoria\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\bho (qualche|dei) promemoria\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\bcosa ho (oggi|domani|in programma)\\b",
-            "weight": 0.85
-          },
-          {
-            "regex": "^aricancelreminder\\b",
-            "weight": 1
-          },
-          {
-            "regex": "^ariconfirmreminder\\b",
-            "weight": 1
-          }
-        ]
-      },
+      "suggest": {},
       "screenshots": {
         "android": [
           "screenshots/dev.heyari.reminder-0.5.0/android/01-task-request.webp",
@@ -518,28 +219,7 @@
           "description": "Riproduce musica per nome in un'app musicale, facoltativamente su un servizio specificato."
         }
       },
-      "matching": {
-        "en": [
-          {
-            "regex": "\\b(play|put on|listen to)\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\b(pause|resume|skip|next|previous|stop|mute|unmute|louder|quieter|volume)\\b",
-            "weight": 0.9
-          }
-        ],
-        "it": [
-          {
-            "regex": "\\b(metti su|riproduci|ascolta)\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\b(pausa|riprendi|prossima|successiva|avanti|salta|precedente|ferma|muto|silenzia|volume)\\b",
-            "weight": 0.9
-          }
-        ]
-      },
+      "suggest": {},
       "screenshots": {
         "android": [
           "screenshots/dev.heyari.music-0.2.1/android/01-song-request.webp",
@@ -573,26 +253,7 @@
           "description": "Minuscola skill WASM di test. Restituisce un saluto fisso dall'interno del suo modulo sandboxed. Usare solo per testare il loader WASM."
         }
       },
-      "matching": {
-        "en": [
-          {
-            "keywords": [
-              "wasm",
-              "echo"
-            ],
-            "weight": 0.95
-          }
-        ],
-        "it": [
-          {
-            "keywords": [
-              "wasm",
-              "echo"
-            ],
-            "weight": 0.95
-          }
-        ]
-      },
+      "suggest": {},
       "screenshots": {
         "android": [
           "screenshots/dev.heyari.wasmecho-0.1.0/android/01-test.webp"
@@ -623,7 +284,7 @@
           "description": "Usa Gemini di Google per rispondere a domande generali. Richiede una chiave API da aistudio.google.com. Le tue domande vengono inviate ai server di Google.\n"
         }
       },
-      "matching": {},
+      "suggest": {},
       "screenshots": {
         "android": [
           "screenshots/dev.heyari.assistant.gemini-0.4.0/android/01-query.webp",
@@ -656,7 +317,7 @@
           "description": "Usa ChatGPT di OpenAI per rispondere a domande generali. Richiede una chiave API da platform.openai.com. Le tue domande vengono inviate ai server di OpenAI.\n"
         }
       },
-      "matching": {},
+      "suggest": {},
       "screenshots": {
         "android": [
           "screenshots/dev.heyari.assistant.chatgpt-0.4.0/android/01-query.webp",
@@ -691,52 +352,7 @@
           "description": "Imposta le sveglie del dispositivo passandole alla tua app Orologio. Capisce gli orari (\"imposta una sveglia per le 7\"), le etichette (\"sveglia palestra alle 5 e mezza\") e la ricorrenza (\"svegliami alle 6:30 ogni giorno feriale\"). Apre l'app Orologio per modificare o elencare le sveglie."
         }
       },
-      "matching": {
-        "en": [
-          {
-            "regex": "\\b(set|create|add)\\b.*\\balarm\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\bwake me up\\b.*\\bat\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\balarm\\b.*\\b(for|at)\\b",
-            "weight": 0.85
-          },
-          {
-            "regex": "\\b(cancel|delete|remove|turn off|stop)\\b.*\\balarm\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\bwhat alarms\\b|\\blist.*\\balarm|\\balarms do i\\b",
-            "weight": 0.9
-          }
-        ],
-        "it": [
-          {
-            "regex": "\\b(imposta|crea|metti|aggiungi)\\b.*\\bsveglia\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\bsvegliami\\b.*\\b(alle|alla|a)\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\bsveglia\\b.*\\b(per|alle|alla)\\b",
-            "weight": 0.85
-          },
-          {
-            "regex": "\\b(cancella|elimina|rimuovi|togli|disattiva|ferma)\\b.*\\bsveglia\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\bquali sveglie\\b|\\belenca.*\\bsveglia|\\bche sveglie ho\\b",
-            "weight": 0.9
-          }
-        ]
-      },
+      "suggest": {},
       "screenshots": {
         "android": [
           "screenshots/dev.heyari.alarm-0.1.2/android/01-set-alarm.webp",
@@ -769,47 +385,7 @@
           "description": "Lancia una moneta virtuale e restituisce testa o croce. Usalo quando l'utente chiede di lanciare una moneta, tirare una moneta o fare una scelta binaria casuale."
         }
       },
-      "matching": {
-        "en": [
-          {
-            "keywords": [
-              "flip",
-              "coin"
-            ],
-            "weight": 0.95
-          },
-          {
-            "keywords": [
-              "toss",
-              "coin"
-            ],
-            "weight": 0.95
-          }
-        ],
-        "it": [
-          {
-            "keywords": [
-              "lancia",
-              "moneta"
-            ],
-            "weight": 0.95
-          },
-          {
-            "keywords": [
-              "tira",
-              "moneta"
-            ],
-            "weight": 0.95
-          },
-          {
-            "keywords": [
-              "testa",
-              "croce"
-            ],
-            "weight": 0.9
-          }
-        ]
-      },
+      "suggest": {},
       "screenshots": {
         "android": [
           "screenshots/dev.heyari.coinflip-0.1.0/android/01-flip.webp"
@@ -845,36 +421,7 @@
           "description": "Manda un messaggio a qualcuno via SMS, WhatsApp, Telegram, Signal, Messenger, Slack, Matrix o email. Dici a chi e cosa, e Ari lo invia oppure apre l'app con il messaggio già pronto.\n"
         }
       },
-      "matching": {
-        "en": [
-          {
-            "regex": "\\b(send|message|text|tell|whatsapp|telegram|signal|slack)\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\blet \\w+ know\\b",
-            "weight": 0.9
-          }
-        ],
-        "it": [
-          {
-            "regex": "\\b(manda|invia|scrivi) (un|una) (messaggio|sms|mail|email|whatsapp|telegram)\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\b(avvisa|avverti|contatta)\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\bfai sapere a\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\brispondi a\\b",
-            "weight": 0.9
-          }
-        ]
-      },
+      "suggest": {},
       "screenshots": {
         "android": [
           "screenshots/dev.heyari.message-0.2.4/android/01-query.webp",
@@ -911,60 +458,7 @@
           "description": "Meteo attuale, previsioni e condizioni come probabilità di pioggia, vento, umidità e UV — per la tua posizione attuale o per qualsiasi luogo tu indichi."
         }
       },
-      "matching": {
-        "en": [
-          {
-            "regex": "\\bweather\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\bforecast\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\b(will it|is it going to) rain\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\b(wind|windy)\\b",
-            "weight": 0.75
-          },
-          {
-            "regex": "\\buv( index)?\\b",
-            "weight": 0.8
-          },
-          {
-            "regex": "\\bhumid(ity)?\\b",
-            "weight": 0.8
-          }
-        ],
-        "it": [
-          {
-            "regex": "\\b(tempo|meteo)\\b",
-            "weight": 0.95
-          },
-          {
-            "regex": "\\bprevisioni\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\bpiove(ra|rà)?\\b",
-            "weight": 0.9
-          },
-          {
-            "regex": "\\b(vento|ventoso)\\b",
-            "weight": 0.75
-          },
-          {
-            "regex": "\\b(raggi )?uv\\b",
-            "weight": 0.8
-          },
-          {
-            "regex": "\\bumidit(a|à)\\b",
-            "weight": 0.8
-          }
-        ]
-      },
+      "suggest": {},
       "screenshots": {
         "android": [
           "screenshots/dev.heyari.weather-0.2.2/android/01-current.webp",
@@ -999,50 +493,7 @@
           "description": "Recupera una frase di saggezza zen dall'API di GitHub. Usato per testare l'import host http_fetch end-to-end. Richiede accesso a internet."
         }
       },
-      "matching": {
-        "en": [
-          {
-            "keywords": [
-              "zen"
-            ],
-            "weight": 0.9
-          },
-          {
-            "keywords": [
-              "wisdom"
-            ],
-            "weight": 0.9
-          },
-          {
-            "keywords": [
-              "github",
-              "zen"
-            ],
-            "weight": 0.95
-          }
-        ],
-        "it": [
-          {
-            "keywords": [
-              "zen"
-            ],
-            "weight": 0.9
-          },
-          {
-            "keywords": [
-              "saggezza"
-            ],
-            "weight": 0.9
-          },
-          {
-            "keywords": [
-              "github",
-              "zen"
-            ],
-            "weight": 0.95
-          }
-        ]
-      },
+      "suggest": {},
       "screenshots": {
         "android": [
           "screenshots/dev.heyari.githubzen-0.1.2/android/01-response.webp"
@@ -1073,7 +524,7 @@
           "description": "Usa Claude di Anthropic per rispondere a domande generali. Richiede una chiave API da console.anthropic.com. Le tue domande vengono inviate ai server di Anthropic.\n"
         }
       },
-      "matching": {},
+      "suggest": {},
       "screenshots": {
         "android": [
           "screenshots/dev.heyari.assistant.claude-0.4.1/android/01-query.webp",
