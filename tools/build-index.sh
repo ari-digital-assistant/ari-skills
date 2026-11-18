@@ -236,7 +236,7 @@ echo "$SKILL_JSON" | jq -c '.[]' | while read -r SKILL_ROW; do
       sha256: $sha256,
       manifest: $manifest,
       localizations: (.localizations // {}),
-      matching: (.matching // {}),
+      suggest: (.suggest // {}),
       screenshots: ((.screenshots // {}) | map_values(map(sub("^screenshots/"; $shots_prefix))))
     }' \
     >>"$INDEX_TMP"
