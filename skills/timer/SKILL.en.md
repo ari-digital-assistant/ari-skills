@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.timer
-    version: "0.2.2"
+    version: "0.2.3"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
@@ -25,6 +25,16 @@ metadata:
         - regex: "\\bwhat timers\\b|\\blist.*timer|\\btimers do i\\b"
           weight: 0.9
       custom_score: false
+    # Phrases that clearly need this skill, so Ari can suggest it to someone
+    # who hasn't installed it. Opt-in and deliberately narrow: an uninstalled
+    # skill can't turn down a request, so these must not catch anything else.
+    suggest:
+      - "set a timer"
+      - "set a timer for {duration}"
+      - "set a {duration} timer"
+      - "start a timer for {duration}"
+      - "start a {duration} timer"
+      - "timer for {duration}"
     examples:
       - text: "start a {minutes} minute countdown for the {name}"
         weight: 0.95

@@ -9,8 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `index.json` carries each skill's trigger patterns per language (`matching`), so Ari
-  can suggest a skill that isn't installed when what the user said matches it
+- Suggest phrases: alarm 0.1.3, coin-flip 0.1.1, home-assistant 0.3.3, message 0.2.5,
+  music 0.2.2, navigation 0.1.3, reminder 0.5.1, timer 0.2.3 and weather 0.2.3 list, in
+  English and Italian, the phrases that clearly need them (`metadata.ari.suggest`), so
+  Ari can offer them to someone who hasn't installed them. `index.json` carries the
+  lists per language as `suggest`
   ([ari-android#44](https://github.com/ari-digital-assistant/ari-android/issues/44)).
 - navigation 0.1.2: a Home address setting. "Take me home" and "portami a casa" go
   there in any maps app; left blank, turn-by-turn asks Google Maps for the home saved

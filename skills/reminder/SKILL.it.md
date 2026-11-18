@@ -9,7 +9,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.reminder
-    version: "0.5.0"
+    version: "0.5.1"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.5"
@@ -63,6 +63,18 @@ metadata:
         - regex: "^ariconfirmreminder\\b"
           weight: 1.0
       custom_score: false
+    # Phrases that clearly need this skill, so Ari can suggest it to someone
+    # who hasn't installed it. Opt-in and deliberately narrow: an uninstalled
+    # skill can't turn down a request, so these must not catch anything else.
+    suggest:
+      - "ricordami"
+      - "ricordami di {text}"
+      - "ricordami {when} di {text}"
+      - "imposta un promemoria"
+      - "imposta un promemoria per {text}"
+      - "crea un promemoria"
+      - "aggiungi {item} alla lista della spesa"
+      - "che promemoria ho"
     examples:
       - text: "imposta un promemoria per {text} {when}"
         weight: 0.75

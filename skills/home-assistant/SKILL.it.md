@@ -9,7 +9,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.homeassistant
-    version: "0.3.2"
+    version: "0.3.3"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.4"
@@ -54,6 +54,18 @@ metadata:
         # nell'inglese `[thermostat, lights]`.
         - keywords: [termostato, luci]
           weight: 0.7
+    # Phrases that clearly need this skill, so Ari can suggest it to someone
+    # who hasn't installed it. Opt-in and deliberately narrow: an uninstalled
+    # skill can't turn down a request, so these must not catch anything else.
+    suggest:
+      - "accendi le luci"
+      - "spegni le luci"
+      - "accendi la luce"
+      - "spegni la luce"
+      - "accendi le luci in {room}"
+      - "spegni le luci in {room}"
+      - "apri il garage"
+      - "avvia la scena {scene}"
     examples:
       - text: "apri {cover}"
         weight: 0.95

@@ -8,7 +8,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.timer
-    version: "0.2.2"
+    version: "0.2.3"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
@@ -36,6 +36,15 @@ metadata:
         - regex: "\\bquali .*timer\\b"
           weight: 0.85
       custom_score: false
+    # Phrases that clearly need this skill, so Ari can suggest it to someone
+    # who hasn't installed it. Opt-in and deliberately narrow: an uninstalled
+    # skill can't turn down a request, so these must not catch anything else.
+    suggest:
+      - "imposta un timer"
+      - "imposta un timer di {duration}"
+      - "imposta un timer per {duration}"
+      - "avvia un timer di {duration}"
+      - "metti un timer di {duration}"
     examples:
       - text: "avvia il conto alla rovescia di {minutes} minuti per {name}"
         weight: 0.95

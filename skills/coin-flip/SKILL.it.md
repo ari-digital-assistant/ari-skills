@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.coinflip
-    version: "0.1.0"
+    version: "0.1.1"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.1"
@@ -24,6 +24,14 @@ metadata:
     # quando lo scorer a keyword non trova nulla. Le frasi che i pattern
     # qui sopra non catturano ("lancio della moneta", "decida il caso")
     # sono quindi le più utili: sono esattamente i casi che coprono.
+    # Phrases that clearly need this skill, so Ari can suggest it to someone
+    # who hasn't installed it. Opt-in and deliberately narrow: an uninstalled
+    # skill can't turn down a request, so these must not catch anything else.
+    suggest:
+      - "lancia una moneta"
+      - "lancia una monetina"
+      - "tira una moneta"
+      - "testa o croce"
     examples:
       - text: "lancia una monetina"
         weight: 0.95

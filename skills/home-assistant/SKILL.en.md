@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.homeassistant
-    version: "0.3.2"
+    version: "0.3.3"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.4"
@@ -30,6 +30,18 @@ metadata:
           weight: 0.75
         - keywords: [thermostat, lights]
           weight: 0.7
+    # Phrases that clearly need this skill, so Ari can suggest it to someone
+    # who hasn't installed it. Opt-in and deliberately narrow: an uninstalled
+    # skill can't turn down a request, so these must not catch anything else.
+    suggest:
+      - "turn on the lights"
+      - "turn off the lights"
+      - "turn on the {room} lights"
+      - "turn off the {room} lights"
+      - "dim the {room} lights"
+      - "open the garage door"
+      - "close the garage door"
+      - "run the {scene} scene"
     examples:
       - text: "open the {room} blinds"
         weight: 0.95

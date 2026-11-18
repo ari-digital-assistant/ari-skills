@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.weather
-    version: "0.2.2"
+    version: "0.2.3"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
@@ -34,6 +34,23 @@ metadata:
     # Examples carry `args` naming the two slots the skill needs:
     # `location` (empty string = use GPS) and `when` (one of
     # now | today | tomorrow | this week).
+    # Phrases that clearly need this skill, so Ari can suggest it to someone
+    # who hasn't installed it. Opt-in and deliberately narrow: an uninstalled
+    # skill can't turn down a request, so these must not catch anything else.
+    suggest:
+      - "what is the weather"
+      - "what is the weather like"
+      - "what is the weather in {location}"
+      - "what is the weather like in {location}"
+      - "what is the weather {when}"
+      - "how is the weather"
+      - "what is the forecast"
+      - "what is the forecast for {when}"
+      - "weather forecast"
+      - "will it rain"
+      - "will it rain {when}"
+      - "is it going to rain"
+      - "is it going to rain {when}"
     examples:
       - text: "what are the weather conditions {location} right now"
         weight: 0.95

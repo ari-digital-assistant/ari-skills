@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.alarm
-    version: "0.1.2"
+    version: "0.1.3"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
@@ -25,6 +25,16 @@ metadata:
         - regex: "\\bwhat alarms\\b|\\blist.*\\balarm|\\balarms do i\\b"
           weight: 0.9
       custom_score: false
+    # Phrases that clearly need this skill, so Ari can suggest it to someone
+    # who hasn't installed it. Opt-in and deliberately narrow: an uninstalled
+    # skill can't turn down a request, so these must not catch anything else.
+    suggest:
+      - "set an alarm"
+      - "set an alarm for {time}"
+      - "set an alarm for {time} tomorrow"
+      - "wake me up at {time}"
+      - "wake me at {time}"
+      - "wake me up tomorrow at {time}"
     examples:
       - text: "i have an early start so wake me at {time}"
         weight: 0.85
