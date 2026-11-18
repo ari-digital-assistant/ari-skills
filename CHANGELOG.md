@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `index.json` carries each skill's trigger patterns per language (`matching`), so Ari
+  can suggest a skill that isn't installed when what the user said matches it
+  ([ari-android#44](https://github.com/ari-digital-assistant/ari-android/issues/44)).
 - navigation 0.1.2: a Home address setting. "Take me home" and "portami a casa" go
   there in any maps app; left blank, turn-by-turn asks Google Maps for the home saved
   in the user's account.
