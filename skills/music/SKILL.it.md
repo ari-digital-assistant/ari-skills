@@ -9,7 +9,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.music
-    version: "0.2.1"
+    version: "0.2.2"
     author: Ari core team
     engine: ">=0.3"
     capabilities: [media_control, media_services, storage_kv, http, authorize]
@@ -23,6 +23,16 @@ metadata:
           weight: 0.9
         - regex: "\\b(pausa|riprendi|prossima|successiva|avanti|salta|precedente|ferma|muto|silenzia|volume)\\b"
           weight: 0.9
+    # Phrases that clearly need this skill, so Ari can suggest it to someone
+    # who hasn't installed it. Opt-in and deliberately narrow: an uninstalled
+    # skill can't turn down a request, so these must not catch anything else.
+    suggest:
+      - "metti un po' di musica"
+      - "metti della musica"
+      - "fai partire la musica"
+      - "riproduci {song}"
+      - "metti su {artist}"
+      - "voglio ascoltare {artist}"
     examples:
       - text: "metti su {artist}"
         weight: 0.6

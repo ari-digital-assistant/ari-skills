@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.music
-    version: "0.2.1"
+    version: "0.2.2"
     author: Ari core team
     engine: ">=0.3"
     capabilities: [media_control, media_services, storage_kv, http, authorize]
@@ -17,6 +17,18 @@ metadata:
           weight: 0.9
         - regex: "\\b(pause|resume|skip|next|previous|stop|mute|unmute|louder|quieter|volume)\\b"
           weight: 0.9
+    # Phrases that clearly need this skill, so Ari can suggest it to someone
+    # who hasn't installed it. Opt-in and deliberately narrow: an uninstalled
+    # skill can't turn down a request, so these must not catch anything else.
+    suggest:
+      - "play some music"
+      - "play music"
+      - "put on some music"
+      - "play some {artist}"
+      - "play {song} by {artist}"
+      - "play {song} on {service}"
+      - "play the song {song}"
+      - "play the album {album}"
     examples:
       - text: "play {song}"
         weight: 0.95

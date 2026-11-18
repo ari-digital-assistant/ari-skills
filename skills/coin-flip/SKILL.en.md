@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.coinflip
-    version: "0.1.0"
+    version: "0.1.1"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.1"
@@ -18,6 +18,14 @@ metadata:
           weight: 0.95
         - keywords: [toss, coin]
           weight: 0.95
+    # Phrases that clearly need this skill, so Ari can suggest it to someone
+    # who hasn't installed it. Opt-in and deliberately narrow: an uninstalled
+    # skill can't turn down a request, so these must not catch anything else.
+    suggest:
+      - "flip a coin"
+      - "toss a coin"
+      - "flip a coin for me"
+      - "heads or tails"
     examples:
       - text: "flip a coin for me"
         weight: 0.95

@@ -12,7 +12,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.message
-    version: "0.2.4"
+    version: "0.2.5"
     type: skill
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari-skills
@@ -86,6 +86,16 @@ metadata:
     # elisioni sostituite da uno spazio ("di'" → "di", "l'incontro" →
     # "l incontro"). Gli accenti sopravvivono alla normalizzazione e vanno
     # scritti.
+    # Phrases that clearly need this skill, so Ari can suggest it to someone
+    # who hasn't installed it. Opt-in and deliberately narrow: an uninstalled
+    # skill can't turn down a request, so these must not catch anything else.
+    suggest:
+      - "manda un messaggio"
+      - "manda un messaggio a {recipient}"
+      - "invia un messaggio a {recipient}"
+      - "scrivi un messaggio a {recipient}"
+      - "manda un whatsapp a {recipient}"
+      - "manda un sms a {recipient}"
     examples:
       - text: "aprimi un nuovo messaggio per {recipient}"
         weight: 0.95

@@ -9,7 +9,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.weather
-    version: "0.2.2"
+    version: "0.2.3"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
@@ -45,6 +45,20 @@ metadata:
     # (stringa vuota = usa il GPS) e `when`. I valori di `when` restano
     # i token INGLESI (now | today | tomorrow | this week): è la skill
     # a mappare quei token.
+    # Phrases that clearly need this skill, so Ari can suggest it to someone
+    # who hasn't installed it. Opt-in and deliberately narrow: an uninstalled
+    # skill can't turn down a request, so these must not catch anything else.
+    suggest:
+      - "che tempo fa"
+      - "che tempo fa a {location}"
+      - "che tempo farà {when}"
+      - "che tempo c'è"
+      - "com'è il tempo"
+      - "previsioni del tempo"
+      - "previsioni meteo"
+      - "pioverà"
+      - "pioverà {when}"
+      - "il meteo di {when}"
     examples:
       - text: "Che tempo c'è fuori in questo momento?"
         weight: 0.85

@@ -7,7 +7,7 @@ description: >
 metadata:
   ari:
     id: dev.heyari.message
-    version: "0.2.4"
+    version: "0.2.5"
     type: skill
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari-skills
@@ -69,6 +69,18 @@ metadata:
             label: Matrix
           - value: email
             label: Email
+    # Phrases that clearly need this skill, so Ari can suggest it to someone
+    # who hasn't installed it. Opt-in and deliberately narrow: an uninstalled
+    # skill can't turn down a request, so these must not catch anything else.
+    suggest:
+      - "send a message"
+      - "send a message to {recipient}"
+      - "send a message to {recipient} saying {body}"
+      - "send {recipient} a message"
+      - "send a text to {recipient}"
+      - "text {recipient}"
+      - "send a whatsapp to {recipient}"
+      - "send a whatsapp message to {recipient}"
     examples:
       - text: "start a WhatsApp message to {recipient}"
         weight: 0.95

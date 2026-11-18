@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.navigation
-    version: "0.1.2"
+    version: "0.1.3"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
@@ -26,6 +26,15 @@ metadata:
         - regex: "\\b(avvia|avviami|attiva|fai partire) (la |il )?(navigazione|navigatore)\\b"
           weight: 0.9
       custom_score: false
+    # Phrases that clearly need this skill, so Ari can suggest it to someone
+    # who hasn't installed it. Opt-in and deliberately narrow: an uninstalled
+    # skill can't turn down a request, so these must not catch anything else.
+    suggest:
+      - "portami a casa"
+      - "portami a {destination}"
+      - "naviga verso {destination}"
+      - "indicazioni per {destination}"
+      - "avvia la navigazione verso {destination}"
     examples:
       - text: "avviami la navigazione {destination}"
         weight: 0.95
