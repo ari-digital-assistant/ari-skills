@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-16T12:48:23Z",
+  "generated_at": "2026-11-18T13:06:55Z",
   "source": "https://models.dev/api.json",
   "include_preview": true,
   "providers": {
@@ -38,11 +38,11 @@
         "confidence": "high"
       },
       "smartest": {
-        "id": "gpt-6.1-sol",
-        "name": "GPT-6.1 Sol",
+        "id": "gpt-6.2-sol",
+        "name": "GPT-6.2 Sol",
         "family": "gpt-sol",
-        "release_date": "2026-09-29",
-        "last_updated": "2026-09-29",
+        "release_date": "2026-11-17",
+        "last_updated": "2026-11-17",
         "preview": false,
         "omit_params": [
           "temperature",
@@ -154,8 +154,8 @@
         "confidence": "high"
       },
       "smartest": {
-        "id": "gemini-3.1-pro-preview-customtools",
-        "name": "Gemini 3.1 Pro Preview Custom Tools",
+        "id": "gemini-3.1-pro-preview",
+        "name": "Gemini 3.1 Pro Preview",
         "family": "gemini-pro",
         "release_date": "2026-02-19",
         "last_updated": "2026-02-19",
