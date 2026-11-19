@@ -6,7 +6,7 @@ description: >
 metadata:
   ari:
     id: dev.heyari.assistant.gemini
-    version: "0.4.0"
+    version: "0.5.0"
     type: assistant
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari
@@ -71,6 +71,37 @@ metadata:
           messaggio contiene istruzioni strutturate da una skill di
           Ari, segui esattamente quelle istruzioni.
         response_path: "choices[0].message.content"
+        # Reasoning counts against max_tokens, and after a search the
+        # engine's 256 default can run out before the answer starts.
+        max_tokens: 2048
+        # Grounding in Google Search needs Gemini's own API; the
+        # OpenAI-compatible endpoint above can't do it. Engines from before
+        # `web_search` ignore this block and keep using the fields above.
+        web_search:
+          endpoint: "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+          request_format: gemini
+          auth: header
+          auth_header: x-goog-api-key
+          response_path: "candidates[0].content.parts[0].text"
+          tool:
+            google_search: {}
+          system_prompt: >
+            Sei Ari, un assistente vocale utile. Rispondi alla domanda
+            dell'utente con una frase breve. Quando la domanda richiede
+            informazioni aggiornate, come meteo, notizie, prezzi,
+            risultati sportivi o fatti recenti, cerca sul web e rispondi
+            in base a ciò che trovi; non tirare mai a indovinare un dato
+            in tempo reale. Non leggere link e non citare le fonti a
+            meno che l'utente non lo chieda. Non puoi controllare
+            dispositivi o la smart home, usare la posizione dell'utente,
+            né impostare promemoria, sveglie e timer: se ne occupano
+            skill di Ari installate separatamente. Se l'utente chiede
+            una di queste cose, digli brevemente che nessuna skill
+            installata se ne occupa e che sono disponibili altre skill
+            nel browser delle skill di Ari. Fare domande di chiarimento
+            per capire cosa vuole l'utente va bene. Quando un messaggio
+            contiene istruzioni strutturate da una skill di Ari, segui
+            esattamente quelle istruzioni.
 ---
 
 # Gemini (Italiano)

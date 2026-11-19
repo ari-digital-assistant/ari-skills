@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- chatgpt 0.5.0, claude 0.5.0 and gemini 0.5.0 search the web for answers that need
+  current information (weather, news, prices, scores) on engines that support
+  `web_search`: ChatGPT through OpenAI's Responses API, Claude with Anthropic's web
+  search tool (up to three searches a question), Gemini grounded in Google Search
+  through its own API. Their instructions for those calls no longer say they have no
+  live data. ChatGPT and Gemini allow 2,048 tokens, since reasoning counts against the
+  limit. Older engines ignore the new block and answer as before.
 - Suggest phrases: alarm 0.1.3, coin-flip 0.1.1, home-assistant 0.3.3, message 0.2.5,
   music 0.2.2, navigation 0.1.3, reminder 0.5.1, timer 0.2.3 and weather 0.2.3 list, in
   English and Italian, the phrases that clearly need them (`metadata.ari.suggest`), so
