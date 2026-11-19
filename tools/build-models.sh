@@ -132,9 +132,14 @@ trap 'rm -f "$MODELS_TMP"' EXIT
 
   # Anything other than an explicit `true` means omit. models.dev may not
   # have annotated a brand-new model yet, and guessing wrong in the
-  # permissive direction is a 400 on every request.
-  def omit_params:
-    if (.temperature == true) then [] else ["temperature", "top_p", "top_k"] end;
+  # permissive direction is a 400 on every request. OpenAI reasoning models
+  # omit whatever models.dev says: it marks gpt-6-luna and gpt-6.1-terra as
+  # taking `temperature`, and the API rejects anything but the default with
+  # a 400 (checked 2026-11-19).
+  def omit_params($provider):
+    if .temperature == true and ($provider != "openai" or .reasoning != true) then []
+    else ["temperature", "top_p", "top_k"]
+    end;
 
   def is_general_text_model($provider):
     ((.status // "") != "deprecated")
@@ -272,7 +277,7 @@ trap 'rm -f "$MODELS_TMP"' EXIT
     | pick_named($models; $h.positive; $h.negative) as $named
     | if $named != null then $named else pick_fallback($models; $tier) end;
 
-  def public_model($model):
+  def public_model($model; $provider):
     if $model == null then null
     else {
       id: $model.id,
@@ -281,7 +286,7 @@ trap 'rm -f "$MODELS_TMP"' EXIT
       release_date: ($model.release_date // null),
       last_updated: ($model.last_updated // null),
       preview: ($model | is_preview),
-      omit_params: ($model | omit_params),
+      omit_params: ($model | omit_params($provider)),
       pricing_per_million_tokens: {
         input: ($model.cost.input // null),
         output: ($model.cost.output // null)
@@ -295,9 +300,9 @@ trap 'rm -f "$MODELS_TMP"' EXIT
   def provider_result($provider):
     candidates($provider) as $models
     | {
-        fast: public_model(choose($models; $provider; "fast")),
-        balanced: public_model(choose($models; $provider; "balanced")),
-        smartest: public_model(choose($models; $provider; "smartest"))
+        fast: public_model(choose($models; $provider; "fast"); $provider),
+        balanced: public_model(choose($models; $provider; "balanced"); $provider),
+        smartest: public_model(choose($models; $provider; "smartest"); $provider)
       };
 
   {

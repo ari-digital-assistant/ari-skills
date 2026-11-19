@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `models.json`: ChatGPT's Fast and Balanced models (gpt-6-luna, gpt-6.1-terra) leave
+  out `temperature`. models.dev says they take it, but the API rejects anything but the
+  default with a 400, so every routing call and skill consultation through ChatGPT on
+  those tiers failed. `build-models.sh` now omits sampling parameters for every OpenAI
+  reasoning model, whatever models.dev says.
 - music 0.2.1: Italian phrasings the manifest already listed now work. "Metti su Vasco
   Rossi" searched for "su vasco rossi"; "voglio ascoltare", "fammi sentire", "mettimi"
   and "puoi mettere" asked what to play; "più forte" never matched because the engine

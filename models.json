@@ -12,7 +12,11 @@
         "release_date": "2026-09-22",
         "last_updated": "2026-09-22",
         "preview": false,
-        "omit_params": [],
+        "omit_params": [
+          "temperature",
+          "top_p",
+          "top_k"
+        ],
         "pricing_per_million_tokens": {
           "input": 0.1,
           "output": 0.5
@@ -28,7 +32,11 @@
         "release_date": "2026-10-26",
         "last_updated": "2026-10-26",
         "preview": false,
-        "omit_params": [],
+        "omit_params": [
+          "temperature",
+          "top_p",
+          "top_k"
+        ],
         "pricing_per_million_tokens": {
           "input": 1,
           "output": 5
