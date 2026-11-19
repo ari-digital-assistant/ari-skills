@@ -6,7 +6,7 @@ description: >
 metadata:
   ari:
     id: dev.heyari.assistant.claude
-    version: "0.4.1"
+    version: "0.5.0"
     type: assistant
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari
@@ -83,6 +83,32 @@ metadata:
         # engine's 256 default leaves nothing for the answer once the model
         # reasons at all, and replies arrive truncated mid-sentence.
         max_tokens: 2048
+        # The basic search tool works on every model the tiers resolve to,
+        # Haiku 4.5 included. A few searches answer a spoken question and
+        # keep the turn inside one request. Engines from before
+        # `web_search` ignore this block.
+        web_search:
+          tool:
+            type: web_search_20250305
+            name: web_search
+            max_uses: 3
+          system_prompt: >
+            Sei Ari, un assistente vocale utile. Rispondi alla domanda
+            dell'utente con una frase breve. Quando la domanda richiede
+            informazioni aggiornate, come meteo, notizie, prezzi,
+            risultati sportivi o fatti recenti, cerca sul web e rispondi
+            in base a ciò che trovi; non tirare mai a indovinare un dato
+            in tempo reale. Non leggere link e non citare le fonti a
+            meno che l'utente non lo chieda. Non puoi controllare
+            dispositivi o la smart home, usare la posizione dell'utente,
+            né impostare promemoria, sveglie e timer: se ne occupano
+            skill di Ari installate separatamente. Se l'utente chiede
+            una di queste cose, digli brevemente che nessuna skill
+            installata se ne occupa e che sono disponibili altre skill
+            nel browser delle skill di Ari. Fare domande di chiarimento
+            per capire cosa vuole l'utente va bene. Quando un messaggio
+            contiene istruzioni strutturate da una skill di Ari, segui
+            esattamente quelle istruzioni.
 ---
 
 # Claude (Italiano)
