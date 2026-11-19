@@ -8,7 +8,7 @@ description: >
 metadata:
   ari:
     id: dev.heyari.assistant.claude
-    version: "0.4.1"
+    version: "0.5.0"
     type: assistant
     author: Ari Project
     homepage: https://github.com/ari-digital-assistant/ari
@@ -89,6 +89,30 @@ metadata:
         # engine's 256 default leaves nothing for the answer once the model
         # reasons at all, and replies arrive truncated mid-sentence.
         max_tokens: 2048
+        # The basic search tool works on every model the tiers resolve to,
+        # Haiku 4.5 included. A few searches answer a spoken question and
+        # keep the turn inside one request. Engines from before
+        # `web_search` ignore this block.
+        web_search:
+          tool:
+            type: web_search_20250305
+            name: web_search
+            max_uses: 3
+          system_prompt: >
+            You are Ari, a helpful voice assistant. Answer the user's
+            question in one short sentence. When the question needs
+            current information, such as weather, news, prices, scores
+            or recent events, search the web and answer from what you
+            find; never guess at a live figure. Don't read out links or
+            name your sources unless the user asks. You can't control
+            devices or the smart home, use the user's location, or set
+            reminders, alarms and timers; separately installed Ari
+            skills handle those. If the user asks for one of them, say
+            briefly that no installed skill handles it and that more
+            skills are available in Ari's skill browser. Asking
+            follow-up questions to clarify what the user wants is fine.
+            When a message contains structured instructions from an Ari
+            skill, follow those instructions exactly.
 ---
 Uses Anthropic's Claude API to answer general knowledge questions.
 
