@@ -104,17 +104,21 @@ Uses Anthropic's Claude API to answer general knowledge questions.
 | `model_config_key` | No | — | Settings key holding the model id. |
 | `default_model` | **Yes** | — | Used when the user hasn't chosen. |
 | `system_prompt` | **Yes** | — | String, or a `{locale: prompt}` map. |
-| `request_format` | No | `openai` | `openai` or `anthropic`. |
+| `request_format` | No | `openai` | `openai`, `anthropic`, `openai_responses` or `gemini`. |
 | `response_path` | **Yes** | — | Dotted/indexed path to the answer text. |
 | `api_version` | No | — | Extra version header value. |
 | `api_version_header` | No | — | Its header name. |
 | `max_tokens` | No | — | |
 | `temperature` | No | — | |
+| `web_search` | No | — | How to search the web first. See below. |
 
 ### `request_format`
 
-Two shapes are built in. `openai` covers OpenAI, Ollama, and the many APIs
-that copied it; `anthropic` covers Claude.
+Four shapes are built in. `openai` covers OpenAI's Chat Completions, Ollama,
+and the many APIs that copied it; `anthropic` covers Claude;
+`openai_responses` is OpenAI's Responses API; `gemini` is Gemini's own
+`generateContent`. The last two exist for web search, which neither
+provider offers through Chat Completions.
 
 Pick the one your provider speaks. If it speaks neither, it can't be an
 assistant skill today — open an issue.
@@ -127,6 +131,48 @@ Where the answer lives in the response JSON. Supports dots and array indices:
 response_path: "content[0].text"           # Anthropic
 response_path: "choices[0].message.content" # OpenAI-shaped
 ```
+
+Ari gathers an answer that arrives in pieces before the path runs, so a
+fixed path still finds all of it: Claude's text after its last search or
+thinking block becomes `content[0]`, a Responses reply gets the
+`output_text` OpenAI's own libraries give it, and a Gemini candidate's text
+parts become `parts[0]`.
+
+### `web_search`
+
+Lets the assistant search the web before it answers, for questions that
+need current information. Ari uses it whenever the reply may be an answer,
+including the call that either answers or hands the request to a skill. It
+leaves it off when it only wants a skill picked, or a reply in a format a
+skill asked for.
+
+```yaml
+        web_search:
+          tool:
+            type: web_search_20250305
+            name: web_search
+            max_uses: 3
+          system_prompt: >
+            You are Ari, a helpful voice assistant. Answer in one short
+            sentence. Search the web when the question needs current
+            information.
+```
+
+| Field | Required | Notes |
+|---|---|---|
+| `tool` | **Yes** | The provider's search tool, sent as the request's only tool. |
+| `system_prompt` | No | Replaces `system_prompt` for these calls. |
+| `endpoint` | No | Replaces the endpoint. `{model}` becomes the model ID. |
+| `request_format` | No | Replaces `request_format`. |
+| `auth`, `auth_header` | No | Replace the skill's; the key is still read through `auth_config_key`. |
+| `response_path` | No | Replaces `response_path`. |
+
+Anything left out is the skill's own. Engines from before `web_search`
+ignore the block, so the fields outside it must still work on their own.
+The `chatgpt`, `claude` and `gemini` skills show the three providers.
+
+Searches cost extra on every provider, so cap them where the tool allows
+it.
 
 ### `system_prompt` per locale
 
