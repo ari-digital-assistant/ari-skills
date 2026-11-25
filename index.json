@@ -1,6 +1,6 @@
 {
   "index_version": 1,
-  "generated_at": "2026-11-25T13:05:36Z",
+  "generated_at": "2026-11-25T13:36:30Z",
   "models": {
     "path": "models.json",
     "signature": "models.json.sig",
@@ -389,7 +389,7 @@
     },
     {
       "id": "dev.heyari.reminder",
-      "version": "0.5.1",
+      "version": "0.5.2",
       "name": "reminder",
       "description": "Sets timed reminders and untimed list items. Routes to the user's tasks app (default), calendar, or both, with optional voice-named lists like \"add milk to my shopping list\".",
       "type": "skill",
@@ -404,10 +404,10 @@
         "en",
         "it"
       ],
-      "bundle": "bundles/dev.heyari.reminder-0.5.1.tar.gz",
-      "signature": "bundles/dev.heyari.reminder-0.5.1.tar.gz.sig",
-      "sha256": "bd2b72c4fbcb89ba96e2f567a015cbe5531e5d32813058961b69a9077f0c42f5",
-      "manifest": "manifests/dev.heyari.reminder-0.5.1.md",
+      "bundle": "bundles/dev.heyari.reminder-0.5.2.tar.gz",
+      "signature": "bundles/dev.heyari.reminder-0.5.2.tar.gz.sig",
+      "sha256": "278b951c16b40461f1b54b98a0a065481f3a5f24b8dbc35642ee41bcd3ddb2b8",
+      "manifest": "manifests/dev.heyari.reminder-0.5.2.md",
       "localizations": {
         "it": {
           "name": "reminder",
@@ -439,11 +439,11 @@
       },
       "screenshots": {
         "android": [
-          "screenshots/dev.heyari.reminder-0.5.1/android/01-task-request.webp",
-          "screenshots/dev.heyari.reminder-0.5.1/android/02-tasks-org-integration.webp",
-          "screenshots/dev.heyari.reminder-0.5.1/android/03-shopping-list-request.webp",
-          "screenshots/dev.heyari.reminder-0.5.1/android/04-shopping-list-response.webp",
-          "screenshots/dev.heyari.reminder-0.5.1/android/05-settings.webp"
+          "screenshots/dev.heyari.reminder-0.5.2/android/01-task-request.webp",
+          "screenshots/dev.heyari.reminder-0.5.2/android/02-tasks-org-integration.webp",
+          "screenshots/dev.heyari.reminder-0.5.2/android/03-shopping-list-request.webp",
+          "screenshots/dev.heyari.reminder-0.5.2/android/04-shopping-list-response.webp",
+          "screenshots/dev.heyari.reminder-0.5.2/android/05-settings.webp"
         ]
       }
     },
