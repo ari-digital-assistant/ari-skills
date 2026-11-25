@@ -673,14 +673,14 @@ fn build_clarification_envelope(
     );
     out.push_str(",\"body\":");
     push_json_string(&mut out, &clarification);
-    out.push_str(",\"accent\":\"DEFAULT\",\"actions\":[");
+    out.push_str(",\"accent\":\"default\",\"actions\":[");
     out.push_str("{\"id\":\"yes\",\"label\":");
     push_json_string(&mut out, ari::t("clarification.card.yes", &[]).unwrap_or("Yes"));
-    out.push_str(",\"style\":\"PRIMARY\",\"utterance\":");
+    out.push_str(",\"style\":\"primary\",\"utterance\":");
     push_json_string(&mut out, &confirm_utterance);
     out.push_str("},{\"id\":\"no\",\"label\":");
     push_json_string(&mut out, ari::t("clarification.card.no", &[]).unwrap_or("No"));
-    out.push_str(",\"style\":\"DEFAULT\",\"speak\":");
+    out.push_str(",\"style\":\"default\",\"speak\":");
     push_json_string(
         &mut out,
         ari::t("clarification.no_button.speak", &[]).unwrap_or("OK, I won't add that reminder."),
@@ -1086,7 +1086,7 @@ fn build_query_card(
     push_json_string(&mut card, title);
     card.push_str(",\"body\":");
     push_json_string(&mut card, &body);
-    card.push_str(",\"accent\":\"DEFAULT\"}");
+    card.push_str(",\"accent\":\"default\"}");
     card
 }
 
@@ -1737,8 +1737,8 @@ fn build_partial_card(
             .to_string(),
     };
     let accent = match parsed.confidence {
-        parse::Confidence::Low => "WARNING",
-        _ => "DEFAULT",
+        parse::Confidence::Low => "warning",
+        _ => "default",
     };
     let cancel_utterance = format!("aricancelreminder {} {}", mode.as_str(), row_id);
 
@@ -1754,8 +1754,8 @@ fn build_partial_card(
     card.push_str(",\"accent\":\"");
     card.push_str(accent);
     card.push_str("\",\"actions\":[");
-    card.push_str("{\"id\":\"keep\",\"label\":\"Keep\",\"style\":\"DEFAULT\"},");
-    card.push_str("{\"id\":\"cancel\",\"label\":\"Cancel\",\"style\":\"DESTRUCTIVE\"}");
+    card.push_str("{\"id\":\"keep\",\"label\":\"Keep\",\"style\":\"default\"},");
+    card.push_str("{\"id\":\"cancel\",\"label\":\"Cancel\",\"style\":\"destructive\"}");
     card.push_str("],\"on_cancel\":{\"v\":1,\"run_utterance\":");
     push_json_string(&mut card, &cancel_utterance);
     card.push_str("}}");
