@@ -110,6 +110,7 @@ fn dispatch(input: &str, now_ms: i64, state: &mut State) -> String {
         Intent::Query(name) => handle_query(name, now_ms, state, envelope),
         Intent::Cancel(name) => handle_cancel(name, &ringing, state, envelope),
         Intent::CancelAll => handle_cancel_all(&ringing, state, envelope),
+        Intent::CancelById(id) => handle_cancel_by_id(&id, &ringing, state, envelope),
         Intent::List => handle_list(now_ms, state, envelope),
         Intent::Unintelligible => envelope
             .speak(
@@ -286,6 +287,29 @@ fn handle_cancel(
     envelope.speak(speak).to_json()
 }
 
+/// A timer's own Cancel button: that timer and no other, however many run.
+fn handle_cancel_by_id(id: &str, ringing: &[Timer], state: &mut State, envelope: p::Envelope) -> String {
+    if let Some(timer) = state.remove_by_id(id) {
+        let speak = match &timer.name {
+            Some(n) => t("cancel.named_success", &[("name", n)])
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| format!("Cancelled the {} timer.", n)),
+            None => t("cancel.anonymous_success", &[])
+                .unwrap_or("Cancelled your timer.")
+                .to_string(),
+        };
+        return dismiss_all_for(envelope, id).speak(speak).to_json();
+    }
+    // Pruning has already dismissed a finished one; only the reply is left.
+    let speak = match ringing.iter().find(|ti| ti.id == id) {
+        Some(ti) => stopped_sentence(core::slice::from_ref(ti)),
+        None => t("cancel.gone", &[])
+            .unwrap_or("That timer has already finished.")
+            .to_string(),
+    };
+    envelope.speak(speak).to_json()
+}
+
 fn handle_cancel_all(ringing: &[Timer], state: &mut State, mut envelope: p::Envelope) -> String {
     if state.timers.is_empty() {
         let speak = if ringing.is_empty() {
@@ -362,7 +386,7 @@ fn build_card(timer_id: &str, name: &Option<String>, end_ts_ms: i64, started_ts_
                 "cancel",
                 t("action.cancel_label", &[]).unwrap_or("Cancel"),
             )
-            .utterance(cancel_utterance(name))
+            .utterance(cancel_utterance(timer_id))
             .destructive(),
         )
         .on_complete(
@@ -438,19 +462,14 @@ fn build_notification(timer_id: &str, name: &Option<String>, end_ts_ms: i64) -> 
                 "cancel",
                 t("action.cancel_label", &[]).unwrap_or("Cancel"),
             )
-            .utterance(cancel_utterance(name)),
+            .utterance(cancel_utterance(timer_id)),
         )
 }
 
-fn cancel_utterance(name: &Option<String>) -> String {
-    match name {
-        Some(n) => t("action.cancel_named_utterance", &[("name", n)])
-            .map(|s| s.to_string())
-            .unwrap_or_else(|| format!("cancel my {} timer", n)),
-        None => t("action.cancel_anonymous_utterance", &[])
-            .unwrap_or("cancel my timer")
-            .to_string(),
-    }
+/// What a timer's Cancel buttons send: its id, so the cancel lands on it
+/// even with other timers running.
+fn cancel_utterance(timer_id: &str) -> String {
+    format!("{} {timer_id}", parse::CANCEL_BY_ID)
 }
 
 fn card_id_for(timer_id: &str) -> String {
@@ -622,7 +641,7 @@ mod tests {
         assert_eq!(card["started_at_ts_ms"], 1_000_000);
         // cancel action
         assert_eq!(card["actions"][0]["id"], "cancel");
-        assert_eq!(card["actions"][0]["utterance"], "cancel my pasta timer");
+        assert_eq!(card["actions"][0]["utterance"], format!("aricanceltimer {timer_id}"));
         assert_eq!(card["actions"][0]["style"], "destructive");
         // on_complete.alert
         let alert = &card["on_complete"]["alert"];
@@ -654,7 +673,12 @@ mod tests {
         assert_eq!(n["title"], "Pasta timer");
         assert_eq!(n["countdown_to_ts_ms"], 1_480_000);
         assert_eq!(n["sticky"], true);
-        assert_eq!(n["actions"][0]["utterance"], "cancel my pasta timer");
+        assert!(
+            n["actions"][0]["utterance"]
+                .as_str()
+                .unwrap()
+                .starts_with("aricanceltimer t_")
+        );
     }
 
     #[test]
@@ -719,6 +743,57 @@ mod tests {
         // State now empty.
         let state: Value = serde_json::from_str(&s2).unwrap();
         assert!(state["timers"].as_array().unwrap().is_empty());
+    }
+
+    fn timer_ids(state_json: &str) -> Vec<String> {
+        serde_json::from_str::<Value>(state_json).unwrap()["timers"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|ti| ti["id"].as_str().unwrap().to_string())
+            .collect()
+    }
+
+    #[test]
+    fn a_cancel_button_cancels_its_own_timer_among_several_unnamed_ones() {
+        let (_, s1) = handle_once("set a timer for 1 minute", 0, "");
+        let (env, s2) = handle_once("set a timer for 5 minutes", 0, &s1);
+        let ids = timer_ids(&s2);
+        let button = env["cards"][0]["actions"][0]["utterance"].as_str().unwrap().to_string();
+        assert_eq!(button, format!("aricanceltimer {}", ids[1]));
+
+        let (env, s3) = handle_once(&button, 1_000, &s2);
+        assert_eq!(env["speak"], "Cancelled your timer.");
+        assert_eq!(env["dismiss"]["cards"], serde_json::json!([format!("card_{}", ids[1])]));
+        assert_eq!(env["dismiss"]["notifications"], serde_json::json!([format!("notif_{}", ids[1])]));
+        assert_eq!(timer_ids(&s3), [ids[0].clone()]);
+    }
+
+    #[test]
+    fn a_cancel_button_still_finds_its_timer_after_normalising() {
+        let (_, s1) = handle_once("set a pasta timer for 8 minutes", 0, "");
+        let id = timer_ids(&s1).remove(0);
+        let normalised = format!("aricanceltimer {}", id.replace('_', " "));
+        let (env, s2) = handle_once(&normalised, 1_000, &s1);
+        assert_eq!(env["speak"], "Cancelled the pasta timer.");
+        assert!(timer_ids(&s2).is_empty());
+    }
+
+    #[test]
+    fn a_cancel_button_over_its_ringing_timer_says_it_stopped() {
+        let (_, s1) = handle_once("set a timer for 1 minute", 0, "");
+        let id = timer_ids(&s1).remove(0);
+        let (env, _) = handle_once(&format!("aricanceltimer {id}"), 65_000, &s1);
+        assert_eq!(env["speak"], "Stopped your timer.");
+    }
+
+    #[test]
+    fn a_cancel_button_for_a_timer_long_gone_says_so() {
+        let (_, s1) = handle_once("set a timer for 1 minute", 0, "");
+        let (_, s2) = handle_once("set a timer for 5 minutes", 0, &s1);
+        let (env, s3) = handle_once("aricanceltimer t_0000000000000000", 1_000, &s2);
+        assert_eq!(env["speak"], "That timer has already finished.");
+        assert_eq!(timer_ids(&s3).len(), 2);
     }
 
     #[test]

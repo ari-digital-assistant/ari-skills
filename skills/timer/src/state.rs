@@ -80,6 +80,12 @@ impl State {
         }
     }
 
+    /// Remove the timer with id `id`. Returns it if it was there.
+    pub fn remove_by_id(&mut self, id: &str) -> Option<Timer> {
+        let pos = self.timers.iter().position(|t| t.id == id)?;
+        Some(self.timers.remove(pos))
+    }
+
     /// Remove the single anonymous timer (name = None). Returns its id if
     /// exactly one exists.
     pub fn remove_only_anonymous(&mut self) -> Option<String> {
