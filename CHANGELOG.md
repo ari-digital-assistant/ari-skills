@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- reminder 0.5.2: its cards' styles are lowercase, as the envelope format has them, so
+  the "Is this right?" card's Yes is the primary button, the partial card's Cancel is
+  destructive and a low-confidence card is a warning. Written in capitals, they all fell
+  back to the default.
 - timer 0.2.4: a timer's Cancel button, on its card or its notification, cancels that
   timer. It used to say "cancel my timer", so with two unnamed timers running Ari asked
   which one and cancelled neither, though the card went. The buttons now send
