@@ -29,6 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- timer 0.2.4: a timer's Cancel button, on its card or its notification, cancels that
+  timer. It used to say "cancel my timer", so with two unnamed timers running Ari asked
+  which one and cancelled neither, though the card went. The buttons now send
+  `aricanceltimer <id>`; a timer that has already finished gets "That timer has already
+  finished.", or "Stopped your timer." while it is still ringing.
 - `models.json`: ChatGPT's Fast and Balanced models (gpt-6-luna, gpt-6.1-terra) leave
   out `temperature`. models.dev says they take it, but the API rejects anything but the
   default with a 400, so every routing call and skill consultation through ChatGPT on

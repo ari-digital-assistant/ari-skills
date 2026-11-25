@@ -28,6 +28,9 @@ pub enum Intent {
     Cancel(Option<String>),
     /// Cancel every active timer.
     CancelAll,
+    /// Cancel the timer with this id: what a timer's own Cancel button sends,
+    /// so it never has to say which timer it means.
+    CancelById(String),
     /// List every active timer.
     List,
     /// Couldn't parse a usable request from the utterance.
@@ -65,6 +68,10 @@ const IT_CANCEL_VERBS: &[&str] = &[
     "disattiva",
 ];
 
+/// The internal command a timer's Cancel button sends, with the timer's id.
+/// One run of letters, so normalising input leaves it whole.
+pub const CANCEL_BY_ID: &str = "aricanceltimer";
+
 /// Words that unambiguously signal "cancel every timer" when combined with
 /// a cancel verb. `all`, `every`, `all of` → cancel_all.
 fn is_cancel_all_qualifier(tok: &str) -> bool {
@@ -80,6 +87,15 @@ pub fn classify(input: &str) -> Intent {
     let tokens: Vec<&str> = input.split_whitespace().collect();
     if tokens.is_empty() {
         return Intent::Unintelligible;
+    }
+
+    // `aricanceltimer <id>`, from a Cancel button. The engine's normalising
+    // turns the id's underscore into a space, so the rest is joined back.
+    if tokens[0] == CANCEL_BY_ID {
+        return match tokens[1..].join("_") {
+            id if id.is_empty() => Intent::Unintelligible,
+            id => Intent::CancelById(id),
+        };
     }
 
     if has_list_phrasing(&tokens) {
@@ -707,13 +723,11 @@ mod tests {
     }
 
     #[test]
-    fn it_cancel_button_utterances_round_trip() {
-        // What strings/it.json puts on the card's cancel button.
-        assert_eq!(
-            classify("annulla il mio timer pasta"),
-            Intent::Cancel(Some(String::from("pasta")))
-        );
-        assert_eq!(classify("annulla il mio timer"), Intent::Cancel(None));
+    fn a_cancel_button_names_its_timer_whatever_normalising_did() {
+        let id = Intent::CancelById(String::from("t_00ab12cd34ef5678"));
+        assert_eq!(classify("aricanceltimer t_00ab12cd34ef5678"), id);
+        assert_eq!(classify("aricanceltimer t 00ab12cd34ef5678"), id);
+        assert_eq!(classify("aricanceltimer"), Intent::Unintelligible);
     }
 
     #[test]
