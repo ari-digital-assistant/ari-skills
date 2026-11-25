@@ -5,7 +5,7 @@ license: MIT
 metadata:
   ari:
     id: dev.heyari.timer
-    version: "0.2.3"
+    version: "0.2.4"
     author: Ari core team
     homepage: https://github.com/ari-digital-assistant/ari-skills
     engine: ">=0.3"
@@ -14,6 +14,12 @@ metadata:
     specificity: high
     matching:
       patterns:
+        # A timer's own Cancel button: `aricanceltimer <id>`, so the cancel
+        # lands on that timer however many run. One run of letters, so
+        # normalize_input leaves it whole; weighted highest so nothing else
+        # takes it.
+        - regex: "^aricanceltimer\\b"
+          weight: 1.0
         - regex: "\\b(set|start|create|add)\\b.*\\btimer\\b"
           weight: 0.95
         - regex: "\\btimer\\b.*\\b(for|of)\\b"
