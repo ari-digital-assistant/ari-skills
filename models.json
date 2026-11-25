@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-22T12:37:44Z",
+  "generated_at": "2026-11-25T14:27:47Z",
   "source": "https://models.dev/api.json",
   "include_preview": true,
   "providers": {
@@ -46,11 +46,11 @@
         "confidence": "high"
       },
       "smartest": {
-        "id": "gpt-6.2-sol",
-        "name": "GPT-6.2 Sol",
+        "id": "gpt-6.1-sol-healthcare",
+        "name": "GPT-6.1 Sol Healthcare",
         "family": "gpt-sol",
-        "release_date": "2026-11-17",
-        "last_updated": "2026-11-17",
+        "release_date": "2026-11-24",
+        "last_updated": "2026-11-24",
         "preview": false,
         "omit_params": [
           "temperature",
