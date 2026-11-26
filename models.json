@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-25T14:27:47Z",
+  "generated_at": "2026-11-26T13:56:26Z",
   "source": "https://models.dev/api.json",
   "include_preview": true,
   "providers": {
@@ -46,8 +46,8 @@
         "confidence": "high"
       },
       "smartest": {
-        "id": "gpt-6.1-sol-healthcare",
-        "name": "GPT-6.1 Sol Healthcare",
+        "id": "gpt-6.2-sol-healthcare",
+        "name": "GPT-6.2 Sol Healthcare",
         "family": "gpt-sol",
         "release_date": "2026-11-24",
         "last_updated": "2026-11-24",
